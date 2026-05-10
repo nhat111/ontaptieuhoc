@@ -1,25 +1,20 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import 'katex/dist/katex.min.css'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { getGrades } from '@/lib/services/grades'
+import type { Metadata } from "next";
+import "./globals.css";
+import "katex/dist/katex.min.css";
 
 export const metadata: Metadata = {
-  title: 'ÔnTập - Luyện tập thông minh',
-  description: 'Nền tảng luyện tập trực tuyến THCS & THPT với hàng nghìn câu hỏi chất lượng cao',
-}
+  title: "Ôn Tập Tiểu Học",
+  description: "Nền tảng ôn tập miễn phí cho học sinh Tiểu học Việt Nam",
+};
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const grades = await getGrades()
-
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="vi">
-      <body className="min-h-screen bg-gray-50 flex flex-col">
-        <Header grades={grades} />
-        <main className="flex-1">{children}</main>
-        <Footer />
-      </body>
+      <body>{children}</body>
     </html>
-  )
+  );
 }

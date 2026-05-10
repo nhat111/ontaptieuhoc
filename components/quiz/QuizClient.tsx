@@ -1,162 +1,129 @@
-'use client'
-
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { QuestionCard } from './QuestionCard'
-import { QuestionPalette } from './QuestionPalette'
-import { QuizTimer } from './QuizTimer'
-import { saveQuizResult } from '@/lib/actions'
-import type { Lesson, Question, AnswerRecord } from '@/lib/types'
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Question, LessonMeta, formatTime } from "@/lib/quizData";
+import { loadExamQuestions, loadExamMeta } from "@/lib/examStorage";
+import Header from "@/components/Header";
+import QuestionCard from "./QuestionCard";
+import QuestionPalette from "./QuestionPalette";
 
 interface Props {
-  lesson: Lesson
-  questions: Question[]
-  durationSeconds?: number
+  initialQuestions: Question[];
+  initialLesson: LessonMeta;
 }
 
-export function QuizClient({ lesson, questions, durationSeconds = 30 * 60 }: Props) {
-  const router = useRouter()
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string[]>>({})
-  const [timeLeft, setTimeLeft] = useState(durationSeconds)
-  const [submitted, setSubmitted] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [saving, setSaving] = useState(false)
+export default function QuizClient({ initialQuestions, initialLesson }: Props) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const current = questions[currentIndex]
-  const answeredSet = new Set(
-    questions.map((_, i) => i).filter(i => (answers[questions[i]?.id] ?? []).length > 0)
-  )
+  const lessonId = Number(searchParams.get("lessonId") ?? "1");
 
-  const handleSelect = useCallback((optionId: string) => {
-    if (submitted || !current) return
-    setAnswers(prev => {
-      const existing = prev[current.id] ?? []
-      if (current.type === 'single') return { ...prev, [current.id]: [optionId] }
-      return {
-        ...prev,
-        [current.id]: existing.includes(optionId)
-          ? existing.filter(id => id !== optionId)
-          : [...existing, optionId],
-      }
-    })
-  }, [current, submitted])
+  // localStorage-imported exam takes priority; DB data is the fallback
+  const [{ questions, lesson }] = useState(() => ({
+    questions: loadExamQuestions(lessonId, () => initialQuestions),
+    lesson: loadExamMeta(lessonId, () => initialLesson),
+  }));
 
-  const handleSubmit = async () => {
-    setSaving(true)
-    setSubmitted(true)
-    setShowConfirm(false)
+  const [answers, setAnswers] = useState<(string | null)[]>(() => Array(questions.length).fill(null));
+  const [current, setCurrent] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
 
-    const records: AnswerRecord[] = questions.map(q => {
-      const selected = answers[q.id] ?? []
-      const correctIds = (q.options ?? []).filter(o => o.is_correct).map(o => o.id)
-      const is_correct =
-        selected.length > 0 &&
-        selected.length === correctIds.length &&
-        selected.every(id => correctIds.includes(id))
-      return { question_id: q.id, selected, is_correct }
-    })
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
-    const score = records.filter(r => r.is_correct).length
-    const id = await saveQuizResult(lesson.id, score, questions.length, records)
-    setSaving(false)
-    if (id) router.push(`/result/${id}`)
-  }
+  const submit = (finalAnswers: (string | null)[]) => {
+    sessionStorage.setItem(
+      "quizResult",
+      JSON.stringify({ questions, answers: finalAnswers, lessonId, lessonTitle: lesson.title })
+    );
+    router.push("/result");
+  };
 
-  if (questions.length === 0)
-    return (
-      <div className="text-center py-20 text-gray-400">
-        <div className="text-5xl mb-3">📭</div>
-        <p>Bài học này chưa có câu hỏi nào</p>
-      </div>
-    )
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) { clearInterval(id); submit(answersRef.current); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSelect = (questionIndex: number, answer: string) => {
+    setCurrent(questionIndex);
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[questionIndex] = answer;
+      return next;
+    });
+  };
+
+  const scrollToQuestion = (index: number) => {
+    setCurrent(index);
+    document.getElementById(`question-${index}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const isLow = timeLeft < 60;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Top bar */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="font-bold text-gray-900 text-lg line-clamp-1">{lesson.title}</h1>
-          <p className="text-sm text-gray-500">{questions.length} câu hỏi</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <QuizTimer timeLeft={timeLeft} onTick={setTimeLeft} stopped={submitted} />
-          <button
-            onClick={() => setShowConfirm(true)}
-            disabled={submitted || saving}
-            className="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60"
-          >
-            {saving ? 'Đang lưu...' : 'Nộp bài'}
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
+          {/* Breadcrumb */}
+          <nav className="flex flex-wrap items-center gap-1 text-xs mb-5">
+            {[
+              { label: "Trang chủ", href: "/" },
+              { label: `Lớp ${lessonId}`, href: `/lop/${lessonId}` },
+              { label: "Toán", href: "#" },
+              { label: "Đề kiểm tra", href: "#" },
+            ].map(({ label, href }) => (
+              <span key={label} className="flex items-center gap-1">
+                <a href={href} className="text-blue-500 hover:underline">{label}</a>
+                <span className="text-gray-400">›</span>
+              </span>
+            ))}
+            <span className="text-orange-500 font-medium">{lesson.title}</span>
+          </nav>
+
+          {/* Title */}
+          <h1 className="text-xl font-bold text-gray-800 text-center mb-5">
+            {lesson.title}
+          </h1>
+
+          {/* Timer */}
+          <div className={`flex items-center justify-center gap-2 font-mono font-bold text-2xl ${isLow ? "text-red-500 animate-pulse" : "text-green-500"}`}>
+            <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <path strokeLinecap="round" d="M12 7v5l3 2" />
+            </svg>
+            <span>{formatTime(timeLeft)}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5">
-        <div>
-          <QuestionCard
-            question={current}
-            index={currentIndex}
-            total={questions.length}
-            selected={answers[current.id] ?? []}
-            revealed={submitted}
-            onSelect={handleSelect}
-          />
-
-          <div className="flex items-center justify-between mt-4">
-            <button
-              onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-              disabled={currentIndex === 0}
-              className="px-5 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
-            >
-              ← Trước
-            </button>
-            <span className="text-sm text-gray-500">{currentIndex + 1} / {questions.length}</span>
-            <button
-              onClick={() => setCurrentIndex(i => Math.min(questions.length - 1, i + 1))}
-              disabled={currentIndex === questions.length - 1}
-              className="px-5 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
-            >
-              Tiếp →
-            </button>
-          </div>
+      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[70%_30%] gap-5 items-start">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          {questions.map((q, i) => (
+            <QuestionCard
+              key={q.id}
+              question={q}
+              index={i}
+              selectedAnswer={answers[i]}
+              onSelect={(answer) => handleSelect(i, answer)}
+            />
+          ))}
         </div>
 
         <QuestionPalette
           total={questions.length}
-          current={currentIndex}
-          answered={answeredSet}
-          onJump={setCurrentIndex}
+          current={current}
+          answers={answers}
+          onJump={scrollToQuestion}
+          onSubmit={() => submit(answers)}
         />
       </div>
-
-      {/* Confirm modal */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-            <div className="text-3xl text-center mb-3">📋</div>
-            <h2 className="text-lg font-bold text-center text-gray-900 mb-2">Xác nhận nộp bài</h2>
-            <p className="text-sm text-gray-500 text-center mb-4">
-              Bạn đã làm <strong>{answeredSet.size}/{questions.length}</strong> câu.{' '}
-              {questions.length - answeredSet.size > 0 &&
-                `Còn ${questions.length - answeredSet.size} câu chưa trả lời.`}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Tiếp tục làm
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                Nộp bài
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }

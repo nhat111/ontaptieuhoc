@@ -1,60 +1,67 @@
-import { MathRenderer } from '@/components/ui/MathRenderer'
-import { DifficultyBadge } from '@/components/ui/Badge'
-import type { Question, AnswerRecord } from '@/lib/types'
+import { Question, LABELS } from "@/lib/quizData";
+import MathText from "@/components/MathText";
 
-interface Props {
-  question: Question
-  record: AnswerRecord
-  index: number
+const STATUS = {
+  skipped: { border: "border-gray-200", icon: "—", cls: "bg-gray-200 text-gray-600" },
+  correct:  { border: "border-green-300", icon: "✓", cls: "bg-green-500 text-white" },
+  incorrect: { border: "border-red-300", icon: "✗", cls: "bg-red-500 text-white" },
+};
+
+interface ResultItemProps {
+  question: Question;
+  userAnswer: string | null;
+  index: number;
 }
 
-export function ResultItem({ question, record, index }: Props) {
+export default function ResultItem({ question, userAnswer, index }: ResultItemProps) {
+  const isCorrect = userAnswer === question.correctAnswer;
+  const isSkipped = userAnswer === null;
+  const status = STATUS[isSkipped ? "skipped" : isCorrect ? "correct" : "incorrect"];
+
   return (
-    <div className={`rounded-2xl border p-5 ${record.is_correct ? 'border-green-200 bg-green-50/30' : 'border-red-200 bg-red-50/30'}`}>
+    <div className={`bg-white rounded-xl border-2 ${status.border} p-4`}>
       <div className="flex items-start gap-3 mb-3">
-        <span className={`flex-shrink-0 w-8 h-8 rounded-xl text-sm font-bold flex items-center justify-center ${record.is_correct ? 'bg-green-500 text-white' : 'bg-red-400 text-white'}`}>
-          {record.is_correct ? '✓' : '✗'}
+        <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${status.cls}`}>
+          {status.icon}
         </span>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-gray-500">Câu {index + 1}</span>
-            <DifficultyBadge difficulty={question.difficulty} />
-          </div>
-          <div className="text-sm text-gray-800 font-medium">
-            <MathRenderer content={question.content} />
-          </div>
-        </div>
+        <p className="text-sm font-semibold text-gray-800 leading-relaxed">
+          <span className="text-gray-400 mr-1">Câu {index + 1}.</span>
+          <MathText text={question.question} />
+        </p>
       </div>
 
-      <div className="space-y-1.5 ml-11">
-        {(question.options ?? []).map(opt => {
-          const userSelected = record.selected.includes(opt.id)
+      <div className="grid grid-cols-2 gap-2 ml-10">
+        {question.options.map((opt, i) => {
+          const isRight = opt === question.correctAnswer;
+          const isUser = opt === userAnswer;
+          const optCls = isRight
+            ? "bg-green-50 border-green-300 text-green-700"
+            : isUser && !isRight
+            ? "bg-red-50 border-red-300 text-red-700"
+            : "border-gray-100 text-gray-500";
+          const circleCls = isRight
+            ? "bg-green-500 text-white"
+            : isUser
+            ? "bg-red-400 text-white"
+            : "bg-gray-200 text-gray-500";
+
           return (
-            <div
-              key={opt.id}
-              className={`flex items-start gap-2 px-3 py-2 rounded-lg text-sm ${
-                opt.is_correct      ? 'bg-green-100 text-green-800'
-                : userSelected      ? 'bg-red-100 text-red-800'
-                :                     'text-gray-600'
-              }`}
-            >
-              <span className="font-bold flex-shrink-0">{opt.label}.</span>
-              <MathRenderer content={opt.content} />
-              {opt.is_correct  && <span className="ml-auto text-green-600 font-bold text-xs flex-shrink-0">✓</span>}
-              {userSelected && !opt.is_correct && <span className="ml-auto text-red-500 font-bold text-xs flex-shrink-0">✗</span>}
+            <div key={opt} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${optCls}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${circleCls}`}>
+                {LABELS[i]}
+              </span>
+              <span className="truncate"><MathText text={opt} /></span>
+              {isRight && <span className="ml-auto font-bold">✓</span>}
             </div>
-          )
+          );
         })}
       </div>
 
-      {question.explanation && (
-        <div className="ml-11 mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-          <p className="text-xs font-semibold text-blue-700 mb-1">Giải thích</p>
-          <div className="text-xs text-blue-800">
-            <MathRenderer content={question.explanation} />
-          </div>
-        </div>
+      {isSkipped && (
+        <p className="ml-10 text-xs text-gray-400 mt-2">
+          Đáp án đúng: <span className="font-semibold text-green-600"><MathText text={question.correctAnswer} /></span>
+        </p>
       )}
     </div>
-  )
+  );
 }
