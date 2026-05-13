@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 
@@ -88,12 +89,18 @@ export default function HomePage() {
             Bộ đề ôn tập bám sát chương trình SGK mới — Lớp 1 đến Lớp 5
           </p>
           <div className="flex justify-center gap-3">
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-6 py-3 rounded-xl transition-colors shadow-lg">
+            <a
+              href="#grades"
+              className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-6 py-3 rounded-xl transition-colors shadow-lg"
+            >
               Chọn lớp học →
-            </button>
-            <button className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-colors">
+            </a>
+            <Link
+              href="/quiz?lessonId=1"
+              className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
               Xem đề mẫu
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -115,7 +122,7 @@ export default function HomePage() {
       </section>
 
       {/* Grade cards */}
-      <section className="max-w-6xl mx-auto px-4 py-14">
+      <section id="grades" className="max-w-6xl mx-auto px-4 py-14">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-extrabold text-gray-800 mb-2">Chọn lớp của bạn</h2>
           <p className="text-gray-500">Chọn lớp để bắt đầu ôn tập ngay hôm nay</p>

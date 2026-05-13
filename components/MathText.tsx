@@ -19,16 +19,17 @@ export default function MathText({ text, className }: MathTextProps) {
 }
 
 function renderParts(text: string): string {
-  // Split on $...$, \(...\), \[...\]
-  const re = /(\$[^$]+\$|\\\([^)]+\\\)|\\\[[^\]]+\\\])/g;
+  // $$...$$ (block) must come before $...$ (inline) in the alternation
+  const re = /(\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g;
   let result = "";
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) result += escapeHtml(text.slice(last, m.index));
     const raw = m[0];
-    const isDisplay = raw.startsWith("\\[");
+    const isDisplay = raw.startsWith("\\[") || raw.startsWith("$$");
     const inner = raw
+      .replace(/^\$\$|\$\$$/g, "")
       .replace(/^\$|\$$/g, "")
       .replace(/^\\\(|\\\)$/g, "")
       .replace(/^\\\[|\\\]$/g, "");
