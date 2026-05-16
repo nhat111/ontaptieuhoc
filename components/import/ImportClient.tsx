@@ -1,14 +1,28 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { nanoid } from "@/lib/nanoid";
 import Header from "@/components/Header";
 import QuestionCard, { type QDraft } from "./QuestionCard";
+import PasteImportModal from "./PasteImportModal";
 import MathText from "@/components/MathText";
+import { insertIntoFocused } from "@/lib/focusedEditor";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Subject = { id: number; name: string };
 type Chapter = { id: number; title: string };
+
+const DRAFT_KEY = "ontap_import_draft_v1";
+
+type Draft = {
+  grade: number;
+  subjectId: number | null;
+  chapterId: number | null;
+  lessonTitle: string;
+  indexLabel: string;
+  questions: QDraft[];
+  collapsedIds: string[];
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,28 +55,70 @@ export default function ImportClient() {
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingChapters, setLoadingChapters] = useState(false);
 
-  // Questions
+  // Questions + collapse state
   const [questions, setQuestions] = useState<QDraft[]>([blankQuestion()]);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
+  // Paste modal
+  const [pasteOpen, setPasteOpen] = useState(false);
 
   // Save state
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ ok: boolean; lessonId?: number; msg: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Autosave hydration flag
+  const hydrated = useRef(false);
+  const skipNextSubjectAutoset = useRef(false);
+  const skipNextChapterAutoset = useRef(false);
+
+  // ── Restore draft from localStorage on mount ──────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Draft;
+        if (d.questions?.length) {
+          setGrade(d.grade ?? 1);
+          setLessonTitle(d.lessonTitle ?? "");
+          setIndexLabel(d.indexLabel ?? "01");
+          setQuestions(d.questions);
+          setCollapsedIds(new Set(d.collapsedIds ?? []));
+          // subjectId/chapterId sẽ được áp dụng sau khi fetch xong
+          if (d.subjectId != null) skipNextSubjectAutoset.current = true;
+          if (d.chapterId != null) skipNextChapterAutoset.current = true;
+        }
+      }
+    } catch {/* ignore */}
+    hydrated.current = true;
+  }, []);
+
   // ── Fetch subjects khi grade thay đổi ──────────────────────────────────────
   useEffect(() => {
-    setSubjectId(null);
-    setChapterId(null);
     setSubjects([]);
-    setChapters([]);
     setLoadingSubjects(true);
 
     fetch(`/api/subjects?grade=${grade}`)
       .then((r) => r.json())
       .then((data) => {
         if (data?.error) { console.error("subjects API error:", data.error); return; }
-        setSubjects(data as Subject[]);
-        if ((data as Subject[]).length) setSubjectId((data as Subject[])[0].id);
+        const list = data as Subject[];
+        setSubjects(list);
+        // Áp dụng subjectId từ draft (nếu match), nếu không thì chọn đầu tiên
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          const draftSubjectId = raw ? (JSON.parse(raw) as Draft).subjectId : null;
+          if (skipNextSubjectAutoset.current && draftSubjectId != null && list.some((s) => s.id === draftSubjectId)) {
+            setSubjectId(draftSubjectId);
+          } else if (list.length) {
+            setSubjectId(list[0].id);
+          } else {
+            setSubjectId(null);
+          }
+        } catch {
+          if (list.length) setSubjectId(list[0].id);
+        }
+        skipNextSubjectAutoset.current = false;
       })
       .catch((e) => console.error("subjects fetch error:", e))
       .finally(() => setLoadingSubjects(false));
@@ -75,7 +131,6 @@ export default function ImportClient() {
       setChapterId(null);
       return;
     }
-    setChapterId(null);
     setChapters([]);
     setLoadingChapters(true);
 
@@ -83,16 +138,48 @@ export default function ImportClient() {
       .then((r) => r.json())
       .then((data) => {
         if (data?.error) { console.error("chapters API error:", data.error); return; }
-        setChapters(data as Chapter[]);
-        if ((data as Chapter[]).length) setChapterId((data as Chapter[])[0].id);
+        const list = data as Chapter[];
+        setChapters(list);
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          const draftChapterId = raw ? (JSON.parse(raw) as Draft).chapterId : null;
+          if (skipNextChapterAutoset.current && draftChapterId != null && list.some((c) => c.id === draftChapterId)) {
+            setChapterId(draftChapterId);
+          } else if (list.length) {
+            setChapterId(list[0].id);
+          } else {
+            setChapterId(null);
+          }
+        } catch {
+          if (list.length) setChapterId(list[0].id);
+        }
+        skipNextChapterAutoset.current = false;
       })
       .catch((e) => console.error("chapters fetch error:", e))
       .finally(() => setLoadingChapters(false));
   }, [subjectId]);
 
+  // ── Autosave draft (debounced) ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const t = setTimeout(() => {
+      try {
+        const d: Draft = {
+          grade, subjectId, chapterId, lessonTitle, indexLabel,
+          questions, collapsedIds: Array.from(collapsedIds),
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+      } catch {/* ignore */}
+    }, 500);
+    return () => clearTimeout(t);
+  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, questions, collapsedIds]);
+
   // ── Question operations ──────────────────────────────────────────────────
 
-  const addQuestion = () => setQuestions((qs) => [...qs, blankQuestion()]);
+  const addQuestion = useCallback(() => {
+    const q = blankQuestion();
+    setQuestions((qs) => [...qs, q]);
+  }, []);
 
   const updateQuestion = useCallback((id: string, q: QDraft) => {
     setQuestions((qs) => qs.map((x) => (x.id === id ? q : x)));
@@ -119,11 +206,43 @@ export default function ImportClient() {
 
   const deleteQuestion = (id: string) => {
     setQuestions((qs) => (qs.length > 1 ? qs.filter((q) => q.id !== id) : qs));
+    setCollapsedIds((s) => { const n = new Set(s); n.delete(id); return n; });
+  };
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedIds((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const collapseAll = () => setCollapsedIds(new Set(questions.map((q) => q.id)));
+  const expandAll = () => setCollapsedIds(new Set());
+
+  // ── Import from paste modal ──────────────────────────────────────────────
+  const handlePasteImport = (imported: QDraft[], mode: "replace" | "append") => {
+    if (mode === "replace") {
+      setQuestions(imported);
+      setCollapsedIds(new Set(imported.map((q) => q.id))); // collapse all imported by default
+    } else {
+      setQuestions((qs) => {
+        // Remove blank trailing question if present, then append
+        const cleaned = qs.filter((q) => q.content.trim() || q.options.some((o) => o.trim()));
+        const combined = [...cleaned, ...imported];
+        return combined.length ? combined : imported;
+      });
+      setCollapsedIds((s) => {
+        const n = new Set(s);
+        imported.forEach((q) => n.add(q.id));
+        return n;
+      });
+    }
   };
 
   // ── Save to Supabase ─────────────────────────────────────────────────────
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     setError(null);
     setSaveResult(null);
 
@@ -152,15 +271,35 @@ export default function ImportClient() {
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Lỗi không xác định."); return; }
       setSaveResult({ ok: true, lessonId: data.lessonId, msg: "Đã lưu bài học thành công!" });
+      // Clear draft after successful save
+      try { localStorage.removeItem(DRAFT_KEY); } catch {/* ignore */}
       setLessonTitle("");
       setIndexLabel("01");
       setQuestions([blankQuestion()]);
+      setCollapsedIds(new Set());
     } catch {
       setError("Không thể kết nối máy chủ.");
     } finally {
       setSaving(false);
     }
-  }
+  }, [chapterId, lessonTitle, indexLabel, questions]);
+
+  // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        addQuestion();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleSave, addQuestion]);
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -169,17 +308,30 @@ export default function ImportClient() {
     4: "text-blue-600", 5: "text-purple-600",
   };
 
+  const allCollapsed = questions.length > 0 && questions.every((q) => collapsedIds.has(q.id));
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
       {/* Page header */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-5">
-          <h1 className="text-xl font-bold text-gray-800">Tạo bài học mới</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase
-          </p>
+        <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Tạo bài học mới</h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase
+            </p>
+          </div>
+          <button
+            onClick={() => setPasteOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Dán đề từ văn bản
+          </button>
         </div>
       </div>
 
@@ -281,13 +433,21 @@ export default function ImportClient() {
 
           {/* Question list */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-sm font-bold text-gray-700">
                 Câu hỏi{" "}
                 <span className={`ml-1 ${gradeColor[grade] ?? "text-blue-600"}`}>
                   ({questions.length} câu)
                 </span>
               </h2>
+              {questions.length > 1 && (
+                <button
+                  onClick={allCollapsed ? expandAll : collapseAll}
+                  className="text-xs text-gray-500 hover:text-blue-600 font-medium px-2 py-1 rounded-lg hover:bg-gray-100"
+                >
+                  {allCollapsed ? "↓ Mở rộng tất cả" : "↑ Thu gọn tất cả"}
+                </button>
+              )}
             </div>
 
             {questions.map((q, i) => (
@@ -296,6 +456,8 @@ export default function ImportClient() {
                 question={q}
                 index={i}
                 total={questions.length}
+                collapsed={collapsedIds.has(q.id)}
+                onToggleCollapse={() => toggleCollapse(q.id)}
                 onChange={(updated) => updateQuestion(q.id, updated)}
                 onMoveUp={() => moveQuestion(i, -1)}
                 onMoveDown={() => moveQuestion(i, 1)}
@@ -311,7 +473,7 @@ export default function ImportClient() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Thêm câu hỏi
+              Thêm câu hỏi <span className="text-xs text-gray-400 ml-1">(Ctrl+Enter)</span>
             </button>
           </div>
         </div>
@@ -350,6 +512,7 @@ export default function ImportClient() {
             <button
               onClick={handleSave}
               disabled={saving || !chapterId || !lessonTitle.trim()}
+              title="Ctrl+S"
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               {saving ? (
@@ -369,39 +532,57 @@ export default function ImportClient() {
                 </>
               )}
             </button>
+            <p className="mt-1.5 text-[10px] text-gray-400 text-center">Tự lưu nháp vào trình duyệt</p>
           </div>
 
-          {/* KaTeX cheatsheet */}
+          {/* KaTeX cheatsheet — clickable */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-blue-600 mb-3">LaTeX nhanh</h3>
-            <div className="space-y-1.5 text-xs">
-              {[
-                ["Phân số", "$\\frac{1}{2}$", "$\\frac{1}{2}$"],
-                ["Căn", "$\\sqrt{x}$", "$\\sqrt{x}$"],
-                ["Mũ", "$x^{2}$", "$x^{2}$"],
-                ["Chỉ số dưới", "$x_{i}$", "$x_{i}$"],
-                ["Block math", "$$E=mc^2$$", "$$E=mc^2$$"],
-              ].map(([name, src, preview]) => (
-                <div key={name} className="flex items-center justify-between gap-2">
-                  <span className="text-gray-500 w-20 shrink-0">{name}</span>
-                  <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] flex-1">{src}</code>
+            <h3 className="text-sm font-bold text-blue-600 mb-1">LaTeX nhanh</h3>
+            <p className="text-[11px] text-gray-400 mb-3">Click để chèn vào ô câu hỏi đang focus</p>
+            <div className="space-y-1 text-xs">
+              {([
+                ["Phân số", "$\\frac{1}{2}$"],
+                ["Căn", "$\\sqrt{x}$"],
+                ["Mũ", "$x^{2}$"],
+                ["Chỉ số dưới", "$x_{i}$"],
+                ["Block math", "$$E=mc^2$$"],
+              ] as const).map(([name, src]) => (
+                <button
+                  key={name}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // giữ focus của editor
+                    if (!insertIntoFocused(src)) {
+                      // Không có editor nào đang focus — feedback nhẹ
+                      const el = e.currentTarget;
+                      el.classList.add("animate-pulse");
+                      setTimeout(() => el.classList.remove("animate-pulse"), 400);
+                    }
+                  }}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-blue-50 group transition-colors text-left"
+                  title="Click để chèn"
+                >
+                  <span className="text-gray-500 w-20 shrink-0 group-hover:text-blue-600">{name}</span>
+                  <code className="bg-gray-100 group-hover:bg-blue-100 px-1.5 py-0.5 rounded text-[11px] flex-1 truncate transition-colors">{src}</code>
                   <span className="text-gray-700 shrink-0">
-                    <MathText text={preview} />
+                    <MathText text={src} />
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Tips */}
           <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-xs text-amber-700 space-y-1">
-            <p className="font-semibold">Lưu ý</p>
-            <p>• Nhấn ký tự tròn A/B/C/D để chọn đáp án đúng</p>
-            <p>• Ảnh cần bucket <code className="bg-amber-100 px-1 rounded">question-images</code> (public) trong Supabase Storage</p>
-            <p>• LaTeX inline: <code className="bg-amber-100 px-1 rounded">$...$</code> · block: <code className="bg-amber-100 px-1 rounded">$$...$$</code></p>
+            <p className="font-semibold">Mẹo</p>
+            <p>• <kbd className="bg-amber-100 px-1 rounded">Ctrl+Enter</kbd> thêm câu hỏi mới</p>
+            <p>• <kbd className="bg-amber-100 px-1 rounded">Ctrl+S</kbd> lưu vào Supabase</p>
+            <p>• Click vào tiêu đề câu để thu gọn / mở rộng</p>
+            <p>• Ảnh: bucket <code className="bg-amber-100 px-1 rounded">question-images</code> (public)</p>
           </div>
         </div>
       </div>
+
+      <PasteImportModal open={pasteOpen} onClose={() => setPasteOpen(false)} onImport={handlePasteImport} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import MathText from "@/components/MathText";
+import { setFocusedEditor, clearFocusedEditor } from "@/lib/focusedEditor";
 
 interface Props {
   value: string;
@@ -22,6 +23,7 @@ export default function TiptapEditor({ value, onChange, placeholder, minHeight =
     ],
     content: value,
     immediatelyRender: false,
+    onFocus: ({ editor }) => setFocusedEditor(editor),
     onUpdate: ({ editor }) => {
       if (!syncing.current) {
         onChange(editor.getText({ blockSeparator: "\n" }));
@@ -39,6 +41,11 @@ export default function TiptapEditor({ value, onChange, placeholder, minHeight =
       syncing.current = false;
     }
   }, [value, editor]);
+
+  // Clear focused tracker on unmount
+  useEffect(() => {
+    return () => { if (editor) clearFocusedEditor(editor); };
+  }, [editor]);
 
   return (
     <div>
