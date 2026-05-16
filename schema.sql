@@ -72,9 +72,9 @@ INSERT INTO subjects (name, grade, order_index) VALUES
 
 -- Chương của Toán lớp 1 (subject id = 1)
 INSERT INTO chapters (title, subject_id, order_index) VALUES
-  ('Chương 1: Số tự nhiên',                          1, 1),
-  ('Chương 2: Hình học cơ bản',                      1, 2),
-  ('Chương 3: Đo lường và bài toán có lời văn',      1, 3);
+  ('Chương 1: Số tự nhiên',                          61, 1),
+  ('Chương 2: Hình học cơ bản',                      61, 2),
+  ('Chương 3: Đo lường và bài toán có lời văn',      61, 3);
 
 -- Bài học của Chương 1
 INSERT INTO lessons (title, index_label, chapter_id, status, order_index) VALUES
