@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase, type Subject, type Chapter, type Lesson } from "@/lib/supabase";
-import QuestionEditor from "@/components/teacher/QuestionEditor";
+import { supabase, type Subject, type Chapter, type Lesson } from "@/lib/db";
+import QuestionEditor from "@/app/components/teacher/QuestionEditor";
 
 // ─── Types ────────────────────────────────────────────────────
 type NewQuestion = {
