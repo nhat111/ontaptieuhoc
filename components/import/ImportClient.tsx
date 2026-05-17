@@ -12,6 +12,16 @@ import { insertIntoFocused } from "@/lib/focusedEditor";
 type Subject = { id: number; name: string };
 type Chapter = { id: number; title: string };
 
+export type InitialData = {
+  lessonId: number;
+  title: string;
+  indexLabel: string;
+  chapterId: number;
+  subjectId: number;
+  grade: number;
+  questions: QDraft[];
+};
+
 const DRAFT_KEY = "ontap_import_draft_v1";
 
 type Draft = {
@@ -42,13 +52,15 @@ function validateQuestions(qs: QDraft[]): string | null {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ImportClient() {
+export default function ImportClient({ initialData }: { initialData?: InitialData }) {
+  const editMode = !!initialData;
+
   // Lesson form — dùng state riêng để useEffect dependency chính xác
-  const [grade, setGrade] = useState(1);
+  const [grade, setGrade] = useState(initialData?.grade ?? 1);
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [chapterId, setChapterId] = useState<number | null>(null);
-  const [lessonTitle, setLessonTitle] = useState("");
-  const [indexLabel, setIndexLabel] = useState("01");
+  const [lessonTitle, setLessonTitle] = useState(initialData?.title ?? "");
+  const [indexLabel, setIndexLabel] = useState(initialData?.indexLabel ?? "01");
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -56,7 +68,7 @@ export default function ImportClient() {
   const [loadingChapters, setLoadingChapters] = useState(false);
 
   // Questions + collapse state
-  const [questions, setQuestions] = useState<QDraft[]>([blankQuestion()]);
+  const [questions, setQuestions] = useState<QDraft[]>(() => initialData?.questions ?? [blankQuestion()]);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   // Paste modal
@@ -69,11 +81,15 @@ export default function ImportClient() {
 
   // Autosave hydration flag
   const hydrated = useRef(false);
-  const skipNextSubjectAutoset = useRef(false);
-  const skipNextChapterAutoset = useRef(false);
+  const skipNextSubjectAutoset = useRef(editMode);
+  const skipNextChapterAutoset = useRef(editMode);
+  // Pending IDs to restore after async subject/chapter fetch (edit mode or draft restore)
+  const pendingSubjectId = useRef<number | null>(initialData?.subjectId ?? null);
+  const pendingChapterId = useRef<number | null>(initialData?.chapterId ?? null);
 
-  // ── Restore draft from localStorage on mount ──────────────────────────────
+  // ── Restore draft from localStorage on mount (skipped in edit mode) ───────
   useEffect(() => {
+    if (editMode) { hydrated.current = true; return; }
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
@@ -84,14 +100,19 @@ export default function ImportClient() {
           setIndexLabel(d.indexLabel ?? "01");
           setQuestions(d.questions);
           setCollapsedIds(new Set(d.collapsedIds ?? []));
-          // subjectId/chapterId sẽ được áp dụng sau khi fetch xong
-          if (d.subjectId != null) skipNextSubjectAutoset.current = true;
-          if (d.chapterId != null) skipNextChapterAutoset.current = true;
+          if (d.subjectId != null) {
+            skipNextSubjectAutoset.current = true;
+            pendingSubjectId.current = d.subjectId;
+          }
+          if (d.chapterId != null) {
+            skipNextChapterAutoset.current = true;
+            pendingChapterId.current = d.chapterId;
+          }
         }
       }
     } catch {/* ignore */}
     hydrated.current = true;
-  }, []);
+  }, [editMode]);
 
   // ── Fetch subjects khi grade thay đổi ──────────────────────────────────────
   useEffect(() => {
@@ -104,19 +125,14 @@ export default function ImportClient() {
         if (data?.error) { console.error("subjects API error:", data.error); return; }
         const list = data as Subject[];
         setSubjects(list);
-        // Áp dụng subjectId từ draft (nếu match), nếu không thì chọn đầu tiên
-        try {
-          const raw = localStorage.getItem(DRAFT_KEY);
-          const draftSubjectId = raw ? (JSON.parse(raw) as Draft).subjectId : null;
-          if (skipNextSubjectAutoset.current && draftSubjectId != null && list.some((s) => s.id === draftSubjectId)) {
-            setSubjectId(draftSubjectId);
-          } else if (list.length) {
-            setSubjectId(list[0].id);
-          } else {
-            setSubjectId(null);
-          }
-        } catch {
-          if (list.length) setSubjectId(list[0].id);
+        const targetId = pendingSubjectId.current;
+        pendingSubjectId.current = null;
+        if (skipNextSubjectAutoset.current && targetId != null && list.some((s) => s.id === targetId)) {
+          setSubjectId(targetId);
+        } else if (list.length) {
+          setSubjectId(list[0].id);
+        } else {
+          setSubjectId(null);
         }
         skipNextSubjectAutoset.current = false;
       })
@@ -140,18 +156,14 @@ export default function ImportClient() {
         if (data?.error) { console.error("chapters API error:", data.error); return; }
         const list = data as Chapter[];
         setChapters(list);
-        try {
-          const raw = localStorage.getItem(DRAFT_KEY);
-          const draftChapterId = raw ? (JSON.parse(raw) as Draft).chapterId : null;
-          if (skipNextChapterAutoset.current && draftChapterId != null && list.some((c) => c.id === draftChapterId)) {
-            setChapterId(draftChapterId);
-          } else if (list.length) {
-            setChapterId(list[0].id);
-          } else {
-            setChapterId(null);
-          }
-        } catch {
-          if (list.length) setChapterId(list[0].id);
+        const targetId = pendingChapterId.current;
+        pendingChapterId.current = null;
+        if (skipNextChapterAutoset.current && targetId != null && list.some((c) => c.id === targetId)) {
+          setChapterId(targetId);
+        } else if (list.length) {
+          setChapterId(list[0].id);
+        } else {
+          setChapterId(null);
         }
         skipNextChapterAutoset.current = false;
       })
@@ -159,9 +171,9 @@ export default function ImportClient() {
       .finally(() => setLoadingChapters(false));
   }, [subjectId]);
 
-  // ── Autosave draft (debounced) ─────────────────────────────────────────────
+  // ── Autosave draft (debounced, skipped in edit mode) ──────────────────────
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!hydrated.current || editMode) return;
     const t = setTimeout(() => {
       try {
         const d: Draft = {
@@ -172,7 +184,7 @@ export default function ImportClient() {
       } catch {/* ignore */}
     }, 500);
     return () => clearTimeout(t);
-  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, questions, collapsedIds]);
+  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, questions, collapsedIds, editMode]);
 
   // ── Question operations ──────────────────────────────────────────────────
 
@@ -252,37 +264,44 @@ export default function ImportClient() {
     if (qErr) { setError(qErr); return; }
 
     setSaving(true);
+    const payload = {
+      chapterId,
+      title: lessonTitle,
+      indexLabel,
+      questions: questions.map((q) => ({
+        content: q.content,
+        options: q.options,
+        correctAnswer: q.options[q.correctIdx],
+        imageUrl: q.imageUrl,
+      })),
+      ...(editMode ? { lessonId: initialData!.lessonId } : {}),
+    };
     try {
-      const res = await fetch("/api/create-lesson", {
+      const res = await fetch(editMode ? "/api/update-lesson" : "/api/create-lesson", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chapterId,
-          title: lessonTitle,
-          indexLabel,
-          questions: questions.map((q) => ({
-            content: q.content,
-            options: q.options,
-            correctAnswer: q.options[q.correctIdx],
-            imageUrl: q.imageUrl,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Lỗi không xác định."); return; }
-      setSaveResult({ ok: true, lessonId: data.lessonId, msg: "Đã lưu bài học thành công!" });
-      // Clear draft after successful save
-      try { localStorage.removeItem(DRAFT_KEY); } catch {/* ignore */}
-      setLessonTitle("");
-      setIndexLabel("01");
-      setQuestions([blankQuestion()]);
-      setCollapsedIds(new Set());
+      setSaveResult({
+        ok: true,
+        lessonId: data.lessonId,
+        msg: editMode ? "Đã cập nhật bài học!" : "Đã lưu bài học thành công!",
+      });
+      if (!editMode) {
+        try { localStorage.removeItem(DRAFT_KEY); } catch {/* ignore */}
+        setLessonTitle("");
+        setIndexLabel("01");
+        setQuestions([blankQuestion()]);
+        setCollapsedIds(new Set());
+      }
     } catch {
       setError("Không thể kết nối máy chủ.");
     } finally {
       setSaving(false);
     }
-  }, [chapterId, lessonTitle, indexLabel, questions]);
+  }, [chapterId, lessonTitle, indexLabel, questions, editMode, initialData]);
 
   // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
   useEffect(() => {
@@ -317,23 +336,75 @@ export default function ImportClient() {
       {/* Page header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Tạo bài học mới</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase
-            </p>
+          <div className="flex items-center gap-3">
+            {editMode && (
+              <a
+                href={`/quiz?lessonId=${initialData!.lessonId}`}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors flex-shrink-0"
+                title="Xem bài học"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </a>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-800">
+                  {editMode ? "Chỉnh sửa bài học" : "Tạo bài học mới"}
+                </h1>
+                {editMode && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                    Đang sửa
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {editMode
+                  ? `Bài #${initialData!.lessonId} · Cập nhật câu hỏi · Lưu vào Supabase`
+                  : "Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase"}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => setPasteOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Dán đề từ văn bản
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setPasteOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Dán đề từ văn bản
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Edit mode step bar */}
+      {editMode && (
+        <div className="bg-amber-50 border-b border-amber-100">
+          <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2">
+            {[
+              { n: 1, label: "Thông tin bài" },
+              { n: 2, label: "Câu hỏi" },
+              { n: 3, label: "Lưu" },
+            ].map((step, i) => (
+              <div key={step.n} className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    {step.n}
+                  </div>
+                  <span className="text-xs font-semibold text-amber-700 hidden sm:block">{step.label}</span>
+                </div>
+                {i < 2 && <div className="w-6 h-px bg-amber-300 mx-0.5" />}
+              </div>
+            ))}
+            <span className="ml-auto text-xs text-amber-600">
+              Sửa xong → bấm <strong>Cập nhật bài học</strong>
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
         {/* ── Left: lesson form + question editor ── */}
@@ -341,7 +412,10 @@ export default function ImportClient() {
 
           {/* Lesson form */}
           <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-4">Thông tin bài học</h2>
+            <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+              {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>}
+              Thông tin bài học
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 
               {/* Grade */}
@@ -434,9 +508,10 @@ export default function ImportClient() {
           {/* Question list */}
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-gray-700">
+              <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>}
                 Câu hỏi{" "}
-                <span className={`ml-1 ${gradeColor[grade] ?? "text-blue-600"}`}>
+                <span className={`${gradeColor[grade] ?? "text-blue-600"}`}>
                   ({questions.length} câu)
                 </span>
               </h2>
@@ -482,7 +557,10 @@ export default function ImportClient() {
         <div className="space-y-4 lg:sticky lg:top-6">
           {/* Lesson summary */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">Tổng quan</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>}
+              Tổng quan
+            </h3>
             <div className="space-y-1.5 text-xs text-gray-600">
               <Row label="Lớp" value={`Lớp ${grade}`} />
               <Row label="Môn" value={subjects.find((s) => s.id === subjectId)?.name ?? "—"} />
@@ -501,10 +579,13 @@ export default function ImportClient() {
             )}
 
             {saveResult?.ok && (
-              <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                ✓ {saveResult.msg}{" "}
-                <a href={`/quiz?lessonId=${saveResult.lessonId}`} className="underline font-semibold">
-                  Vào làm bài →
+              <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 space-y-1">
+                <p className="font-semibold">✓ {saveResult.msg}</p>
+                <a
+                  href={`/quiz?lessonId=${saveResult.lessonId}`}
+                  className="underline font-semibold block"
+                >
+                  {editMode ? "Kiểm tra lại bài →" : "Vào làm bài →"}
                 </a>
               </div>
             )}
@@ -528,7 +609,7 @@ export default function ImportClient() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Lưu vào Supabase
+                  {editMode ? "Cập nhật bài học" : "Lưu vào Supabase"}
                 </>
               )}
             </button>

@@ -1,9 +1,5 @@
 import { getSupabaseServer } from './supabase/server'
-import { supabase as supabaseClient } from './supabase/client'
 import type { Question as QuizQuestion, LessonMeta } from './quizData'
-
-// Re-export for client components
-export { supabase } from './supabase/client'
 
 // ---- Database row types ----
 
@@ -105,66 +101,6 @@ export async function getChaptersWithLessons(subjectId: number): Promise<Compone
   }
 }
 
-// ---- Client-callable functions (raw row types for client components) ----
-
-export async function getChaptersBySubject(subjectId: number): Promise<Chapter[]> {
-  try {
-    const { data } = await supabaseClient
-      .from('chapters')
-      .select('*')
-      .eq('subject_id', subjectId)
-      .order('order_index')
-    return data ?? []
-  } catch {
-    return []
-  }
-}
-
-export async function getLessonsByChapter(chapterId: number): Promise<Lesson[]> {
-  try {
-    const { data } = await supabaseClient
-      .from('lessons')
-      .select('*')
-      .eq('chapter_id', chapterId)
-      .order('order_index')
-    return data ?? []
-  } catch {
-    return []
-  }
-}
-
-export async function getQuestionsByLesson(lessonId: number): Promise<Question[]> {
-  try {
-    const { data } = await supabaseClient
-      .from('questions')
-      .select('id, content, options, correct_answer, explanation')
-      .eq('lesson_id', lessonId)
-      .order('order_index')
-    return data ?? []
-  } catch {
-    return []
-  }
-}
-
-export async function getLessonById(lessonId: number): Promise<Lesson | null> {
-  try {
-    const { data } = await supabaseClient
-      .from('lessons')
-      .select('*')
-      .eq('id', lessonId)
-      .single()
-    return data ?? null
-  } catch {
-    return null
-  }
-}
-
-export async function saveQuizResult(lessonId: number, score: number, total: number): Promise<void> {
-  try {
-    await supabaseClient.from('quiz_results').insert({ lesson_id: lessonId, score, total })
-  } catch {}
-}
-
 // ---- Server-side quiz functions (for server components) ----
 
 export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion[]> {
@@ -188,12 +124,32 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
 
 export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta> {
   try {
-    const { data } = await getSupabaseServer()
+    const sb = getSupabaseServer()
+    const { data: lesson } = await sb
       .from('lessons')
-      .select('id, title')
+      .select('id, title, chapter_id')
       .eq('id', lessonId)
       .single()
-    if (data) return { id: data.id, title: data.title }
+    if (!lesson) return { id: lessonId, title: `Bài ${lessonId}` }
+
+    const { data: chapter } = await sb
+      .from('chapters')
+      .select('subject_id')
+      .eq('id', lesson.chapter_id)
+      .single()
+
+    let grade: number | null = null
+    let subjectName: string | null = null
+    if (chapter) {
+      const { data: subject } = await sb
+        .from('subjects')
+        .select('grade, name')
+        .eq('id', chapter.subject_id)
+        .single()
+      if (subject) { grade = subject.grade; subjectName = subject.name }
+    }
+
+    return { id: lesson.id, title: lesson.title, grade, subjectName }
   } catch {}
   return { id: lessonId, title: `Bài ${lessonId}` }
 }

@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Question, LessonMeta, formatTime } from "@/lib/quizData";
-import { loadExamQuestions, loadExamMeta } from "@/lib/examStorage";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
@@ -18,11 +17,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   const lessonId = Number(searchParams.get("lessonId") ?? "1");
 
-  // localStorage-imported exam takes priority; DB data is the fallback
-  const [{ questions, lesson }] = useState(() => ({
-    questions: loadExamQuestions(lessonId, () => initialQuestions),
-    lesson: loadExamMeta(lessonId, () => initialLesson),
-  }));
+  const questions = initialQuestions;
+  const lesson = initialLesson;
 
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(questions.length).fill(null));
   const [current, setCurrent] = useState(0);
@@ -73,24 +69,41 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
           {/* Breadcrumb */}
           <nav className="flex flex-wrap items-center gap-1 text-xs mb-5">
-            {[
-              { label: "Trang chủ", href: "/" },
-              { label: `Lớp ${lessonId}`, href: `/lop/${lessonId}` },
-              { label: "Toán", href: "#" },
-              { label: "Đề kiểm tra", href: "#" },
-            ].map(({ label, href }) => (
-              <span key={label} className="flex items-center gap-1">
-                <a href={href} className="text-blue-500 hover:underline">{label}</a>
+            <span className="flex items-center gap-1">
+              <a href="/" className="text-blue-500 hover:underline">Trang chủ</a>
+              <span className="text-gray-400">›</span>
+            </span>
+            {lesson.grade && (
+              <span className="flex items-center gap-1">
+                <a href={`/lop/${lesson.grade}`} className="text-blue-500 hover:underline">Lớp {lesson.grade}</a>
                 <span className="text-gray-400">›</span>
               </span>
-            ))}
+            )}
+            {lesson.subjectName && (
+              <span className="flex items-center gap-1">
+                <a href={lesson.grade ? `/lop/${lesson.grade}?subject=${encodeURIComponent(lesson.subjectName)}` : '#'} className="text-blue-500 hover:underline">
+                  {lesson.subjectName}
+                </a>
+                <span className="text-gray-400">›</span>
+              </span>
+            )}
             <span className="text-orange-500 font-medium">{lesson.title}</span>
           </nav>
 
-          {/* Title */}
-          <h1 className="text-xl font-bold text-gray-800 text-center mb-5">
-            {lesson.title}
-          </h1>
+          {/* Title + edit link */}
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <h1 className="text-xl font-bold text-gray-800">{lesson.title}</h1>
+            <a
+              href={`/import/edit/${lessonId}`}
+              title="Chỉnh sửa bài học"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-300 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+              </svg>
+              Sửa đề
+            </a>
+          </div>
 
           {/* Timer */}
           <div className={`flex items-center justify-center gap-2 font-mono font-bold text-2xl ${isLow ? "text-red-500 animate-pulse" : "text-green-500"}`}>

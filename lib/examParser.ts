@@ -29,8 +29,8 @@ export function parseExamText(text: string): DraftQuestion[] {
 
     if (!draft) continue; // skip header lines before first "Câu"
 
-    // Answer marker: "Đáp án: C" or "Answer: C"
-    const ans = line.match(/^(?:Đáp án|ĐÁP ÁN|Answer)[:\s]+([A-D])/i);
+    // Answer marker: "Đáp án: C", "Answer: C", or "Chọn C." (loigiaihay.com style)
+    const ans = line.match(/^(?:(?:Đáp án|ĐÁP ÁN|Answer)\s*[:\s]+|Chọn\s+)([A-D])/i);
     if (ans) { draft.answer = ans[1].toUpperCase(); continue; }
 
     // Two options on one line: "A. text    B. text" (2+ spaces between)

@@ -9,10 +9,11 @@ export default async function GradePage({
   searchParams,
 }: {
   params: Promise<{ grade: string }>;
-  searchParams: Promise<{ subject?: string }>;
+  searchParams: Promise<{ subject?: string; view?: string }>;
 }) {
   const { grade } = await params;
-  const { subject: subjectParam } = await searchParams;
+  const { subject: subjectParam, view } = await searchParams;
+  const activeView = view === "exam" ? "exam" : "baitap";
   const gradeNum = parseInt(grade);
 
   const subjects = await getSubjectsByGrade(gradeNum);
@@ -60,19 +61,47 @@ export default async function GradePage({
 
         {/* Toggle */}
         <div className="flex gap-2 mb-7">
-          <button className="bg-blue-600 text-white text-sm font-bold px-5 py-2 rounded-full shadow-sm">
+          <a
+            href={`/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}`}
+            className={`text-sm font-bold px-5 py-2 rounded-full shadow-sm transition-colors ${
+              activeView === "baitap"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
+            }`}
+          >
             Bài tập
-          </button>
-          <button className="bg-white text-gray-600 border border-gray-200 text-sm font-semibold px-5 py-2 rounded-full hover:border-blue-300 hover:text-blue-600 transition-colors">
+          </a>
+          <a
+            href={`/lop/${grade}?${subjectParam ? `subject=${encodeURIComponent(subjectParam)}&` : ""}view=exam`}
+            className={`text-sm font-semibold px-5 py-2 rounded-full transition-colors ${
+              activeView === "exam"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
+            }`}
+          >
             Đề kiểm tra
-          </button>
+          </a>
         </div>
 
         {/* Content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Chapter list */}
+          {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
-            {chapters.length === 0 ? (
+            {activeView === "exam" ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-500">
+                <p className="text-5xl mb-4">📝</p>
+                <p className="text-base font-bold text-gray-700 mb-1">Đề kiểm tra đang được biên soạn</p>
+                <p className="text-sm text-gray-400">
+                  Đề kiểm tra {activeSubject?.name ?? ""} lớp {grade} sẽ sớm được cập nhật.
+                </p>
+                <a
+                  href={`/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}`}
+                  className="mt-5 inline-block text-sm text-blue-600 hover:underline font-medium"
+                >
+                  ← Quay lại bài tập
+                </a>
+              </div>
+            ) : chapters.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
                 <p className="text-4xl mb-3">📭</p>
                 <p>Chưa có nội dung cho môn học này</p>

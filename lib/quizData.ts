@@ -10,6 +10,8 @@ export type Question = {
 export type LessonMeta = {
   id: number;
   title: string;
+  grade?: number | null;
+  subjectName?: string | null;
 };
 
 export type QuizResult = {
