@@ -28,6 +28,15 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   answersRef.current = answers;
 
   const submit = (finalAnswers: (string | null)[]) => {
+    const score = finalAnswers.filter((a, i) => a === questions[i].correctAnswer).length;
+    const total = questions.length;
+
+    fetch("/api/quiz-result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lessonId, score, total }),
+    }).catch(() => {});
+
     sessionStorage.setItem(
       "quizResult",
       JSON.stringify({ questions, answers: finalAnswers, lessonId, lessonTitle: lesson.title })

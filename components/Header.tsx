@@ -107,6 +107,13 @@ export default function Header() {
                       <p className="text-sm font-medium text-gray-700 truncate">{user.email}</p>
                     </div>
                     <Link
+                      href="/progress"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Tiến độ học tập
+                    </Link>
+                    <Link
                       href="/import"
                       onClick={() => setMenuOpen(false)}
                       className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
