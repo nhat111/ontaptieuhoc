@@ -53,6 +53,77 @@ type ComponentChapter = {
   lessons: ComponentLesson[]
 }
 
+// ---- Leaderboard ----
+
+export type LeaderboardEntry = {
+  rank: number
+  name: string
+  avgScore: number
+  lessonCount: number
+}
+
+function maskEmail(email: string): string {
+  const local = email.split('@')[0]
+  if (local.length <= 3) return local
+  return local.slice(0, 3) + '***'
+}
+
+export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardEntry[]> {
+  try {
+    const sb = getSupabaseServer()
+
+    const { data: subjects } = await sb.from('subjects').select('id').eq('grade', grade)
+    if (!subjects?.length) return []
+
+    const { data: chapters } = await sb.from('chapters').select('id').in('subject_id', subjects.map((s: any) => s.id))
+    if (!chapters?.length) return []
+
+    const { data: lessons } = await sb.from('lessons').select('id').in('chapter_id', chapters.map((c: any) => c.id))
+    if (!lessons?.length) return []
+
+    const lessonIds = lessons.map((l: any) => l.id)
+
+    const { data: results } = await sb
+      .from('quiz_results')
+      .select('user_id, lesson_id, score, total')
+      .in('lesson_id', lessonIds)
+      .not('user_id', 'is', null)
+
+    if (!results?.length) return []
+
+    // Best score % per (user, lesson)
+    const userBest = new Map<string, Map<number, number>>()
+    for (const r of results as any[]) {
+      if (!r.user_id) continue
+      const pct = (r.score / r.total) * 100
+      if (!userBest.has(r.user_id)) userBest.set(r.user_id, new Map())
+      const lm = userBest.get(r.user_id)!
+      if (!lm.has(r.lesson_id) || pct > lm.get(r.lesson_id)!) lm.set(r.lesson_id, pct)
+    }
+
+    const stats = [...userBest.entries()]
+      .map(([userId, lm]) => {
+        const scores = [...lm.values()]
+        return { userId, lessonCount: scores.length, avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) }
+      })
+      .sort((a, b) => b.avgScore - a.avgScore || b.lessonCount - a.lessonCount)
+      .slice(0, 10)
+
+    const userIds = stats.map((s) => s.userId)
+    const { data: { users } } = await sb.auth.admin.listUsers({ perPage: 1000 })
+    const emailMap = new Map((users ?? []).map((u: any) => [u.id, u.email ?? '']))
+
+    return stats.map((s, i) => ({
+      rank: i + 1,
+      name: maskEmail(emailMap.get(s.userId) ?? 'user'),
+      avgScore: s.avgScore,
+      lessonCount: s.lessonCount,
+    }))
+  } catch {
+    return []
+  }
+}
+
 // ---- Subjects ----
 
 export async function getSubjectsByGrade(grade: number): Promise<SubjectRow[]> {

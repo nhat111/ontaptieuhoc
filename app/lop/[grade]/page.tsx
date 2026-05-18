@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
 import Sidebar from "@/components/Sidebar";
-import { getSubjectsByGrade, getChaptersWithLessons } from "@/lib/db";
+import { getSubjectsByGrade, getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 
 export default async function GradePage({
   params,
@@ -22,9 +22,12 @@ export default async function GradePage({
   const activeSubject =
     subjects.find((s) => s.name === subjectParam) ?? subjects[0] ?? null;
 
-  const chapters = activeSubject
-    ? await getChaptersWithLessons(activeSubject.id, activeView === "exam" ? "exam" : "lesson")
-    : [];
+  const [chapters, leaderboard] = await Promise.all([
+    activeSubject
+      ? getChaptersWithLessons(activeSubject.id, activeView === "exam" ? "exam" : "lesson")
+      : Promise.resolve([]),
+    getLeaderboardByGrade(gradeNum),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,7 +123,7 @@ export default async function GradePage({
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <Sidebar />
+            <Sidebar leaderboard={leaderboard} grade={gradeNum} />
           </div>
         </div>
       </div>
