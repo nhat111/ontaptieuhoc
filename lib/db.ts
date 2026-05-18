@@ -70,32 +70,56 @@ export async function getSubjectsByGrade(grade: number): Promise<SubjectRow[]> {
 
 // ---- Chapters (server-side, returns rich component types for server pages) ----
 
-export async function getChaptersWithLessons(subjectId: number): Promise<ComponentChapter[]> {
+export async function getChaptersWithLessons(
+  subjectId: number,
+  lessonType: 'lesson' | 'exam' = 'lesson'
+): Promise<ComponentChapter[]> {
   try {
-    const { data } = await getSupabaseServer()
+    const sb = getSupabaseServer()
+
+    const { data: chapters } = await sb
       .from('chapters')
-      .select(`
-        id, title, order_index,
-        lessons ( id, title, index_label, chapter_id, status, order_index, questions(count) )
-      `)
+      .select('id, title, order_index')
       .eq('subject_id', subjectId)
       .order('order_index')
 
-    return (data ?? []).map((ch: any) => {
-      const lessons: ComponentLesson[] = (ch.lessons ?? [])
-        .sort((a: any, b: any) => a.order_index - b.order_index)
-        .map((l: any) => ({
-          id: l.id,
-          index: l.index_label,
-          title: l.title,
-          questionCount: l.questions?.[0]?.count ?? 0,
-          status: l.status as ComponentLesson['status'],
-        }))
+    if (!chapters?.length) return []
 
-      const questionCount = lessons.reduce((s, l) => s + l.questionCount, 0)
+    const chapterIds = chapters.map((c: any) => c.id)
 
-      return { id: ch.id, title: ch.title, questionCount, lessons }
-    })
+    let query = sb
+      .from('lessons')
+      .select('id, title, index_label, chapter_id, status, order_index, questions(count)')
+      .in('chapter_id', chapterIds)
+      .order('order_index')
+
+    if (lessonType === 'exam') {
+      query = query.eq('type', 'exam') as typeof query
+    } else {
+      query = query.or('type.eq.lesson,type.is.null') as typeof query
+    }
+
+    const { data: lessons } = await query
+
+    return chapters
+      .map((ch: any) => {
+        const chLessons: ComponentLesson[] = (lessons ?? [])
+          .filter((l: any) => l.chapter_id === ch.id)
+          .map((l: any) => ({
+            id: l.id,
+            index: l.index_label,
+            title: l.title,
+            questionCount: l.questions?.[0]?.count ?? 0,
+            status: l.status as ComponentLesson['status'],
+          }))
+        return {
+          id: ch.id,
+          title: ch.title,
+          questionCount: chLessons.reduce((s, l) => s + l.questionCount, 0),
+          lessons: chLessons,
+        }
+      })
+      .filter((ch: ComponentChapter) => ch.lessons.length > 0)
   } catch {
     return []
   }

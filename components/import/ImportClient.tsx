@@ -74,6 +74,12 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
   // Paste modal
   const [pasteOpen, setPasteOpen] = useState(false);
 
+  // Inline chapter creation
+  const [showNewChapter, setShowNewChapter] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState("");
+  const [creatingChapter, setCreatingChapter] = useState(false);
+  const [chapterCreateError, setChapterCreateError] = useState<string | null>(null);
+
   // Save state
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ ok: boolean; lessonId?: number; msg: string } | null>(null);
@@ -149,6 +155,9 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
     }
     setChapters([]);
     setLoadingChapters(true);
+    setShowNewChapter(false);
+    setNewChapterTitle("");
+    setChapterCreateError(null);
 
     fetch(`/api/chapters?subjectId=${subjectId}`)
       .then((r) => r.json())
@@ -251,6 +260,31 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
       });
     }
   };
+
+  // ── Create chapter inline ────────────────────────────────────────────────
+
+  const handleCreateChapter = useCallback(async () => {
+    if (!subjectId || !newChapterTitle.trim()) return;
+    setChapterCreateError(null);
+    setCreatingChapter(true);
+    try {
+      const res = await fetch("/api/chapters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId, title: newChapterTitle.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setChapterCreateError(data.error ?? "Không thể tạo chương."); return; }
+      setChapters((prev) => [...prev, data as Chapter]);
+      setChapterId(data.id);
+      setNewChapterTitle("");
+      setShowNewChapter(false);
+    } catch {
+      setChapterCreateError("Không thể kết nối máy chủ.");
+    } finally {
+      setCreatingChapter(false);
+    }
+  }, [subjectId, newChapterTitle]);
 
   // ── Save to Supabase ─────────────────────────────────────────────────────
 
@@ -457,25 +491,64 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
                 <label className="text-xs text-gray-500 block mb-1">
                   Chương {loadingChapters && <span className="text-blue-400">⟳</span>}
                 </label>
-                <select
-                  value={chapterId ?? ""}
-                  onChange={(e) => setChapterId(Number(e.target.value))}
-                  disabled={loadingChapters || chapters.length === 0}
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {chapters.length === 0 && !loadingChapters && (
-                    <option value="">
-                      {subjectId ? "— Môn này chưa có chương —" : "— Chọn môn học trước —"}
-                    </option>
+                <div className="flex gap-1.5">
+                  <select
+                    value={chapterId ?? ""}
+                    onChange={(e) => setChapterId(Number(e.target.value))}
+                    disabled={loadingChapters || chapters.length === 0}
+                    className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {chapters.length === 0 && !loadingChapters && (
+                      <option value="">
+                        {subjectId ? "— Chưa có chương —" : "— Chọn môn học trước —"}
+                      </option>
+                    )}
+                    {chapters.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                  {subjectId && !loadingChapters && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNewChapter((v) => !v); setChapterCreateError(null); setNewChapterTitle(""); }}
+                      title="Tạo chương mới"
+                      className={`px-2.5 py-2 rounded-lg border text-sm font-bold transition-colors flex-shrink-0 ${
+                        showNewChapter
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"
+                      }`}
+                    >
+                      +
+                    </button>
                   )}
-                  {chapters.map((c) => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
-                {chapters.length === 0 && subjectId && !loadingChapters && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Môn này chưa có chương trong DB. Hãy thêm chương vào Supabase trước.
-                  </p>
+                </div>
+
+                {/* Inline create chapter form */}
+                {showNewChapter && subjectId && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                    <p className="text-xs font-semibold text-blue-700">Tạo chương mới</p>
+                    <div className="flex gap-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newChapterTitle}
+                        onChange={(e) => setNewChapterTitle(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleCreateChapter(); if (e.key === "Escape") setShowNewChapter(false); }}
+                        placeholder="VD: Chương 1: Số tự nhiên"
+                        className="flex-1 border border-blue-200 bg-white rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      />
+                      <button
+                        onClick={handleCreateChapter}
+                        disabled={!newChapterTitle.trim() || creatingChapter}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors flex-shrink-0"
+                      >
+                        {creatingChapter ? "..." : "Tạo"}
+                      </button>
+                    </div>
+                    {chapterCreateError && (
+                      <p className="text-xs text-red-500">✗ {chapterCreateError}</p>
+                    )}
+                  </div>
                 )}
               </div>
 

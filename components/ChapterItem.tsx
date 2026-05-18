@@ -12,9 +12,11 @@ export type Chapter = {
 export default function ChapterItem({
   chapter,
   defaultOpen = false,
+  viewType = "lesson",
 }: {
   chapter: Chapter;
   defaultOpen?: boolean;
+  viewType?: "lesson" | "exam";
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -33,7 +35,7 @@ export default function ChapterItem({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-gray-800 truncate">{chapter.title}</h3>
           <p className="text-xs text-gray-400 mt-0.5">
-            {chapter.lessons.length} bài học · {chapter.questionCount} câu hỏi
+            {chapter.lessons.length} {viewType === "exam" ? "đề" : "bài học"} · {chapter.questionCount} câu hỏi
           </p>
           <div className="mt-2 h-1.5 bg-gray-100 rounded-full w-48 max-w-full">
             <div
@@ -59,6 +61,7 @@ export default function ChapterItem({
               key={lesson.id}
               lesson={lesson}
               isLast={i === chapter.lessons.length - 1}
+              viewType={viewType}
             />
           ))}
         </div>

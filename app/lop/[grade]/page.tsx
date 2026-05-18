@@ -23,7 +23,7 @@ export default async function GradePage({
     subjects.find((s) => s.name === subjectParam) ?? subjects[0] ?? null;
 
   const chapters = activeSubject
-    ? await getChaptersWithLessons(activeSubject.id)
+    ? await getChaptersWithLessons(activeSubject.id, activeView === "exam" ? "exam" : "lesson")
     : [];
 
   return (
@@ -53,10 +53,12 @@ export default async function GradePage({
 
         {/* Page title */}
         <h1 className="text-2xl font-extrabold text-gray-800">
-          Bài tập {activeSubject?.name ?? "Toán"} lớp {grade}
+          {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject?.name ?? "Toán"} lớp {grade}
         </h1>
         <p className="text-gray-500 text-sm mt-1 mb-4">
-          Bộ bài tập bám sát sách giáo khoa · Luyện tập từng chương, từng bài
+          {activeView === "exam"
+            ? "Đề kiểm tra theo chương · Luyện thi cuối kỳ"
+            : "Bộ bài tập bám sát sách giáo khoa · Luyện tập từng chương, từng bài"}
         </p>
 
         {/* Toggle */}
@@ -87,24 +89,22 @@ export default async function GradePage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
-            {activeView === "exam" ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-500">
-                <p className="text-5xl mb-4">📝</p>
-                <p className="text-base font-bold text-gray-700 mb-1">Đề kiểm tra đang được biên soạn</p>
-                <p className="text-sm text-gray-400">
-                  Đề kiểm tra {activeSubject?.name ?? ""} lớp {grade} sẽ sớm được cập nhật.
-                </p>
-                <a
-                  href={`/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}`}
-                  className="mt-5 inline-block text-sm text-blue-600 hover:underline font-medium"
-                >
-                  ← Quay lại bài tập
-                </a>
-              </div>
-            ) : chapters.length === 0 ? (
+            {chapters.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
-                <p className="text-4xl mb-3">📭</p>
-                <p>Chưa có nội dung cho môn học này</p>
+                <p className="text-4xl mb-3">{activeView === "exam" ? "📝" : "📭"}</p>
+                <p className="font-medium text-gray-500">
+                  {activeView === "exam"
+                    ? `Chưa có đề kiểm tra ${activeSubject?.name ?? ""} lớp ${grade}`
+                    : "Chưa có nội dung cho môn học này"}
+                </p>
+                {activeView === "exam" && (
+                  <a
+                    href={`/import`}
+                    className="mt-4 inline-block text-sm text-blue-600 hover:underline font-medium"
+                  >
+                    + Tạo đề kiểm tra mới
+                  </a>
+                )}
               </div>
             ) : (
               chapters.map((chapter, i) => (
@@ -112,6 +112,7 @@ export default async function GradePage({
                   key={chapter.id}
                   chapter={chapter}
                   defaultOpen={i === 0}
+                  viewType={activeView === "exam" ? "exam" : "lesson"}
                 />
               ))
             )}

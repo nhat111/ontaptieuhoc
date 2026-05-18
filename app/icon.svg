@@ -1,12 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="#2563EB"/>
-  <text
-    x="16"
-    y="23"
-    font-family="system-ui, -apple-system, Arial, sans-serif"
-    font-size="17"
-    font-weight="800"
-    text-anchor="middle"
-    fill="white"
-  >Ô</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" fill="none">
+  <rect width="36" height="36" rx="9" fill="#2563EB"/>
+  <!-- Left page -->
+  <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fill-opacity="0.85"/>
+  <!-- Right page -->
+  <path d="M28 25V12C28 11.4 27.6 11 27 11H19V26H27C27.6 26 28 25.6 28 25Z" fill="white"/>
+  <!-- Spine -->
+  <rect x="17" y="11" width="2" height="15" rx="0.5" fill="#BFDBFE"/>
+  <!-- Text lines on left page -->
+  <line x1="10" y1="15" x2="15.5" y2="15" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="18" x2="15.5" y2="18" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="21" x2="13.5" y2="21" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Checkmark on right page -->
+  <path d="M21 19L23.5 22L27 16" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

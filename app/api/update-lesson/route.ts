@@ -2,7 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { lessonId, chapterId, title, indexLabel, questions } = await req.json();
+  const { lessonId, chapterId, title, indexLabel, questions, type } = await req.json();
 
   if (!lessonId || !chapterId || !title?.trim() || !questions?.length) {
     return NextResponse.json({ error: "Thiếu thông tin bài học." }, { status: 400 });
@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       title: title.trim(),
       index_label: indexLabel?.trim() || "01",
       chapter_id: chapterId,
+      type: type === "exam" ? "exam" : "lesson",
     })
     .eq("id", lessonId);
 

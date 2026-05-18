@@ -78,8 +78,15 @@ export default function HomePage() {
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 text-white py-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-5">
-            🎓 Nền tảng ôn tập Tiểu học miễn phí
+          <div className="inline-flex items-center gap-2 bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-5">
+            <svg width="18" height="18" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.25"/>
+              <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fillOpacity="0.85"/>
+              <path d="M28 25V12C28 11.4 27.6 11 27 11H19V26H27C27.6 26 28 25.6 28 25Z" fill="white"/>
+              <rect x="17" y="11" width="2" height="15" rx="0.5" fill="#BFDBFE"/>
+              <path d="M21 19L23.5 22L27 16" stroke="#FB923C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Nền tảng ôn tập Tiểu học miễn phí
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
             Ôn tập thông minh <br />

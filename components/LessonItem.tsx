@@ -14,20 +14,28 @@ const circleStyle: Record<Lesson["status"], string> = {
   locked: "bg-gray-200 text-gray-400",
 };
 
-const statusBadge: Record<Lesson["status"], { label: string; cls: string }> = {
+const lessonBadge: Record<Lesson["status"], { label: string; cls: string }> = {
   completed: { label: "Đã xong", cls: "bg-green-100 text-green-600" },
   active: { label: "Đang học", cls: "bg-blue-100 text-blue-600" },
   locked: { label: "Ôn tập", cls: "bg-gray-100 text-gray-500" },
 };
 
+const examBadge: Record<Lesson["status"], { label: string; cls: string }> = {
+  completed: { label: "Đã làm", cls: "bg-green-100 text-green-600" },
+  active: { label: "Thi thử", cls: "bg-orange-100 text-orange-600" },
+  locked: { label: "Chưa mở", cls: "bg-gray-100 text-gray-500" },
+};
+
 export default function LessonItem({
   lesson,
   isLast,
+  viewType = "lesson",
 }: {
   lesson: Lesson;
   isLast: boolean;
+  viewType?: "lesson" | "exam";
 }) {
-  const badge = statusBadge[lesson.status];
+  const badge = (viewType === "exam" ? examBadge : lessonBadge)[lesson.status];
 
   return (
     <div className="flex gap-3">
