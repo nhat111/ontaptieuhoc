@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import { getUser } from '@/lib/supabase/server-client'
@@ -85,7 +84,34 @@ function formatDate(iso: string) {
 
 export default async function ProgressPage() {
   const user = await getUser()
-  if (!user) redirect('/login?redirect=/progress')
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 max-w-md mx-auto">
+            <p className="text-5xl mb-5">📊</p>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Tiến độ học tập</h2>
+            <p className="text-gray-500 text-sm mb-7">
+              Đăng nhập để xem lịch sử bài làm và theo dõi tiến độ học tập của bạn.
+            </p>
+            <div className="flex flex-col gap-3 items-center">
+              <Link
+                href="/login?redirect=/progress"
+                className="bg-blue-600 text-white font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-blue-700 transition-colors"
+              >
+                Đăng nhập
+              </Link>
+              <Link href="/" className="text-sm text-gray-400 hover:text-blue-600 transition-colors">
+                Tiếp tục ôn tập không cần đăng nhập →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const results = await getUserResults(user.id)
   const uniqueLessonIds = [...new Set(results.map((r) => r.lesson_id))]

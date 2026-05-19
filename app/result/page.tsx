@@ -1,19 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { QuizResult } from "@/lib/quizData";
 import Header from "@/components/Header";
 import ResultSummary from "@/components/result/ResultSummary";
 import ResultItem from "@/components/result/ResultItem";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("quizResult");
     if (!raw) { router.push("/"); return; }
     setResult(JSON.parse(raw));
+
+    createClient().auth.getUser().then(({ data }) => {
+      setIsGuest(!data.user);
+    });
   }, [router]);
 
   if (!result) {
@@ -79,6 +86,21 @@ export default function ResultPage() {
             <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} />
           ))}
         </div>
+
+        {isGuest && (
+          <div className="mb-5 bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-blue-800">Đăng nhập để lưu tiến độ</p>
+              <p className="text-xs text-blue-600 mt-0.5">Kết quả bài làm sẽ được lưu vào tài khoản của bạn.</p>
+            </div>
+            <Link
+              href={`/login?redirect=/progress`}
+              className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+            >
+              Đăng nhập
+            </Link>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
