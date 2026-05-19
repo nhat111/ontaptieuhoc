@@ -20,9 +20,11 @@ export type InitialData = {
   subjectId: number;
   grade: number;
   questions: QDraft[];
+  type?: "exam" | "lesson";
 };
 
 const DRAFT_KEY = "ontap_import_draft_v1";
+const EXAM_DRAFT_KEY = "ontap_exam_draft_v1";
 
 type Draft = {
   grade: number;
@@ -52,8 +54,10 @@ function validateQuestions(qs: QDraft[]): string | null {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ImportClient({ initialData }: { initialData?: InitialData }) {
+export default function ImportClient({ initialData, examMode: examModeProp }: { initialData?: InitialData; examMode?: boolean }) {
   const editMode = !!initialData;
+  const examMode = initialData?.type === "exam" || examModeProp === true;
+  const draftKey = examMode ? EXAM_DRAFT_KEY : DRAFT_KEY;
 
   // Lesson form — dùng state riêng để useEffect dependency chính xác
   const [grade, setGrade] = useState(initialData?.grade ?? 1);
@@ -97,7 +101,7 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
   useEffect(() => {
     if (editMode) { hydrated.current = true; return; }
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw) as Draft;
         if (d.questions?.length) {
@@ -189,7 +193,7 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
           grade, subjectId, chapterId, lessonTitle, indexLabel,
           questions, collapsedIds: Array.from(collapsedIds),
         };
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+        localStorage.setItem(draftKey, JSON.stringify(d));
       } catch {/* ignore */}
     }, 500);
     return () => clearTimeout(t);
@@ -302,6 +306,7 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
       chapterId,
       title: lessonTitle,
       indexLabel,
+      type: examMode ? "exam" : "lesson",
       questions: questions.map((q) => ({
         content: q.content,
         options: q.options,
@@ -324,7 +329,7 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
         msg: editMode ? "Đã cập nhật bài học!" : "Đã lưu bài học thành công!",
       });
       if (!editMode) {
-        try { localStorage.removeItem(DRAFT_KEY); } catch {/* ignore */}
+        try { localStorage.removeItem(draftKey); } catch {/* ignore */}
         setLessonTitle("");
         setIndexLabel("01");
         setQuestions([blankQuestion()]);
@@ -385,7 +390,9 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-gray-800">
-                  {editMode ? "Chỉnh sửa bài học" : "Tạo bài học mới"}
+                  {editMode
+                    ? (examMode ? "Chỉnh sửa đề kiểm tra" : "Chỉnh sửa bài học")
+                    : (examMode ? "Tạo đề kiểm tra mới" : "Tạo bài học mới")}
                 </h1>
                 {editMode && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -395,8 +402,8 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
               </div>
               <p className="text-sm text-gray-400 mt-0.5">
                 {editMode
-                  ? `Bài #${initialData!.lessonId} · Cập nhật câu hỏi · Lưu vào Supabase`
-                  : "Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase"}
+                  ? `${examMode ? "Đề" : "Bài"} #${initialData!.lessonId} · Cập nhật câu hỏi · Lưu vào Supabase`
+                  : (examMode ? "Tạo đề kiểm tra · Soạn câu hỏi với KaTeX · Lưu vào Supabase" : "Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase")}
               </p>
             </div>
           </div>
@@ -434,7 +441,7 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
               </div>
             ))}
             <span className="ml-auto text-xs text-amber-600">
-              Sửa xong → bấm <strong>Cập nhật bài học</strong>
+              Sửa xong → bấm <strong>{examMode ? "Cập nhật đề kiểm tra" : "Cập nhật bài học"}</strong>
             </span>
           </div>
         </div>
@@ -658,7 +665,9 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
                   href={`/quiz?lessonId=${saveResult.lessonId}`}
                   className="underline font-semibold block"
                 >
-                  {editMode ? "Kiểm tra lại bài →" : "Vào làm bài →"}
+                  {editMode
+                    ? (examMode ? "Kiểm tra lại đề →" : "Kiểm tra lại bài →")
+                    : (examMode ? "Vào làm thử →" : "Vào làm bài →")}
                 </a>
               </div>
             )}
@@ -682,7 +691,9 @@ export default function ImportClient({ initialData }: { initialData?: InitialDat
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {editMode ? "Cập nhật bài học" : "Lưu vào Supabase"}
+                  {editMode
+                    ? (examMode ? "Cập nhật đề kiểm tra" : "Cập nhật bài học")
+                    : (examMode ? "Lưu đề kiểm tra" : "Lưu bài học")}
                 </>
               )}
             </button>

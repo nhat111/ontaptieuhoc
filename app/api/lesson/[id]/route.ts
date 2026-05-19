@@ -14,7 +14,7 @@ export async function GET(
 
   const { data: lesson, error: lessonErr } = await sb
     .from("lessons")
-    .select("id, title, index_label, chapter_id")
+    .select("id, title, index_label, chapter_id, type")
     .eq("id", lessonId)
     .single();
 
@@ -69,5 +69,6 @@ export async function GET(
     subjectId,
     grade,
     questions: qDrafts,
+    type: lesson.type === "exam" ? "exam" : "lesson",
   });
 }

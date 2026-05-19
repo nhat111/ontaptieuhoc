@@ -102,7 +102,7 @@ export default async function GradePage({
                 </p>
                 {activeView === "exam" && (
                   <a
-                    href={`/import`}
+                    href={`/import/exam`}
                     className="mt-4 inline-block text-sm text-blue-600 hover:underline font-medium"
                   >
                     + Tạo đề kiểm tra mới

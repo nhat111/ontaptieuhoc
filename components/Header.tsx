@@ -9,7 +9,8 @@ import type { User } from "@supabase/supabase-js";
 const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–5", href: "/#grades" },
-  { label: "Tạo bài", href: "/import" },
+  { label: "Tạo bài học", href: "/import" },
+  { label: "Tạo đề kiểm tra", href: "/import/exam" },
 ];
 
 export default function Header() {
@@ -119,6 +120,13 @@ export default function Header() {
                       className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     >
                       Tạo bài học
+                    </Link>
+                    <Link
+                      href="/import/exam"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Tạo đề kiểm tra
                     </Link>
                     <button
                       onClick={handleLogout}

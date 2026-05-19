@@ -43,5 +43,5 @@ export default function EditLessonPage() {
     );
   }
 
-  return <ImportClient initialData={data} />;
+  return <ImportClient initialData={data} examMode={data.type === "exam"} />;
 }
