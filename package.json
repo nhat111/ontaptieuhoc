@@ -14,6 +14,7 @@
     "@tiptap/extension-placeholder": "^3.23.1",
     "@tiptap/react": "^3.23.1",
     "@tiptap/starter-kit": "^3.23.1",
+    "@vercel/speed-insights": "^2.0.0",
     "katex": "^0.16.45",
     "next": "^16.2.4",
     "react": "^19.0.0",

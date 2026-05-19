@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
-
 const grades = [
   {
     grade: 1,
