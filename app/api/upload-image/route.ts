@@ -1,8 +1,23 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
+const BUCKET = "question-images";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+
+type Sb = ReturnType<typeof getSupabaseServer>;
+
+async function ensureBucket(sb: Sb): Promise<{ error?: string }> {
+  const { error } = await sb.storage.createBucket(BUCKET, {
+    public: true,
+    fileSizeLimit: MAX_BYTES,
+    allowedMimeTypes: ALLOWED_TYPES,
+  });
+  if (!error) return {};
+  // Treat "already exists" as success (idempotent).
+  if (/already exists|duplicate/i.test(error.message)) return {};
+  return { error: error.message };
+}
 
 export async function POST(req: NextRequest) {
   let form: FormData;
@@ -30,15 +45,28 @@ export async function POST(req: NextRequest) {
   const path = `questions/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext || "bin"}`;
 
   const sb = getSupabaseServer();
-  const { error } = await sb.storage.from("question-images").upload(path, file, {
-    contentType: file.type || undefined,
-    upsert: false,
-  });
+  const opts = { contentType: file.type || undefined, upsert: false };
+
+  let { error } = await sb.storage.from(BUCKET).upload(path, file, opts);
+
+  // Lazy-create bucket on first use (also covers fresh Supabase projects).
+  if (error && /bucket not found|not found/i.test(error.message)) {
+    const ensured = await ensureBucket(sb);
+    if (ensured.error) {
+      console.error("[/api/upload-image] createBucket:", ensured.error);
+      return NextResponse.json(
+        { error: `Không thể tạo bucket "${BUCKET}": ${ensured.error}` },
+        { status: 500 }
+      );
+    }
+    ({ error } = await sb.storage.from(BUCKET).upload(path, file, opts));
+  }
+
   if (error) {
     console.error("[/api/upload-image]", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const { data } = sb.storage.from("question-images").getPublicUrl(path);
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
   return NextResponse.json({ url: data.publicUrl });
 }
