@@ -572,7 +572,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
               </div>
 
               {/* Lesson title */}
-              <div className="col-span-3">
+              <div className="col-span-2 sm:col-span-3">
                 <label className="text-xs text-gray-500 block mb-1">Tên bài học</label>
                 <input
                   type="text"
