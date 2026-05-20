@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 const PROTECTED = ['/import']
+const PUBLIC_OVERRIDES = ['/import/edit/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -26,7 +27,9 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
+  const isProtected =
+    PROTECTED.some((p) => pathname.startsWith(p)) &&
+    !PUBLIC_OVERRIDES.some((p) => pathname.startsWith(p))
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone()

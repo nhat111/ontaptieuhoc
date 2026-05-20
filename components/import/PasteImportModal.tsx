@@ -169,8 +169,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
+        <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-base font-bold text-gray-800">Dán đề thi từ văn bản</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {mode === "html"
@@ -178,7 +178,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
                 : "Dán từ Word, Google Docs, trang web — tự động bỏ định dạng HTML"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Mode toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5 text-xs font-semibold">
               <button
@@ -274,14 +274,14 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-2 bg-gray-50">
+        <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 bg-gray-50">
           <button
             onClick={handleClose}
             className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
           >
             Hủy
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {!preview ? (
               <button
                 onClick={handleParse}
