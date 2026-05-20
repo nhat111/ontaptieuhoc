@@ -37,7 +37,7 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 1. **`lib/supabase/server.ts` → `getSupabaseServer()`** — service-role client. Bypasses RLS. Use in API routes and server components for **data access** (subjects/chapters/lessons/questions/quiz_results reads & writes). No session, no cookies.
 2. **`lib/supabase/server-client.ts` → `createSessionClient()` / `getUser()`** — SSR cookie-bound client using `@supabase/ssr`. Use **only when you need the current user** (e.g., `quiz_results.user_id`, `progress` page). Don't query data tables through this; queries hit RLS.
-3. **`lib/supabase/client.ts` → `createClient()` / `supabase`** — browser client. Used for auth (login/logout/sign-up) and `question-images` storage uploads from `QuestionCard`.
+3. **`lib/supabase/client.ts` → `createClient()` / `supabase`** — browser client. Used for auth only (login/logout/sign-up). Image uploads go through `/api/upload-image` (server-side, service-role) so Storage RLS doesn't have to allow anon writes.
 
 ### Next.js 16 quirks
 
@@ -75,6 +75,7 @@ All use the service-role client unless noted:
 - `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts).
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
 - `GET /api/fetch-exam?url=...` — scrapes a remote page's `<p>` tags into plain text for the paste-import flow.
+- `POST /api/upload-image` — accepts a multipart `file` field, uploads to the `question-images` bucket via service-role, returns `{ url }`. Used by `QuestionCard` (10 MB cap, jpg/png/webp/gif/svg only).
 - `POST /api/auth/logout` — clears Supabase session.
 
 ### Import flow (`components/import/`)
@@ -86,7 +87,7 @@ All use the service-role client unless noted:
 - Keyboard shortcuts (global `keydown` listener): `Ctrl/Cmd+S` saves, `Ctrl/Cmd+Enter` adds a blank question.
 - **Paste-import (`PasteImportModal`)** accepts either plain text or HTML. The parser at `lib/examParser.ts` recognizes question starts (`Câu N.` / `Câu N:`), single & two-column options (`A. ...   B. ...` with 2+ spaces), and unified answer markers (`Đáp án: X`, `Answer: X`, `Chọn X.` — last form is the loigiaihay.com convention). Type is inferred at commit time, not from explicit markers: ≥2 options + single letter → `mcq`; ≥2 options + multiple letters (`Đáp án: A, C`) → `multi`; no options + numeric-looking answer → `numeric`; no options + free text → `short`. The "letter list" pattern (`Đáp án: B`) is only interpreted as a letter answer when options exist — without options it falls through to short/numeric so things like `Đáp án: Cần Thơ` don't get mis-parsed as "answer = C".
 - **Tiptap → focused editor singleton**: `lib/focusedEditor.ts` tracks whichever Tiptap instance currently has focus so the LaTeX cheat-sheet buttons in the sidebar can insert into the right field. `onMouseDown` with `preventDefault` is required on those buttons or focus shifts before insertion.
-- **Image uploads** go to the public Supabase Storage bucket `question-images`. Bucket must exist and be public.
+- **Image uploads** go through `POST /api/upload-image` → public Supabase Storage bucket `question-images` (service-role, bypasses RLS). Bucket must exist and be public for the returned URLs to be readable.
 
 ### Math handling
 

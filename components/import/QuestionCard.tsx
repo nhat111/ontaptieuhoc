@@ -2,7 +2,6 @@
 import { useRef } from "react";
 import TiptapEditor from "./TiptapEditor";
 import MathText from "@/components/MathText";
-import { supabase } from "@/lib/supabase/client";
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
@@ -117,13 +116,21 @@ export default function QuestionCard({
     e.target.value = "";
     if (!file || uploadingRef.current) return;
     uploadingRef.current = true;
-    const ext = file.name.split(".").pop();
-    const path = `questions/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("question-images").upload(path, file);
-    uploadingRef.current = false;
-    if (error) { alert("Upload ảnh thất bại: " + error.message); return; }
-    const { data } = supabase.storage.from("question-images").getPublicUrl(path);
-    patch({ imageUrl: data.publicUrl });
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Upload ảnh thất bại: " + (data?.error ?? `lỗi ${res.status}`));
+        return;
+      }
+      patch({ imageUrl: data.url });
+    } catch {
+      alert("Upload ảnh thất bại: không thể kết nối máy chủ.");
+    } finally {
+      uploadingRef.current = false;
+    }
   }
 
   const isFilled = (() => {
