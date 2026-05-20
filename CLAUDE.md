@@ -41,7 +41,7 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 ### Next.js 16 quirks
 
-- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It guards `/import/*`, redirecting unauthenticated users to `/login?redirect=<original>`. Edit this file — not a `middleware.ts` — when changing route protection.
+- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It guards `/import/*` (creating new lessons/exams) but explicitly leaves `/import/edit/*` open so the "Sửa đề" button on the quiz page works for guests. Redirects unauthenticated users to `/login?redirect=<original>`. Edit this file — not a `middleware.ts` — when changing route protection.
 - `searchParams` and `params` in server components are `Promise<...>` — always `await` them (see `app/quiz/page.tsx`, `app/lop/[grade]/page.tsx`).
 
 ### Data model
