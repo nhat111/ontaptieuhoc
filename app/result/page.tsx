@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { QuizResult } from "@/lib/quizData";
+import { QuizResult, scoreAnswer } from "@/lib/quizData";
 import Header from "@/components/Header";
 import ResultSummary from "@/components/result/ResultSummary";
 import ResultItem from "@/components/result/ResultItem";
@@ -36,8 +36,9 @@ export default function ResultPage() {
 
   const { correct, wrong, unanswered } = questions.reduce(
     (acc, q, i) => {
-      if (answers[i] === null) acc.unanswered++;
-      else if (answers[i] === q.correctAnswer) acc.correct++;
+      const a = answers[i];
+      if (a === null || a === "" || a === "[]") acc.unanswered++;
+      else if (scoreAnswer(q, a)) acc.correct++;
       else acc.wrong++;
       return acc;
     },

@@ -1,5 +1,5 @@
 import { getSupabaseServer } from './supabase/server'
-import type { Question as QuizQuestion, LessonMeta } from './quizData'
+import type { Question as QuizQuestion, LessonMeta, QType } from './quizData'
 
 // ---- Database row types ----
 
@@ -202,14 +202,15 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
   try {
     const { data } = await getSupabaseServer()
       .from('questions')
-      .select('id, content, options, correct_answer')
+      .select('id, content, options, correct_answer, type')
       .eq('lesson_id', lessonId)
       .order('order_index')
 
     return (data ?? []).map((q: any) => ({
       id: q.id,
+      type: ((q.type as QType | null) ?? 'mcq') as QType,
       question: q.content,
-      options: q.options as string[],
+      options: (q.options ?? []) as string[],
       correctAnswer: q.correct_answer,
     }))
   } catch {

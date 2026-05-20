@@ -1,6 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import type { QDraft } from "@/components/import/QuestionCard";
+import type { QDraft, QType } from "@/components/import/QuestionCard";
 
 export async function GET(
   _req: NextRequest,
@@ -44,21 +44,49 @@ export async function GET(
 
   const { data: questions } = await sb
     .from("questions")
-    .select("id, content, options, correct_answer, explanation")
+    .select("id, content, options, correct_answer, type, explanation")
     .eq("lesson_id", lessonId)
     .order("order_index");
 
-  const qDrafts: QDraft[] = (questions ?? []).map((q) => {
-    const opts = (Array.isArray(q.options) ? q.options : []) as string[];
-    while (opts.length < 4) opts.push("");
-    const four = opts.slice(0, 4) as [string, string, string, string];
-    const correctIdx = Math.max(0, four.indexOf(q.correct_answer ?? "")) as 0 | 1 | 2 | 3;
+  const qDrafts: QDraft[] = (questions ?? []).map((q: any) => {
+    const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
+    const type: QType = (q.type as QType | null) ?? "mcq";
     let imageUrl: string | undefined;
     try {
       const exp = typeof q.explanation === "string" ? JSON.parse(q.explanation) : q.explanation;
       if (exp?.imageUrl) imageUrl = exp.imageUrl;
     } catch {}
-    return { id: String(q.id), content: q.content ?? "", options: four, correctIdx, imageUrl };
+
+    const ca = q.correct_answer ?? "";
+    let correctIdx = 0;
+    let correctIdxs: number[] = [];
+    let answer = "";
+
+    if (type === "mcq") {
+      correctIdx = Math.max(0, opts.indexOf(ca));
+    } else if (type === "multi") {
+      try {
+        const arr = JSON.parse(ca) as string[];
+        correctIdxs = Array.isArray(arr)
+          ? arr.map((s) => opts.indexOf(s)).filter((i) => i >= 0)
+          : [];
+      } catch {
+        correctIdxs = [];
+      }
+    } else {
+      answer = ca;
+    }
+
+    return {
+      id: String(q.id),
+      type,
+      content: q.content ?? "",
+      options: opts,
+      correctIdx,
+      correctIdxs,
+      answer,
+      imageUrl,
+    };
   });
 
   return NextResponse.json({

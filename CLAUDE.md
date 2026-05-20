@@ -46,7 +46,15 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 ### Data model
 
-`subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.options` is a JSONB array of 4 strings; `correct_answer` is the string value (not an index) that must match one of `options`. `questions.explanation` is reused as a JSON blob to carry `{ imageUrl }` for image attachments — there is no dedicated image column.
+`subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.explanation` is reused as a JSON blob to carry `{ imageUrl }` for image attachments — there is no dedicated image column.
+
+`questions.type` (added later — `ALTER TABLE questions ADD COLUMN type TEXT NOT NULL DEFAULT 'mcq';` if upgrading) is one of `'mcq' | 'multi' | 'short' | 'numeric'`. `options` is variable length 2–6 for `mcq`/`multi`, `[]` for `short`/`numeric`. `correct_answer` encoding is **per-type** — get this wrong and scoring breaks silently:
+- `mcq`: the literal text of the correct option (must match one of `options`).
+- `multi`: `JSON.stringify(string[])` of all correct option texts.
+- `short`: pipe-delimited accepted answers (`"Hà Nội|Ha Noi|hà nội"`), compared case-insensitive after `trim()`.
+- `numeric`: number as string. `,` and `.` are both accepted as decimal separators; compared with `Math.abs(a-b) < 1e-9`.
+
+Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` slot for `multi` is itself a `JSON.stringify(string[])` of selected option texts; for short/numeric it's the raw user input. QuizClient normalizes `""` and `"[]"` back to `null` so the palette and unanswered count stay correct.
 
 ### Page routes
 
@@ -76,7 +84,7 @@ All use the service-role client unless noted:
 - **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The hydration race is handled via `pendingSubjectId`/`pendingChapterId` refs — preserve this when refactoring the cascading-fetch effects, or restored drafts will lose their subject/chapter selection.
 - Distinguishes lesson vs. exam through `examMode` prop AND `initialData.type`; both flow into the `type` column in the API payload.
 - Keyboard shortcuts (global `keydown` listener): `Ctrl/Cmd+S` saves, `Ctrl/Cmd+Enter` adds a blank question.
-- **Paste-import (`PasteImportModal`)** accepts either plain text or HTML. The parser at `lib/examParser.ts` recognizes question starts (`Câu N.` / `Câu N:`), single & two-column options (`A. ...   B. ...` with 2+ spaces), and answer markers (`Đáp án: X`, `Answer: X`, `Chọn X.` — last form is the loigiaihay.com convention).
+- **Paste-import (`PasteImportModal`)** accepts either plain text or HTML. The parser at `lib/examParser.ts` recognizes question starts (`Câu N.` / `Câu N:`), single & two-column options (`A. ...   B. ...` with 2+ spaces), and unified answer markers (`Đáp án: X`, `Answer: X`, `Chọn X.` — last form is the loigiaihay.com convention). Type is inferred at commit time, not from explicit markers: ≥2 options + single letter → `mcq`; ≥2 options + multiple letters (`Đáp án: A, C`) → `multi`; no options + numeric-looking answer → `numeric`; no options + free text → `short`. The "letter list" pattern (`Đáp án: B`) is only interpreted as a letter answer when options exist — without options it falls through to short/numeric so things like `Đáp án: Cần Thơ` don't get mis-parsed as "answer = C".
 - **Tiptap → focused editor singleton**: `lib/focusedEditor.ts` tracks whichever Tiptap instance currently has focus so the LaTeX cheat-sheet buttons in the sidebar can insert into the right field. `onMouseDown` with `preventDefault` is required on those buttons or focus shifts before insertion.
 - **Image uploads** go to the public Supabase Storage bucket `question-images`. Bucket must exist and be public.
 

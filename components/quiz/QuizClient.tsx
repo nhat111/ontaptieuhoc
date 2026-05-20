@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Question, LessonMeta, formatTime } from "@/lib/quizData";
+import { Question, LessonMeta, formatTime, scoreAnswer } from "@/lib/quizData";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
@@ -28,7 +28,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   answersRef.current = answers;
 
   const submit = (finalAnswers: (string | null)[]) => {
-    const score = finalAnswers.filter((a, i) => a === questions[i].correctAnswer).length;
+    const score = finalAnswers.filter((a, i) => scoreAnswer(questions[i], a)).length;
     const total = questions.length;
 
     fetch("/api/quiz-result", {
@@ -58,7 +58,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     setCurrent(questionIndex);
     setAnswers((prev) => {
       const next = [...prev];
-      next[questionIndex] = answer;
+      // Normalize empty answer / empty multi-select to null so the palette
+      // doesn't count it as answered.
+      next[questionIndex] = answer === "" || answer === "[]" ? null : answer;
       return next;
     });
   };
