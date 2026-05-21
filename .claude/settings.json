@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(find . *)",
+      "mcp__github__pull_request_read",
+      "mcp__github__get_status",
+      "mcp__github__get_check_runs",
+      "mcp__github__get_review_comments",
+      "mcp__github__get_reviews",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_pull_requests",
+      "mcp__github__list_commits",
+      "mcp__github__list_branches",
+      "mcp__github__list_issues",
+      "mcp__github__search_code",
+      "mcp__github__search_issues",
+      "mcp__github__search_pull_requests",
+      "mcp__github__subscribe_pr_activity",
+      "mcp__github__unsubscribe_pr_activity"
+    ]
+  }
+}
