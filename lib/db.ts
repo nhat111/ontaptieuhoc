@@ -319,3 +319,71 @@ export async function getAllExams(): Promise<ExamListItem[]> {
     return []
   }
 }
+
+// ---- Chapter dashboard ----
+
+export type ChapterContext = {
+  chapterId: number
+  chapterTitle: string
+  subjectId: number
+  subjectName: string
+  grade: number
+}
+
+export type ChapterLesson = {
+  id: number
+  title: string
+  indexLabel: string
+  type: 'lesson' | 'exam' | null
+  durationMinutes: number
+  questionCount: number
+}
+
+export async function getChapterContext(chapterId: number): Promise<ChapterContext | null> {
+  try {
+    const sb = getSupabaseServer()
+    const { data: chapter } = await sb
+      .from('chapters')
+      .select('id, title, subject_id')
+      .eq('id', chapterId)
+      .single()
+    if (!chapter) return null
+    const { data: subject } = await sb
+      .from('subjects')
+      .select('id, name, grade')
+      .eq('id', chapter.subject_id)
+      .single()
+    if (!subject) return null
+    return {
+      chapterId: chapter.id,
+      chapterTitle: chapter.title,
+      subjectId: subject.id,
+      subjectName: subject.name,
+      grade: subject.grade,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function getLessonsInChapter(chapterId: number): Promise<ChapterLesson[]> {
+  try {
+    const sb = getSupabaseServer()
+    const { data } = await sb
+      .from('lessons')
+      .select('id, title, index_label, type, duration_minutes, questions(count)')
+      .eq('chapter_id', chapterId)
+      .order('id', { ascending: true })
+    if (!data) return []
+    return (data as any[]).map((l) => ({
+      id: l.id,
+      title: l.title,
+      indexLabel: l.index_label,
+      type: (l.type === 'exam' ? 'exam' : l.type === 'lesson' ? 'lesson' : null) as ChapterLesson['type'],
+      durationMinutes: l.duration_minutes ?? 15,
+      questionCount: l.questions?.[0]?.count ?? 0,
+    }))
+  } catch {
+    return []
+  }
+}

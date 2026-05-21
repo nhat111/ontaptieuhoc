@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { nanoid } from "@/lib/nanoid";
 import Header from "@/components/Header";
 import QuestionCard, { type QDraft } from "./QuestionCard";
@@ -368,7 +369,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // ── Save to Supabase ─────────────────────────────────────────────────────
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (gotoNext = false) => {
     setError(null);
     setSaveResult(null);
 
@@ -395,10 +396,18 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Lỗi không xác định."); return; }
+
+      if (gotoNext && editMode && data.nextLessonId) {
+        window.location.href = `/import/edit/${data.nextLessonId}`;
+        return;
+      }
+
       setSaveResult({
         ok: true,
         lessonId: data.lessonId,
-        msg: editMode ? "Đã cập nhật bài học!" : "Đã lưu bài học thành công!",
+        msg: editMode
+          ? (gotoNext ? "Đã lưu — đây là bài cuối trong chương." : "Đã cập nhật bài học!")
+          : "Đã lưu bài học thành công!",
       });
       if (!editMode) {
         try { localStorage.removeItem(draftKey); } catch {/* ignore */}
@@ -757,11 +766,19 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                     ? (examMode ? "Kiểm tra lại đề →" : "Kiểm tra lại bài →")
                     : (examMode ? "Vào làm thử →" : "Vào làm bài →")}
                 </a>
+                {chapterId && (
+                  <Link
+                    href={`/import/chapter/${chapterId}`}
+                    className="underline font-semibold block"
+                  >
+                    Xem tất cả bài trong chương →
+                  </Link>
+                )}
               </div>
             )}
 
             <button
-              onClick={handleSave}
+              onClick={() => handleSave(false)}
               disabled={saving || !chapterId || !lessonTitle.trim()}
               title="Ctrl+S"
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -785,6 +802,30 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </>
               )}
             </button>
+
+            {editMode && (
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving || !chapterId || !lessonTitle.trim()}
+                title="Lưu rồi chuyển sang bài kế tiếp trong cùng chương"
+                className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                Lưu &amp; sang bài tiếp
+              </button>
+            )}
+
+            {editMode && initialData?.chapterId && (
+              <Link
+                href={`/import/chapter/${initialData.chapterId}`}
+                className="mt-2 block text-center text-[11px] text-blue-600 hover:underline"
+              >
+                ← Xem tất cả bài trong chương
+              </Link>
+            )}
+
             <p className="mt-1.5 text-[10px] text-gray-400 text-center">Tự lưu nháp vào trình duyệt</p>
           </div>
 
