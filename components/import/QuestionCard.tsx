@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import TiptapEditor from "./TiptapEditor";
 import MathText from "@/components/MathText";
 
@@ -51,7 +51,7 @@ export default function QuestionCard({
   onDelete,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const uploadingRef = useRef(false);
+  const [uploading, setUploading] = useState(false);
 
   function patch(partial: Partial<QDraft>) {
     onChange({ ...question, ...partial });
@@ -114,8 +114,8 @@ export default function QuestionCard({
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || uploadingRef.current) return;
-    uploadingRef.current = true;
+    if (!file || uploading) return;
+    setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -129,7 +129,7 @@ export default function QuestionCard({
     } catch {
       alert("Upload ảnh thất bại: không thể kết nối máy chủ.");
     } finally {
-      uploadingRef.current = false;
+      setUploading(false);
     }
   }
 
@@ -288,12 +288,25 @@ export default function QuestionCard({
             ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                disabled={uploading}
+                className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Thêm ảnh
+                {uploading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    Đang tải lên…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Thêm ảnh
+                  </>
+                )}
               </button>
             )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
