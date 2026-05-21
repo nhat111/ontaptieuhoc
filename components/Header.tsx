@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–5", href: "/#grades" },
+  { label: "Đề kiểm tra", href: "/de-thi" },
   { label: "Tạo bài học", href: "/import" },
   { label: "Tạo đề kiểm tra", href: "/import/exam" },
 ];

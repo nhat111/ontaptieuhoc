@@ -198,24 +198,6 @@ export async function getChaptersWithLessons(
 
 // ---- Server-side quiz functions (for server components) ----
 
-// Pick a lesson id for the "Xem đề mẫu" CTA on the home page.
-// Returns the lowest-id lesson that has at least one question, or null if none.
-export async function getDemoLessonId(): Promise<number | null> {
-  try {
-    const sb = getSupabaseServer()
-    const { data } = await sb
-      .from('lessons')
-      .select('id, questions(count)')
-      .order('id', { ascending: true })
-      .limit(50)
-    if (!data?.length) return null
-    const hit = (data as any[]).find((l) => (l.questions?.[0]?.count ?? 0) > 0)
-    return hit?.id ?? null
-  } catch {
-    return null
-  }
-}
-
 export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion[]> {
   try {
     const { data } = await getSupabaseServer()
@@ -249,7 +231,7 @@ export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta>
     const sb = getSupabaseServer()
     const { data: lesson } = await sb
       .from('lessons')
-      .select('id, title, chapter_id')
+      .select('id, title, chapter_id, duration_minutes')
       .eq('id', lessonId)
       .single()
     if (!lesson) return { id: lessonId, title: `Bài ${lessonId}` }
@@ -271,7 +253,69 @@ export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta>
       if (subject) { grade = subject.grade; subjectName = subject.name }
     }
 
-    return { id: lesson.id, title: lesson.title, grade, subjectName }
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      grade,
+      subjectName,
+      durationMinutes: (lesson as any).duration_minutes ?? 15,
+    }
   } catch {}
   return { id: lessonId, title: `Bài ${lessonId}` }
+}
+
+// ---- All exams (for /de-thi) ----
+
+export type ExamListItem = {
+  id: number
+  title: string
+  indexLabel: string
+  durationMinutes: number
+  questionCount: number
+  grade: number
+  subjectName: string
+}
+
+export async function getAllExams(): Promise<ExamListItem[]> {
+  try {
+    const sb = getSupabaseServer()
+    const { data: lessons } = await sb
+      .from('lessons')
+      .select('id, title, index_label, duration_minutes, chapter_id, questions(count)')
+      .eq('type', 'exam')
+      .order('id', { ascending: false })
+
+    if (!lessons?.length) return []
+
+    const chapterIds = [...new Set((lessons as any[]).map((l) => l.chapter_id))]
+    const { data: chapters } = await sb
+      .from('chapters')
+      .select('id, subject_id')
+      .in('id', chapterIds)
+
+    const subjectIds = [...new Set((chapters ?? []).map((c: any) => c.subject_id))]
+    const { data: subjects } = await sb
+      .from('subjects')
+      .select('id, name, grade')
+      .in('id', subjectIds)
+
+    const chapterMap = new Map((chapters ?? []).map((c: any) => [c.id, c]))
+    const subjectMap = new Map((subjects ?? []).map((s: any) => [s.id, s]))
+
+    return (lessons as any[]).map((l) => {
+      const chapter = chapterMap.get(l.chapter_id)
+      const subject = chapter ? subjectMap.get((chapter as any).subject_id) : null
+      return {
+        id: l.id,
+        title: l.title,
+        indexLabel: l.index_label,
+        durationMinutes: l.duration_minutes ?? 15,
+        questionCount: l.questions?.[0]?.count ?? 0,
+        grade: (subject as any)?.grade ?? 0,
+        subjectName: (subject as any)?.name ?? '',
+      }
+    })
+  } catch {
+    return []
+  }
 }

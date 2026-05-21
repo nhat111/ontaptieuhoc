@@ -19,6 +19,7 @@ export type InitialData = {
   chapterId: number;
   subjectId: number;
   grade: number;
+  durationMinutes?: number;
   questions: QDraft[];
   type?: "exam" | "lesson";
 };
@@ -32,6 +33,7 @@ type Draft = {
   chapterId: number | null;
   lessonTitle: string;
   indexLabel: string;
+  durationMinutes: number;
   questions: QDraft[];
   collapsedIds: string[];
 };
@@ -129,6 +131,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
   const [chapterId, setChapterId] = useState<number | null>(null);
   const [lessonTitle, setLessonTitle] = useState(initialData?.title ?? "");
   const [indexLabel, setIndexLabel] = useState(initialData?.indexLabel ?? "01");
+  const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 15);
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -172,6 +175,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
           setGrade(d.grade ?? 1);
           setLessonTitle(d.lessonTitle ?? "");
           setIndexLabel(d.indexLabel ?? "01");
+          if (typeof d.durationMinutes === "number" && d.durationMinutes > 0) {
+            setDurationMinutes(d.durationMinutes);
+          }
           setQuestions(d.questions.map(migrateDraftQuestion));
           setCollapsedIds(new Set(d.collapsedIds ?? []));
           if (d.subjectId != null) {
@@ -254,14 +260,14 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     const t = setTimeout(() => {
       try {
         const d: Draft = {
-          grade, subjectId, chapterId, lessonTitle, indexLabel,
+          grade, subjectId, chapterId, lessonTitle, indexLabel, durationMinutes,
           questions, collapsedIds: Array.from(collapsedIds),
         };
         localStorage.setItem(draftKey, JSON.stringify(d));
       } catch {/* ignore */}
     }, 500);
     return () => clearTimeout(t);
-  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, questions, collapsedIds, editMode]);
+  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, durationMinutes, questions, collapsedIds, editMode]);
 
   // ── Question operations ──────────────────────────────────────────────────
 
@@ -376,6 +382,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       chapterId,
       title: lessonTitle,
       indexLabel,
+      durationMinutes,
       type: examMode ? "exam" : "lesson",
       questions: questions.map(encodeQuestion),
       ...(editMode ? { lessonId: initialData!.lessonId } : {}),
@@ -397,6 +404,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
         try { localStorage.removeItem(draftKey); } catch {/* ignore */}
         setLessonTitle("");
         setIndexLabel("01");
+        setDurationMinutes(15);
         setQuestions([blankQuestion()]);
         setCollapsedIds(new Set());
       }
@@ -647,6 +655,20 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                   className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
+
+              {/* Duration */}
+              <div className="col-span-2 sm:col-span-4">
+                <label className="text-xs text-gray-500 block mb-1">Thời gian làm bài (phút)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={300}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Math.max(1, Math.min(300, Number(e.target.value) || 1)))}
+                  className="w-32 border border-gray-200 rounded-lg px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <span className="ml-2 text-[11px] text-gray-400">Mặc định 15 phút</span>
+              </div>
             </div>
           </section>
 
@@ -715,6 +737,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
               />
               <Row label="Bài" value={lessonTitle || "—"} />
               <Row label="Số câu" value={String(questions.length)} />
+              <Row label="Thời gian" value={`${durationMinutes} phút`} />
             </div>
 
             {error && (

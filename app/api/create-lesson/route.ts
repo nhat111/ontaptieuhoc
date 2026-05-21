@@ -10,13 +10,16 @@ type QPayload = {
 };
 
 export async function POST(req: NextRequest) {
-  const { chapterId, title, indexLabel, questions, type } = await req.json();
+  const { chapterId, title, indexLabel, questions, type, durationMinutes } = await req.json();
 
   if (!chapterId || !title?.trim() || !questions?.length) {
     return NextResponse.json({ error: "Thiếu thông tin bài học." }, { status: 400 });
   }
 
   const sb = getSupabaseServer();
+  const dur = Number.isFinite(Number(durationMinutes)) && Number(durationMinutes) > 0
+    ? Math.floor(Number(durationMinutes))
+    : 15;
 
   const { data: lesson, error: lessonErr } = await sb
     .from("lessons")
@@ -27,6 +30,7 @@ export async function POST(req: NextRequest) {
       status: "active",
       order_index: 99,
       type: type === "exam" ? "exam" : "lesson",
+      duration_minutes: dur,
     })
     .select("id")
     .single();

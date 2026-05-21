@@ -21,14 +21,17 @@ CREATE TABLE IF NOT EXISTS chapters (
 
 -- Bài học — id này được dùng làm lessonId trong URL /quiz?lessonId=X
 CREATE TABLE IF NOT EXISTS lessons (
-  id          SERIAL PRIMARY KEY,
-  title       TEXT NOT NULL,
-  index_label TEXT NOT NULL DEFAULT '01',   -- hiển thị "01", "02"...
-  chapter_id  INT  NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
-  status      TEXT NOT NULL DEFAULT 'locked'
-                   CHECK (status IN ('completed', 'active', 'locked')),
-  order_index INT  NOT NULL DEFAULT 0
+  id               SERIAL PRIMARY KEY,
+  title            TEXT NOT NULL,
+  index_label      TEXT NOT NULL DEFAULT '01',   -- hiển thị "01", "02"...
+  chapter_id       INT  NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  status           TEXT NOT NULL DEFAULT 'locked'
+                       CHECK (status IN ('completed', 'active', 'locked')),
+  order_index      INT  NOT NULL DEFAULT 0,
+  duration_minutes INT  NOT NULL DEFAULT 15      -- thời gian làm bài (phút)
 );
+-- Nếu DB cũ chưa có duration_minutes, chạy:
+--   ALTER TABLE lessons ADD COLUMN duration_minutes INT NOT NULL DEFAULT 15;
 
 -- Câu hỏi
 -- type: 'mcq' | 'multi' | 'short' | 'numeric'

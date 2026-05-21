@@ -10,13 +10,16 @@ type QPayload = {
 };
 
 export async function POST(req: NextRequest) {
-  const { lessonId, chapterId, title, indexLabel, questions, type } = await req.json();
+  const { lessonId, chapterId, title, indexLabel, questions, type, durationMinutes } = await req.json();
 
   if (!lessonId || !chapterId || !title?.trim() || !questions?.length) {
     return NextResponse.json({ error: "Thiếu thông tin bài học." }, { status: 400 });
   }
 
   const sb = getSupabaseServer();
+  const dur = Number.isFinite(Number(durationMinutes)) && Number(durationMinutes) > 0
+    ? Math.floor(Number(durationMinutes))
+    : 15;
 
   const { error: updateErr } = await sb
     .from("lessons")
@@ -25,6 +28,7 @@ export async function POST(req: NextRequest) {
       index_label: indexLabel?.trim() || "01",
       chapter_id: chapterId,
       type: type === "exam" ? "exam" : "lesson",
+      duration_minutes: dur,
     })
     .eq("id", lessonId);
 
