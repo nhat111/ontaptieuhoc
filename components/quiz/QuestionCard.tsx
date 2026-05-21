@@ -35,7 +35,7 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
 
   return (
     <div id={`question-${index}`} className="p-6 scroll-mt-20">
-      <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <span className="font-bold text-gray-800 text-base flex-shrink-0">{index + 1}.</span>
           <p className="text-gray-800 font-medium text-base leading-relaxed">
@@ -48,6 +48,17 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           </span>
         </div>
       </div>
+
+      {question.imageUrl && (
+        <div className="pl-5 mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={question.imageUrl}
+            alt={`Hình minh hoạ câu ${index + 1}`}
+            className="max-h-72 max-w-full rounded-xl border border-gray-200 object-contain"
+          />
+        </div>
+      )}
 
       <div className="pl-5">
         {(question.type === "mcq" || question.type === "multi") && (

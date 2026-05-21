@@ -8,6 +8,7 @@ export type Question = {
   question: string;
   options: string[]; // [] for short/numeric
   correctAnswer: string; // see scoreAnswer below for per-type encoding
+  imageUrl?: string;
 };
 
 export type LessonMeta = {
