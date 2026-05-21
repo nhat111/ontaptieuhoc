@@ -58,9 +58,10 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 
 ### Page routes
 
-- `/` — landing, grade picker.
+- `/` — landing, grade picker. "Xem đề mẫu" CTA links to `/de-thi`.
+- `/de-thi` — server-rendered list of all `type='exam'` lessons grouped by grade.
 - `/lop/[grade]?subject=...&view=lesson|exam` — server-rendered subject tabs + chapters + leaderboard sidebar.
-- `/quiz?lessonId=X` — timed quiz (15 min, fixed). Server loads questions, client manages answers + timer, posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
+- `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration). Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
 - `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly.
 - `/progress` — authenticated user's quiz history.
 - `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. Auth-protected via `proxy.ts`.
@@ -97,9 +98,10 @@ All use the service-role client unless noted:
 
 ### Quiz lifecycle
 
-1. `app/quiz/page.tsx` (server): fetches `questions` + `lesson` meta in parallel via `lib/db.ts`.
-2. `QuizClient` (client): manages `answers[]`, counts down `15 * 60` seconds, auto-submits when time hits 0. On submit, posts a `quiz_results` row (best-effort; failures are swallowed), then hands off to `/result` via `sessionStorage`.
-3. `/result` is stateless beyond `sessionStorage` — navigating directly with no session storage redirects home.
+1. `app/quiz/page.tsx` (server): fetches `questions` + `lesson` meta in parallel via `lib/db.ts`. `LessonMeta.durationMinutes` comes from `lessons.duration_minutes` (default 15).
+2. `QuizClient` (client): boots in `started=false` state showing a Start screen with title / question count / duration. Once user clicks **Bắt đầu làm bài**, sets `started=true`; the countdown effect (gated on `started`) starts ticking from `durationMinutes * 60`. Auto-submits when time hits 0. Refreshing the page resets to the Start screen (timer never persists).
+3. On submit, posts a `quiz_results` row (best-effort; failures are swallowed), then hands off to `/result` via `sessionStorage`.
+4. `/result` is stateless beyond `sessionStorage` — navigating directly with no session storage redirects home.
 
 ### Leaderboard
 

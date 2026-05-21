@@ -16,6 +16,7 @@ export type LessonMeta = {
   title: string;
   grade?: number | null;
   subjectName?: string | null;
+  durationMinutes?: number;
 };
 
 export type QuizResult = {
