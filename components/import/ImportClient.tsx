@@ -39,7 +39,29 @@ type Draft = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function blankQuestion(): QDraft {
-  return { id: nanoid(), content: "", options: ["", "", "", ""], correctIdx: 0 };
+  return {
+    id: nanoid(),
+    type: "mcq",
+    content: "",
+    options: ["", "", "", ""],
+    correctIdx: 0,
+    correctIdxs: [],
+    answer: "",
+  };
+}
+
+// Backfill defaults for drafts saved before QDraft gained type/correctIdxs/answer.
+function migrateDraftQuestion(q: any): QDraft {
+  return {
+    id: q.id ?? nanoid(),
+    type: q.type ?? "mcq",
+    content: q.content ?? "",
+    options: Array.isArray(q.options) ? [...q.options] : ["", "", "", ""],
+    correctIdx: typeof q.correctIdx === "number" ? q.correctIdx : 0,
+    correctIdxs: Array.isArray(q.correctIdxs) ? q.correctIdxs : [],
+    answer: q.answer ?? "",
+    imageUrl: q.imageUrl,
+  };
 }
 
 function validateQuestions(qs: QDraft[]): string | null {
@@ -47,9 +69,51 @@ function validateQuestions(qs: QDraft[]): string | null {
   for (let i = 0; i < qs.length; i++) {
     const q = qs[i];
     if (!q.content.trim()) return `Câu ${i + 1}: Thiếu nội dung câu hỏi.`;
-    if (q.options.some((o) => !o.trim())) return `Câu ${i + 1}: Cần điền đủ 4 đáp án.`;
+    switch (q.type) {
+      case "mcq":
+      case "multi": {
+        const filled = q.options.filter((o) => o.trim());
+        if (filled.length < 2) return `Câu ${i + 1}: Cần ít nhất 2 đáp án không rỗng.`;
+        if (q.options.some((o) => !o.trim())) return `Câu ${i + 1}: Có đáp án bỏ trống — xoá hoặc điền đủ.`;
+        if (q.type === "mcq" && (q.correctIdx < 0 || q.correctIdx >= q.options.length)) {
+          return `Câu ${i + 1}: Chưa chọn đáp án đúng.`;
+        }
+        if (q.type === "multi" && q.correctIdxs.length === 0) {
+          return `Câu ${i + 1}: Chưa chọn đáp án đúng nào.`;
+        }
+        break;
+      }
+      case "short":
+        if (!q.answer.trim()) return `Câu ${i + 1}: Thiếu đáp án mẫu.`;
+        break;
+      case "numeric": {
+        const n = parseFloat(q.answer.replace(",", "."));
+        if (q.answer.trim() === "" || Number.isNaN(n)) {
+          return `Câu ${i + 1}: Đáp án số không hợp lệ.`;
+        }
+        break;
+      }
+    }
   }
   return null;
+}
+
+// Encode QDraft → API payload per type.
+function encodeQuestion(q: QDraft) {
+  const base = { type: q.type, content: q.content, imageUrl: q.imageUrl };
+  switch (q.type) {
+    case "mcq":
+      return { ...base, options: q.options, correctAnswer: q.options[q.correctIdx] ?? "" };
+    case "multi":
+      return {
+        ...base,
+        options: q.options,
+        correctAnswer: JSON.stringify(q.correctIdxs.map((i) => q.options[i]).filter(Boolean)),
+      };
+    case "short":
+    case "numeric":
+      return { ...base, options: [], correctAnswer: q.answer.trim() };
+  }
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -108,7 +172,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
           setGrade(d.grade ?? 1);
           setLessonTitle(d.lessonTitle ?? "");
           setIndexLabel(d.indexLabel ?? "01");
-          setQuestions(d.questions);
+          setQuestions(d.questions.map(migrateDraftQuestion));
           setCollapsedIds(new Set(d.collapsedIds ?? []));
           if (d.subjectId != null) {
             skipNextSubjectAutoset.current = true;
@@ -222,7 +286,13 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   const duplicateQuestion = (i: number) => {
     setQuestions((qs) => {
-      const clone: QDraft = { ...qs[i], id: nanoid(), options: [...qs[i].options] as QDraft["options"] };
+      const src = qs[i];
+      const clone: QDraft = {
+        ...src,
+        id: nanoid(),
+        options: [...src.options],
+        correctIdxs: [...src.correctIdxs],
+      };
       const next = [...qs];
       next.splice(i + 1, 0, clone);
       return next;
@@ -307,12 +377,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       title: lessonTitle,
       indexLabel,
       type: examMode ? "exam" : "lesson",
-      questions: questions.map((q) => ({
-        content: q.content,
-        options: q.options,
-        correctAnswer: q.options[q.correctIdx],
-        imageUrl: q.imageUrl,
-      })),
+      questions: questions.map(encodeQuestion),
       ...(editMode ? { lessonId: initialData!.lessonId } : {}),
     };
     try {

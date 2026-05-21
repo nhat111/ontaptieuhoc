@@ -19,9 +19,18 @@ C. 6
 D. 7
 Đáp án: B
 
-Câu 2. Tính $\\frac{1}{2} + \\frac{1}{4}$
-A. $\\frac{1}{6}$   B. $\\frac{3}{4}$
-C. $\\frac{1}{3}$   D. $\\frac{2}{6}$`;
+Câu 2. Chọn các số chẵn trong các số sau
+A. 1
+B. 2
+C. 3
+D. 4
+Đáp án: B, D
+
+Câu 3. Thủ đô của Việt Nam là gì?
+Đáp án: Hà Nội
+
+Câu 4. Tính $\\frac{1}{2} + \\frac{1}{4}$
+Đáp án: 0.75`;
 
 const SAMPLE_HTML = `<p><strong>Câu 1.</strong> 2 + 3 = ?</p>
 <p>A. 4</p>
@@ -128,19 +137,48 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
       return;
     }
     const drafts: QDraft[] = parsed.map((q, i) => {
-      const opts = [...q.options];
-      while (opts.length < 4) opts.push("");
-      const four = opts.slice(0, 4) as [string, string, string, string];
-      let correctIdx: 0 | 1 | 2 | 3 = 0;
-      if (q.correctAnswer) {
-        const idx = q.options.indexOf(q.correctAnswer);
-        if (idx >= 0) correctIdx = idx as 0 | 1 | 2 | 3;
-      } else if (answerMap.has(i + 1)) {
-        const letter = answerMap.get(i + 1)!;
-        const idx = "ABCD".indexOf(letter);
-        if (idx >= 0) correctIdx = idx as 0 | 1 | 2 | 3;
+      const base = { id: nanoid(), content: q.question, imageUrl: undefined as string | undefined };
+
+      if (q.type === "mcq") {
+        const opts = [...q.options];
+        while (opts.length < 2) opts.push("");
+        let correctIdx = 0;
+        if (q.correctAnswer) {
+          const idx = opts.indexOf(q.correctAnswer);
+          if (idx >= 0) correctIdx = idx;
+        } else if (answerMap.has(i + 1)) {
+          // Lời giải chi tiết → "Chọn X."
+          const letter = answerMap.get(i + 1)!;
+          const idx = "ABCDEF".indexOf(letter);
+          if (idx >= 0 && idx < opts.length) correctIdx = idx;
+        }
+        return { ...base, type: "mcq", options: opts, correctIdx, correctIdxs: [], answer: "" };
       }
-      return { id: nanoid(), content: q.question, options: four, correctIdx };
+
+      if (q.type === "multi") {
+        const opts = [...q.options];
+        let correctIdxs: number[] = [];
+        if (q.correctAnswer) {
+          try {
+            const picks = JSON.parse(q.correctAnswer) as string[];
+            correctIdxs = picks
+              .map((p) => opts.indexOf(p))
+              .filter((idx) => idx >= 0)
+              .sort((a, b) => a - b);
+          } catch {}
+        }
+        return { ...base, type: "multi", options: opts, correctIdx: 0, correctIdxs, answer: "" };
+      }
+
+      // short / numeric
+      return {
+        ...base,
+        type: q.type,
+        options: [],
+        correctIdx: 0,
+        correctIdxs: [],
+        answer: q.correctAnswer ?? "",
+      };
     });
     setPreview(drafts);
   }
@@ -239,8 +277,9 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700 space-y-1">
               <p className="font-semibold">Quy tắc định dạng</p>
               <p>• Mỗi câu bắt đầu bằng <code className="bg-amber-100 px-1 rounded">Câu 1.</code> hoặc <code className="bg-amber-100 px-1 rounded">Câu 1:</code></p>
-              <p>• Đáp án: <code className="bg-amber-100 px-1 rounded">A. text</code> mỗi dòng — hoặc 2 đáp án/dòng (cách 2+ space)</p>
-              <p>• Dòng <code className="bg-amber-100 px-1 rounded">Đáp án: B</code> để chỉ đáp án đúng (tùy chọn)</p>
+              <p>• <strong>Trắc nghiệm:</strong> <code className="bg-amber-100 px-1 rounded">A. text</code> mỗi dòng + <code className="bg-amber-100 px-1 rounded">Đáp án: B</code></p>
+              <p>• <strong>Nhiều đáp án:</strong> <code className="bg-amber-100 px-1 rounded">Đáp án: A, C</code> (≥2 chữ cái)</p>
+              <p>• <strong>Tự luận / Trả lời số:</strong> không có A./B./C./D. — chỉ có <code className="bg-amber-100 px-1 rounded">Đáp án: Hà Nội</code> hoặc <code className="bg-amber-100 px-1 rounded">Đáp án: 42</code></p>
               <p>• LaTeX: <code className="bg-amber-100 px-1 rounded">$\\frac{"{1}{2}"}$</code>, <code className="bg-amber-100 px-1 rounded">$x^2$</code></p>
             </div>
           )}
@@ -251,23 +290,53 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
                 ✓ Đã nhận diện {preview.length} câu hỏi
               </p>
               <div className="space-y-3 max-h-72 overflow-auto text-xs">
-                {preview.map((q, qi) => (
-                  <div key={q.id} className="bg-white rounded-lg p-2.5 border border-gray-100">
-                    <p className="font-semibold text-gray-800 mb-1">
-                      <span className="text-gray-400 mr-1 font-normal">Câu {qi + 1}.</span>
-                      <MathText text={q.content} />
-                    </p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-3">
-                      {q.options.map((opt, oi) => (
-                        <div key={oi} className={oi === q.correctIdx ? "text-green-700 font-semibold" : "text-gray-600"}>
-                          <span className="font-bold mr-1">{"ABCD"[oi]}.</span>
-                          {opt ? <MathText text={opt} /> : <span className="text-gray-300 italic">(trống)</span>}
-                          {oi === q.correctIdx && <span className="ml-1">✓</span>}
+                {preview.map((q, qi) => {
+                  const typeLabel =
+                    q.type === "mcq" ? "Trắc nghiệm"
+                    : q.type === "multi" ? "Nhiều đáp án"
+                    : q.type === "short" ? "Tự luận"
+                    : "Trả lời số";
+                  return (
+                    <div key={q.id} className="bg-white rounded-lg p-2.5 border border-gray-100">
+                      <p className="font-semibold text-gray-800 mb-1 flex flex-wrap items-baseline gap-1.5">
+                        <span className="text-gray-400 font-normal">Câu {qi + 1}.</span>
+                        <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                          {typeLabel}
+                        </span>
+                        <MathText text={q.content} />
+                      </p>
+                      {(q.type === "mcq" || q.type === "multi") && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 pl-3">
+                          {q.options.map((opt, oi) => {
+                            const isRight =
+                              q.type === "mcq"
+                                ? oi === q.correctIdx
+                                : q.correctIdxs.includes(oi);
+                            return (
+                              <div key={oi} className={isRight ? "text-green-700 font-semibold" : "text-gray-600"}>
+                                <span className="font-bold mr-1">{"ABCDEF"[oi]}.</span>
+                                {opt ? <MathText text={opt} /> : <span className="text-gray-300 italic">(trống)</span>}
+                                {isRight && <span className="ml-1">✓</span>}
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
+                      )}
+                      {(q.type === "short" || q.type === "numeric") && (
+                        <div className="pl-3 text-gray-600">
+                          <span className="text-gray-400">Đáp án: </span>
+                          {q.answer ? (
+                            <span className="text-green-700 font-semibold">
+                              <MathText text={q.answer} />
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 italic">(chưa nhận diện)</span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

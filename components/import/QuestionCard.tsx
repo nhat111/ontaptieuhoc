@@ -2,17 +2,28 @@
 import { useRef } from "react";
 import TiptapEditor from "./TiptapEditor";
 import MathText from "@/components/MathText";
-import { supabase } from "@/lib/supabase/client";
+
+export type QType = "mcq" | "multi" | "short" | "numeric";
 
 export type QDraft = {
   id: string;
+  type: QType;
   content: string;
-  options: [string, string, string, string];
-  correctIdx: number;
+  options: string[]; // variable length 2-6 (mcq/multi)
+  correctIdx: number; // mcq
+  correctIdxs: number[]; // multi
+  answer: string; // short/numeric: pipe-delimited accepted answers for short, raw for numeric
   imageUrl?: string;
 };
 
-const LABELS = ["A", "B", "C", "D"];
+const LABELS = ["A", "B", "C", "D", "E", "F"];
+
+const TYPE_OPTIONS: { value: QType; label: string; hint: string }[] = [
+  { value: "mcq", label: "Trắc nghiệm", hint: "1 đáp án đúng · 2–6 lựa chọn" },
+  { value: "multi", label: "Nhiều đáp án", hint: "Chọn nhiều đáp án đúng" },
+  { value: "short", label: "Tự luận ngắn", hint: "Người làm gõ text (nhiều đáp án cách | )" },
+  { value: "numeric", label: "Trả lời số", hint: "Người làm nhập số" },
+];
 
 interface Props {
   question: QDraft;
@@ -47,9 +58,57 @@ export default function QuestionCard({
   }
 
   function setOption(i: number, val: string) {
-    const opts = [...question.options] as [string, string, string, string];
+    const opts = [...question.options];
     opts[i] = val;
     patch({ options: opts });
+  }
+
+  function addOption() {
+    if (question.options.length >= 6) return;
+    patch({ options: [...question.options, ""] });
+  }
+
+  function removeOption(i: number) {
+    if (question.options.length <= 2) return;
+    const opts = question.options.filter((_, idx) => idx !== i);
+    let correctIdx = question.correctIdx;
+    if (correctIdx === i) correctIdx = 0;
+    else if (correctIdx > i) correctIdx -= 1;
+    const correctIdxs = question.correctIdxs
+      .filter((idx) => idx !== i)
+      .map((idx) => (idx > i ? idx - 1 : idx));
+    patch({ options: opts, correctIdx, correctIdxs });
+  }
+
+  function toggleMulti(i: number) {
+    const set = new Set(question.correctIdxs);
+    if (set.has(i)) set.delete(i);
+    else set.add(i);
+    patch({ correctIdxs: [...set].sort((a, b) => a - b) });
+  }
+
+  function setTfPreset() {
+    patch({
+      type: "mcq",
+      options: ["Đúng", "Sai"],
+      correctIdx: 0,
+      correctIdxs: [],
+    });
+  }
+
+  function setType(newType: QType) {
+    if (newType === question.type) return;
+    if (newType === "short" || newType === "numeric") {
+      patch({ type: newType, options: [], correctIdxs: [] });
+    } else {
+      const opts = question.options.length >= 2 ? question.options : ["", "", "", ""];
+      patch({
+        type: newType,
+        options: opts,
+        correctIdx: newType === "mcq" ? Math.min(question.correctIdx, opts.length - 1) : 0,
+        correctIdxs: newType === "multi" ? question.correctIdxs : [],
+      });
+    }
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,16 +116,45 @@ export default function QuestionCard({
     e.target.value = "";
     if (!file || uploadingRef.current) return;
     uploadingRef.current = true;
-    const ext = file.name.split(".").pop();
-    const path = `questions/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("question-images").upload(path, file);
-    uploadingRef.current = false;
-    if (error) { alert("Upload ảnh thất bại: " + error.message); return; }
-    const { data } = supabase.storage.from("question-images").getPublicUrl(path);
-    patch({ imageUrl: data.publicUrl });
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Upload ảnh thất bại: " + (data?.error ?? `lỗi ${res.status}`));
+        return;
+      }
+      patch({ imageUrl: data.url });
+    } catch {
+      alert("Upload ảnh thất bại: không thể kết nối máy chủ.");
+    } finally {
+      uploadingRef.current = false;
+    }
   }
 
-  const isFilled = question.content.trim() && question.options.every((o) => o.trim());
+  const isFilled = (() => {
+    if (!question.content.trim()) return false;
+    switch (question.type) {
+      case "mcq":
+        return (
+          question.options.length >= 2 &&
+          question.options.every((o) => o.trim()) &&
+          question.correctIdx >= 0 &&
+          question.correctIdx < question.options.length
+        );
+      case "multi":
+        return (
+          question.options.length >= 2 &&
+          question.options.every((o) => o.trim()) &&
+          question.correctIdxs.length >= 1
+        );
+      case "short":
+        return !!question.answer.trim();
+      case "numeric":
+        return question.answer.trim() !== "" && !Number.isNaN(parseFloat(question.answer.replace(",", ".")));
+    }
+  })();
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -86,6 +174,9 @@ export default function QuestionCard({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
           </svg>
           <span className="shrink-0">Câu {index + 1}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded shrink-0">
+            {TYPE_OPTIONS.find((t) => t.value === question.type)?.label ?? "?"}
+          </span>
           {isFilled && <span className="text-green-500 text-xs shrink-0" title="Đã điền đủ">●</span>}
           {collapsed && question.content.trim() && (
             <span className="text-xs font-normal text-gray-500 truncate min-w-0">
@@ -138,6 +229,41 @@ export default function QuestionCard({
 
       {!collapsed && (
         <div className="p-4 space-y-4">
+          {/* Type selector */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Dạng câu hỏi</label>
+            <div className="flex flex-wrap gap-1.5">
+              {TYPE_OPTIONS.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setType(t.value)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+                    question.type === t.value
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                  }`}
+                  title={t.hint}
+                >
+                  {t.label}
+                </button>
+              ))}
+              {(question.type === "mcq" || question.type === "multi") && (
+                <button
+                  type="button"
+                  onClick={setTfPreset}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-white border-gray-200 text-gray-500 hover:border-amber-400 hover:text-amber-600 transition-colors"
+                  title="Tạo nhanh 2 đáp án Đúng/Sai"
+                >
+                  + Đúng/Sai
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {TYPE_OPTIONS.find((t) => t.value === question.type)?.hint}
+            </p>
+          </div>
+
           {/* Question content */}
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Nội dung câu hỏi</label>
@@ -173,48 +299,138 @@ export default function QuestionCard({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
 
-          {/* Options */}
-          <div>
-            <label className="text-xs font-semibold text-gray-500 mb-2 block">Đáp án</label>
-            <div className="space-y-2">
-              {question.options.map((opt, oi) => (
-                <div key={oi} className="flex items-start gap-2">
-                  {/* Correct answer radio */}
+          {/* Body per type */}
+          {(question.type === "mcq" || question.type === "multi") && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-gray-500">
+                  Đáp án ({question.options.length}/6)
+                </label>
+                {question.options.length < 6 && (
                   <button
-                    onClick={() => patch({ correctIdx: oi })}
-                    className={`mt-2 w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
-                      question.correctIdx === oi
-                        ? "border-green-500 bg-green-500 text-white shadow-sm"
-                        : "border-gray-300 text-gray-500 hover:border-green-400"
-                    }`}
-                    title={`Chọn ${LABELS[oi]} là đáp án đúng`}
+                    onClick={addOption}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
                   >
-                    {LABELS[oi]}
+                    + Thêm đáp án
                   </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {question.options.map((opt, oi) => {
+                  const selected =
+                    question.type === "mcq"
+                      ? question.correctIdx === oi
+                      : question.correctIdxs.includes(oi);
+                  return (
+                    <div key={oi} className="flex items-start gap-2">
+                      <button
+                        onClick={() =>
+                          question.type === "mcq" ? patch({ correctIdx: oi }) : toggleMulti(oi)
+                        }
+                        className={`mt-2 w-7 h-7 ${
+                          question.type === "multi" ? "rounded-md" : "rounded-full"
+                        } border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+                          selected
+                            ? "border-green-500 bg-green-500 text-white shadow-sm"
+                            : "border-gray-300 text-gray-500 hover:border-green-400"
+                        }`}
+                        title={`Chọn ${LABELS[oi]} là đáp án đúng`}
+                      >
+                        {LABELS[oi]}
+                      </button>
 
-                  {/* Option input + preview */}
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => setOption(oi, e.target.value)}
-                      placeholder={`Đáp án ${LABELS[oi]}...`}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                    />
-                    {opt.trim() && opt.includes("$") && (
-                      <div className="mt-1 px-2 py-1 bg-green-50 rounded text-xs">
-                        <MathText text={opt} />
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => setOption(oi, e.target.value)}
+                          placeholder={`Đáp án ${LABELS[oi]}...`}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                        {opt.trim() && (
+                          <div className="mt-1 px-2 py-1 bg-blue-50 rounded text-xs text-gray-700">
+                            <span className="text-[10px] font-semibold text-blue-400 mr-1">Preview</span>
+                            <MathText text={opt} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+
+                      {question.options.length > 2 && (
+                        <button
+                          onClick={() => removeOption(oi)}
+                          className="mt-2 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 shrink-0 transition-colors"
+                          title="Xóa đáp án"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">
+                {question.type === "mcq" ? (
+                  <>
+                    Nhấn ô tròn để chọn đáp án đúng (hiện tại:{" "}
+                    <span className="font-semibold text-green-600">{LABELS[question.correctIdx]}</span>)
+                  </>
+                ) : (
+                  <>
+                    Tick ô vuông để chọn các đáp án đúng (đã chọn:{" "}
+                    <span className="font-semibold text-green-600">
+                      {question.correctIdxs.length === 0
+                        ? "chưa có"
+                        : question.correctIdxs.map((i) => LABELS[i]).join(", ")}
+                    </span>
+                    )
+                  </>
+                )}
+              </p>
             </div>
-            <p className="text-xs text-gray-400 mt-1.5">
-              Nhấn vào ký tự tròn để chọn đáp án đúng (hiện tại:{" "}
-              <span className="font-semibold text-green-600">{LABELS[question.correctIdx]}</span>)
-            </p>
-          </div>
+          )}
+
+          {question.type === "short" && (
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                Đáp án mẫu
+              </label>
+              <input
+                type="text"
+                value={question.answer}
+                onChange={(e) => patch({ answer: e.target.value })}
+                placeholder="VD: Hà Nội | Ha Noi | hà nội"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                Phân tách nhiều đáp án chấp nhận bằng dấu <code className="bg-gray-100 px-1 rounded">|</code>. So sánh không phân biệt hoa-thường và khoảng trắng đầu/cuối.
+              </p>
+              {question.answer.trim() && (
+                <div className="mt-2 px-2 py-1 bg-blue-50 rounded text-xs text-gray-700">
+                  <span className="text-[10px] font-semibold text-blue-400 mr-1">Preview</span>
+                  <MathText text={question.answer} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {question.type === "numeric" && (
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                Đáp án (số)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={question.answer}
+                onChange={(e) => patch({ answer: e.target.value })}
+                placeholder="VD: 42, 3.14, -7.5"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 font-mono"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                Người làm bài sẽ nhập số (chấp nhận cả dấu phẩy và dấu chấm).
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

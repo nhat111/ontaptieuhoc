@@ -1,4 +1,4 @@
-import { Question, LABELS } from "@/lib/quizData";
+import { Question, LABELS, scoreAnswer } from "@/lib/quizData";
 import MathText from "@/components/MathText";
 
 const STATUS = {
@@ -13,9 +13,18 @@ interface ResultItemProps {
   index: number;
 }
 
+function parseList(json: string): string[] {
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? (arr as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ResultItem({ question, userAnswer, index }: ResultItemProps) {
-  const isCorrect = userAnswer === question.correctAnswer;
-  const isSkipped = userAnswer === null;
+  const isSkipped = userAnswer === null || userAnswer === "" || userAnswer === "[]";
+  const isCorrect = !isSkipped && scoreAnswer(question, userAnswer);
   const status = STATUS[isSkipped ? "skipped" : isCorrect ? "correct" : "incorrect"];
 
   return (
@@ -30,38 +39,96 @@ export default function ResultItem({ question, userAnswer, index }: ResultItemPr
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 ml-10">
-        {question.options.map((opt, i) => {
-          const isRight = opt === question.correctAnswer;
-          const isUser = opt === userAnswer;
-          const optCls = isRight
-            ? "bg-green-50 border-green-300 text-green-700"
-            : isUser && !isRight
-            ? "bg-red-50 border-red-300 text-red-700"
-            : "border-gray-100 text-gray-500";
-          const circleCls = isRight
-            ? "bg-green-500 text-white"
-            : isUser
-            ? "bg-red-400 text-white"
-            : "bg-gray-200 text-gray-500";
-
-          return (
-            <div key={opt} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${optCls}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${circleCls}`}>
-                {LABELS[i]}
-              </span>
-              <span className="truncate"><MathText text={opt} /></span>
-              {isRight && <span className="ml-auto font-bold">✓</span>}
-            </div>
-          );
-        })}
-      </div>
-
-      {isSkipped && (
-        <p className="ml-10 text-xs text-gray-400 mt-2">
-          Đáp án đúng: <span className="font-semibold text-green-600"><MathText text={question.correctAnswer} /></span>
-        </p>
+      {(question.type === "mcq" || question.type === "multi") && (
+        <McqMultiBody question={question} userAnswer={userAnswer} />
       )}
+
+      {(question.type === "short" || question.type === "numeric") && (
+        <ShortBody question={question} userAnswer={userAnswer} isSkipped={isSkipped} isCorrect={isCorrect} />
+      )}
+    </div>
+  );
+}
+
+function McqMultiBody({ question, userAnswer }: { question: Question; userAnswer: string | null }) {
+  const userSet =
+    question.type === "multi"
+      ? new Set(userAnswer ? parseList(userAnswer) : [])
+      : new Set(userAnswer ? [userAnswer] : []);
+  const rightSet =
+    question.type === "multi"
+      ? new Set(parseList(question.correctAnswer))
+      : new Set([question.correctAnswer]);
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-10">
+      {question.options.map((opt, i) => {
+        const isRight = rightSet.has(opt);
+        const isUser = userSet.has(opt);
+        const optCls = isRight
+          ? "bg-green-50 border-green-300 text-green-700"
+          : isUser && !isRight
+          ? "bg-red-50 border-red-300 text-red-700"
+          : "border-gray-100 text-gray-500";
+        const circleCls = isRight
+          ? "bg-green-500 text-white"
+          : isUser
+          ? "bg-red-400 text-white"
+          : "bg-gray-200 text-gray-500";
+
+        return (
+          <div key={opt + i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${optCls}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${circleCls}`}>
+              {LABELS[i]}
+            </span>
+            <span className="truncate"><MathText text={opt} /></span>
+            {isRight && <span className="ml-auto font-bold">✓</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ShortBody({
+  question,
+  userAnswer,
+  isSkipped,
+  isCorrect,
+}: {
+  question: Question;
+  userAnswer: string | null;
+  isSkipped: boolean;
+  isCorrect: boolean;
+}) {
+  const accepted =
+    question.type === "short"
+      ? question.correctAnswer.split("|").map((s) => s.trim())
+      : [question.correctAnswer];
+
+  return (
+    <div className="ml-10 space-y-1.5 text-xs">
+      <div>
+        <span className="text-gray-400">Đáp án của bạn: </span>
+        {isSkipped ? (
+          <span className="italic text-gray-400">(không trả lời)</span>
+        ) : (
+          <span className={`font-semibold ${isCorrect ? "text-green-700" : "text-red-600"}`}>
+            <MathText text={userAnswer ?? ""} />
+          </span>
+        )}
+      </div>
+      <div>
+        <span className="text-gray-400">Đáp án đúng: </span>
+        <span className="font-semibold text-green-700">
+          {accepted.map((a, i) => (
+            <span key={i}>
+              {i > 0 && <span className="text-gray-400 mx-1">hoặc</span>}
+              <MathText text={a} />
+            </span>
+          ))}
+        </span>
+      </div>
     </div>
   );
 }

@@ -31,17 +31,26 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 
 -- Câu hỏi
--- options: JSON array of strings  ["8", "9", "10", "11"]
--- correct_answer: một string khớp với một option
+-- type: 'mcq' | 'multi' | 'short' | 'numeric'
+-- options: JSON array of strings (2–6 cho mcq/multi, [] cho short/numeric)
+-- correct_answer encoding theo type:
+--   mcq     → text của option đúng (vd "8")
+--   multi   → JSON.stringify mảng option đúng (vd '["A text","C text"]')
+--   short   → các đáp án chấp nhận, ngăn bằng '|' (vd "Hà Nội|Ha Noi")
+--   numeric → số (vd "42.5")
 CREATE TABLE IF NOT EXISTS questions (
   id             SERIAL PRIMARY KEY,
   lesson_id      INT  NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
   content        TEXT NOT NULL,
+  type           TEXT NOT NULL DEFAULT 'mcq'
+                   CHECK (type IN ('mcq', 'multi', 'short', 'numeric')),
   options        JSONB NOT NULL DEFAULT '[]',
   correct_answer TEXT NOT NULL,
   explanation    TEXT,
   order_index    INT  NOT NULL DEFAULT 0
 );
+-- Nếu DB cũ chưa có cột type, chạy:
+--   ALTER TABLE questions ADD COLUMN type TEXT NOT NULL DEFAULT 'mcq';
 
 -- Kết quả quiz (tuỳ chọn, dùng sau)
 CREATE TABLE IF NOT EXISTS quiz_results (
