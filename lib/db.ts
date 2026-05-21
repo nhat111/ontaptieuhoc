@@ -198,6 +198,24 @@ export async function getChaptersWithLessons(
 
 // ---- Server-side quiz functions (for server components) ----
 
+// Pick a lesson id for the "Xem đề mẫu" CTA on the home page.
+// Returns the lowest-id lesson that has at least one question, or null if none.
+export async function getDemoLessonId(): Promise<number | null> {
+  try {
+    const sb = getSupabaseServer()
+    const { data } = await sb
+      .from('lessons')
+      .select('id, questions(count)')
+      .order('id', { ascending: true })
+      .limit(50)
+    if (!data?.length) return null
+    const hit = (data as any[]).find((l) => (l.questions?.[0]?.count ?? 0) > 0)
+    return hit?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion[]> {
   try {
     const { data } = await getSupabaseServer()
