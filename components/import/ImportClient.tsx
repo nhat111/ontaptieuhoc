@@ -413,7 +413,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     } finally {
       setSaving(false);
     }
-  }, [chapterId, lessonTitle, indexLabel, questions, editMode, initialData]);
+  }, [chapterId, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
 
   // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
   useEffect(() => {
