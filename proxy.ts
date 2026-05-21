@@ -1,9 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
-const PROTECTED = ['/import']
-const PUBLIC_OVERRIDES = ['/import/edit/']
-
+// Cookie refresh proxy for SSR Supabase sessions. No auth gating —
+// /import is intentionally open to guests.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -24,19 +23,8 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
-  const isProtected =
-    PROTECTED.some((p) => pathname.startsWith(p)) &&
-    !PUBLIC_OVERRIDES.some((p) => pathname.startsWith(p))
-
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
-  }
+  // Trigger token rotation if expired. Result is intentionally ignored.
+  await supabase.auth.getUser()
 
   return response
 }
@@ -44,3 +32,4 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/import/:path*'],
 }
+

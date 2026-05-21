@@ -32,9 +32,18 @@ export default async function ExamListPage() {
       <section className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
         <div className="max-w-5xl mx-auto px-4 py-10 sm:py-14 text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Đề kiểm tra</h1>
-          <p className="text-blue-100 text-sm sm:text-base">
+          <p className="text-blue-100 text-sm sm:text-base mb-5">
             Chọn đề để xem chi tiết · {exams.length} đề
           </p>
+          <Link
+            href="/import/exam"
+            className="inline-flex items-center gap-1.5 bg-white text-blue-700 hover:bg-blue-50 font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Tạo đề mới
+          </Link>
         </div>
       </section>
 
@@ -42,13 +51,8 @@ export default async function ExamListPage() {
         {exams.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
             <p className="text-4xl mb-3">📝</p>
-            <p className="font-medium text-gray-500 mb-4">Chưa có đề kiểm tra nào</p>
-            <Link
-              href="/import/exam"
-              className="inline-block text-sm font-semibold text-blue-600 hover:underline"
-            >
-              + Tạo đề đầu tiên
-            </Link>
+            <p className="font-medium text-gray-500">Chưa có đề kiểm tra nào</p>
+            <p className="text-xs text-gray-400 mt-1">Bấm “Tạo đề mới” ở trên để bắt đầu.</p>
           </div>
         ) : (
           <div className="space-y-8">
