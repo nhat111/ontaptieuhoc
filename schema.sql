@@ -13,11 +13,24 @@ CREATE TABLE IF NOT EXISTS subjects (
 
 -- Chương (nhóm bài học)
 CREATE TABLE IF NOT EXISTS chapters (
-  id          SERIAL PRIMARY KEY,
-  title       TEXT NOT NULL,
-  subject_id  INT  NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  order_index INT  NOT NULL DEFAULT 0
+  id                SERIAL PRIMARY KEY,
+  title             TEXT NOT NULL,
+  subject_id        INT  NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  order_index       INT  NOT NULL DEFAULT 0,
+  source_id         TEXT,   -- chapterId từ nguồn ngoài (NXBGD), NULL với data nhập tay
+  source_url        TEXT,   -- URL gốc của cuốn sách
+  source_parent_id  TEXT    -- mục cha trong cây chương của nguồn ngoài
 );
+
+-- Idempotency cho re-run import: chỉ rang chương có source_id (data nhập tay không bị ràng)
+CREATE UNIQUE INDEX IF NOT EXISTS chapters_source_id_idx
+  ON chapters (source_id) WHERE source_id IS NOT NULL;
+
+-- Nếu DB cũ chưa có:
+--   ALTER TABLE chapters ADD COLUMN source_id TEXT;
+--   ALTER TABLE chapters ADD COLUMN source_url TEXT;
+--   ALTER TABLE chapters ADD COLUMN source_parent_id TEXT;
+--   CREATE UNIQUE INDEX chapters_source_id_idx ON chapters (source_id) WHERE source_id IS NOT NULL;
 
 -- Bài học — id này được dùng làm lessonId trong URL /quiz?lessonId=X
 CREATE TABLE IF NOT EXISTS lessons (
@@ -28,10 +41,19 @@ CREATE TABLE IF NOT EXISTS lessons (
   status           TEXT NOT NULL DEFAULT 'locked'
                        CHECK (status IN ('completed', 'active', 'locked')),
   order_index      INT  NOT NULL DEFAULT 0,
-  duration_minutes INT  NOT NULL DEFAULT 15      -- thời gian làm bài (phút)
+  duration_minutes INT  NOT NULL DEFAULT 15,     -- thời gian làm bài (phút)
+  source_id        TEXT,                          -- itemId/lessonId từ NXBGD
+  source_url       TEXT
 );
--- Nếu DB cũ chưa có duration_minutes, chạy:
+
+CREATE UNIQUE INDEX IF NOT EXISTS lessons_source_id_idx
+  ON lessons (source_id) WHERE source_id IS NOT NULL;
+
+-- Nếu DB cũ chưa có:
 --   ALTER TABLE lessons ADD COLUMN duration_minutes INT NOT NULL DEFAULT 15;
+--   ALTER TABLE lessons ADD COLUMN source_id TEXT;
+--   ALTER TABLE lessons ADD COLUMN source_url TEXT;
+--   CREATE UNIQUE INDEX lessons_source_id_idx ON lessons (source_id) WHERE source_id IS NOT NULL;
 
 -- Câu hỏi
 -- type: 'mcq' | 'multi' | 'short' | 'numeric'
