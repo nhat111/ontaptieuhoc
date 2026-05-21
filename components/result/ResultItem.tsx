@@ -39,6 +39,17 @@ export default function ResultItem({ question, userAnswer, index }: ResultItemPr
         </p>
       </div>
 
+      {question.imageUrl && (
+        <div className="ml-10 mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={question.imageUrl}
+            alt={`Hình minh hoạ câu ${index + 1}`}
+            className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain"
+          />
+        </div>
+      )}
+
       {(question.type === "mcq" || question.type === "multi") && (
         <McqMultiBody question={question} userAnswer={userAnswer} />
       )}

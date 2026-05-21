@@ -202,17 +202,25 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
   try {
     const { data } = await getSupabaseServer()
       .from('questions')
-      .select('id, content, options, correct_answer, type')
+      .select('id, content, options, correct_answer, type, explanation')
       .eq('lesson_id', lessonId)
       .order('order_index')
 
-    return (data ?? []).map((q: any) => ({
-      id: q.id,
-      type: ((q.type as QType | null) ?? 'mcq') as QType,
-      question: q.content,
-      options: (q.options ?? []) as string[],
-      correctAnswer: q.correct_answer,
-    }))
+    return (data ?? []).map((q: any) => {
+      let imageUrl: string | undefined
+      try {
+        const exp = typeof q.explanation === 'string' ? JSON.parse(q.explanation) : q.explanation
+        if (exp?.imageUrl) imageUrl = exp.imageUrl
+      } catch {}
+      return {
+        id: q.id,
+        type: ((q.type as QType | null) ?? 'mcq') as QType,
+        question: q.content,
+        options: (q.options ?? []) as string[],
+        correctAnswer: q.correct_answer,
+        imageUrl,
+      }
+    })
   } catch {
     return []
   }
