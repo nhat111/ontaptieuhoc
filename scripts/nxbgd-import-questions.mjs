@@ -84,11 +84,16 @@ async function nxbgdGet(url) {
   return body.data;
 }
 
-async function fetchQuestionsForLesson(bookId, bookIndexId) {
+// NXBGD's `bookIndexId` URL param is ignored server-side — the same pool
+// comes back regardless. So we fetch the whole book once, dedupe by
+// questionId (pagination otherwise loops past the actual end), and
+// group locally on each question's body `bookIndexId` field, which IS
+// the reliable per-leaf tag.
+async function fetchAllQuestionsForBook(bookId) {
   const all = [];
   const seen = new Set();
   for (let page = 0; page < MAX_PAGES; page++) {
-    const url = `${NXBGD}/Book/get-list-question?bookId=${bookId}&bookIndexId=${bookIndexId}&pageIndex=${page}&numberOfPage=${PAGE_SIZE}`;
+    const url = `${NXBGD}/Book/get-list-question?bookId=${bookId}&bookIndexId=0&pageIndex=${page}&numberOfPage=${PAGE_SIZE}`;
     const rows = await nxbgdGet(url);
     if (!rows || rows.length === 0) break;
     let added = 0;
@@ -315,6 +320,17 @@ async function processChapter(chapter) {
     return { imported: 0, lessons: 0 };
   }
 
+  console.log(`  fetching all questions for book ${bookId}…`);
+  const allQ = await fetchAllQuestionsForBook(bookId);
+  console.log(`  fetched ${allQ.length} unique questions, grouping by bookIndexId`);
+  const byBookIndex = new Map();
+  for (const q of allQ) {
+    const key = q.bookIndexId;
+    const arr = byBookIndex.get(key) ?? [];
+    arr.push(q);
+    byBookIndex.set(key, arr);
+  }
+
   let totalImported = 0;
   let touched = 0;
   const skipReasons = new Map();
@@ -323,9 +339,9 @@ async function processChapter(chapter) {
     const mm = lesson.source_id.match(/^bookindex_(\d+)$/);
     if (!mm) continue;
     const bookIndexId = Number(mm[1]);
-    const lessonQs = await fetchQuestionsForLesson(bookId, bookIndexId);
+    const lessonQs = byBookIndex.get(bookIndexId) ?? [];
     if (lessonQs.length === 0) {
-      if (verbose) console.log(`  - "${lesson.title}": no NXBGD questions for bookIndex=${bookIndexId}`);
+      if (verbose) console.log(`  - "${lesson.title}": no NXBGD questions tagged bookIndex=${bookIndexId}`);
       continue;
     }
 
