@@ -34,7 +34,8 @@
 
 const NXBGD = "https://apihanhtrangso.nxbgd.vn:8080/api";
 const PAGE_SIZE = 100;
-const MAX_PAGES = 200;
+const MAX_PAGES = 50;
+const MAX_PER_LESSON = Number(process.env.NXBGD_MAX_PER_LESSON || 20); // cap to keep quizzes reasonable
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(name);
@@ -83,14 +84,21 @@ async function nxbgdGet(url) {
   return body.data;
 }
 
-async function fetchAllQuestionsForBook(bookId) {
+async function fetchQuestionsForLesson(bookId, bookIndexId) {
   const all = [];
+  const seen = new Set();
   for (let page = 0; page < MAX_PAGES; page++) {
-    const url = `${NXBGD}/Book/get-list-question?bookId=${bookId}&bookIndexId=0&pageIndex=${page}&numberOfPage=${PAGE_SIZE}`;
+    const url = `${NXBGD}/Book/get-list-question?bookId=${bookId}&bookIndexId=${bookIndexId}&pageIndex=${page}&numberOfPage=${PAGE_SIZE}`;
     const rows = await nxbgdGet(url);
     if (!rows || rows.length === 0) break;
-    all.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
+    let added = 0;
+    for (const r of rows) {
+      if (seen.has(r.questionId)) continue;
+      seen.add(r.questionId);
+      all.push(r);
+      added += 1;
+    }
+    if (added === 0 || rows.length < PAGE_SIZE) break;
   }
   return all;
 }
@@ -205,7 +213,43 @@ function convertQuestion(q) {
     return { skip: `fill_blank multi-position (${positional.length})` };
   }
 
-  if (type === "mcq" || type === "multiple_choice" || type === "single_choice") {
+  // NXBGD has many MCQ-variant type names with the same answer shape.
+  const MCQ_TYPES = new Set([
+    "mcq",
+    "multiple_choice",
+    "single_choice",
+    "radio",
+    "select",
+    "down_answer",
+    "circle_answer",
+  ]);
+  const MULTI_TYPES = new Set(["checkbox"]);
+
+  if (type === "group") {
+    // Parent of sub-questions (which appear as separate top-level rows with
+    // parentId set); the parent itself has no usable answer.
+    return { skip: "group (parent of sub-questions)" };
+  }
+
+  if (MULTI_TYPES.has(type)) {
+    const opts = (q.answers ?? [])
+      .filter((a) => a.code && a.content != null)
+      .map((a) => ({ text: stripHtmlAndEntities(a.content), correct: a.correct }))
+      .filter((a) => a.text);
+    if (opts.length < 2) return { skip: "checkbox <2 options" };
+    const correctOpts = opts.filter((o) => o.correct === "1" || o.correct === true || o.correct === 1);
+    if (correctOpts.length === 0) return { skip: "checkbox no correct" };
+    return {
+      row: {
+        content,
+        type: "multi",
+        options: opts.map((o) => o.text),
+        correct_answer: JSON.stringify(correctOpts.map((o) => o.text)),
+      },
+    };
+  }
+
+  if (MCQ_TYPES.has(type)) {
     const opts = (q.answers ?? [])
       .filter((a) => a.code && a.content != null)
       .map((a) => ({ text: stripHtmlAndEntities(a.content), correct: a.correct, code: a.code }))
@@ -271,16 +315,6 @@ async function processChapter(chapter) {
     return { imported: 0, lessons: 0 };
   }
 
-  console.log(`  fetching all questions for book ${bookId}…`);
-  const allQ = await fetchAllQuestionsForBook(bookId);
-  console.log(`  fetched ${allQ.length} questions, grouping by bookIndexId`);
-  const byBookIndex = new Map();
-  for (const q of allQ) {
-    const arr = byBookIndex.get(q.bookIndexId) ?? [];
-    arr.push(q);
-    byBookIndex.set(q.bookIndexId, arr);
-  }
-
   let totalImported = 0;
   let touched = 0;
   const skipReasons = new Map();
@@ -289,7 +323,7 @@ async function processChapter(chapter) {
     const mm = lesson.source_id.match(/^bookindex_(\d+)$/);
     if (!mm) continue;
     const bookIndexId = Number(mm[1]);
-    const lessonQs = byBookIndex.get(bookIndexId) ?? [];
+    const lessonQs = await fetchQuestionsForLesson(bookId, bookIndexId);
     if (lessonQs.length === 0) {
       if (verbose) console.log(`  - "${lesson.title}": no NXBGD questions for bookIndex=${bookIndexId}`);
       continue;
@@ -302,9 +336,12 @@ async function processChapter(chapter) {
       continue;
     }
 
+    // Sort by orderNo so the first N (after cap) are deterministic.
+    const ordered = [...lessonQs].sort((a, b) => (a.orderNo ?? 0) - (b.orderNo ?? 0));
+
     // Convert; track skip reasons.
     const rows = [];
-    for (const q of lessonQs) {
+    for (const q of ordered) {
       const r = convertQuestion(q);
       if (r.row) rows.push(r.row);
       else skipReasons.set(r.skip, (skipReasons.get(r.skip) ?? 0) + 1);
@@ -315,8 +352,12 @@ async function processChapter(chapter) {
       continue;
     }
 
+    const cappedFrom = rows.length;
+    if (rows.length > MAX_PER_LESSON) rows.length = MAX_PER_LESSON;
+    const capInfo = cappedFrom > MAX_PER_LESSON ? ` (capped from ${cappedFrom})` : "";
+
     if (dryRun) {
-      console.log(`  [dry-run] "${lesson.title}": would insert ${rows.length}/${lessonQs.length}`);
+      console.log(`  [dry-run] "${lesson.title}": would insert ${rows.length}/${lessonQs.length}${capInfo}`);
       if (verbose) {
         for (const r of rows.slice(0, 2)) {
           console.log(`      · [${r.type}] ${r.content.slice(0, 80)}`);
@@ -334,7 +375,7 @@ async function processChapter(chapter) {
         order_index: i + 1,
       }));
       await sb("POST", "questions", insertRows);
-      console.log(`  - "${lesson.title}": +${rows.length}/${lessonQs.length}`);
+      console.log(`  - "${lesson.title}": +${rows.length}/${lessonQs.length}${capInfo}`);
     }
     totalImported += rows.length;
     touched += 1;
