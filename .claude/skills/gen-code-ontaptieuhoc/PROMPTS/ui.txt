@@ -1,0 +1,13 @@
+[ROLE: UI_DESIGNER]
+
+Recreate this UI from screenshot.
+
+Requirements:
+- Match layout closely
+- Use TailwindCSS
+- Clean spacing
+- Responsive
+
+Split into components if needed.
+
+Keep it simple and readable.

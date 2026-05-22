@@ -1,0 +1,10 @@
+[ROLE: DATA_ENGINEER]
+
+Generate exam questions.
+
+Requirements:
+- No duplicates
+- 4 options
+- 1 correct answer
+
+Output JSON only.

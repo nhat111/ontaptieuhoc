@@ -1,0 +1,11 @@
+[ROLE: COMPONENT_ENGINEER]
+
+Refactor this code into reusable components.
+
+Requirements:
+- Separate files
+- Clean props
+- No inline messy logic
+- Each file < 150 lines
+
+Return folder structure.

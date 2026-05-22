@@ -1,0 +1,6 @@
+Explain this error and fix it.
+
+Steps:
+1. Identify root cause
+2. Fix code
+3. Explain simply

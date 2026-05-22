@@ -1,0 +1,9 @@
+[ROLE: REFACTOR_ENGINEER]
+
+Improve this code:
+- Cleaner structure
+- Better naming
+- Add comments
+- Optimize performance
+
+Do not change behavior.

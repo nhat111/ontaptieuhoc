@@ -1,0 +1,11 @@
+[ROLE: STATE_MANAGER]
+
+Add logic to this UI.
+
+Features:
+- Handle state with React hooks
+- Navigation (next/prev)
+- Store answers
+- Timer if needed
+
+Keep logic clean and separated.
