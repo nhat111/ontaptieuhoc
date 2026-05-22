@@ -5,14 +5,16 @@
 // per lesson via the existing paste-import flow.
 //
 // Requirements:
-//   - Node 18+ (global fetch)
+//   - Node 20.6+ (for --env-file; or 18+ if exporting vars manually)
 //   - NXBGD_TOKEN          fresh Bearer from hanhtrangso.nxbgd.vn DevTools (~3h TTL)
-//   - SUPABASE_URL         e.g. https://xxx.supabase.co
-//   - SUPABASE_SERVICE_ROLE_KEY   service role (bypasses RLS)
+//   - SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL   e.g. https://xxx.supabase.co
+//   - SUPABASE_SERVICE_ROLE_KEY                  service role (bypasses RLS)
 //
-// Usage:
-//   NXBGD_TOKEN=... SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
-//     node scripts/nxbgd-import.mjs --books 402,110 [--dry-run] [--match "luyện tập"]
+// Usage with .env.local (Node 20.6+):
+//   node --env-file=.env.local scripts/nxbgd-import.mjs --books 402 --dry-run
+//
+// Or inline:
+//   NXBGD_TOKEN=... node scripts/nxbgd-import.mjs --books 402 --dry-run
 //
 // Idempotency: matches existing chapters/lessons by source_id
 // (`book_<bookId>` for chapters, `bookindex_<bookIndexId>` for lessons).
@@ -34,7 +36,9 @@ const dryRun = hasFlag("--dry-run");
 const matchPrefix = (arg("--match", "luyện tập") || "").toLowerCase().trim();
 
 const token = process.env.NXBGD_TOKEN;
-const supabaseUrl = process.env.SUPABASE_URL;
+// Accept either name so existing .env.local (which uses NEXT_PUBLIC_SUPABASE_URL)
+// works without renaming. Service role key is server-only and keeps its name.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!bookIdsRaw) {
