@@ -58,5 +58,16 @@ export async function POST(req: NextRequest) {
   const { error: qErr } = await sb.from("questions").insert(rows);
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
 
-  return NextResponse.json({ lessonId });
+  // Find the next lesson in the same chapter (ordered by id, since order_index
+  // is always 99 in practice) so the editor can offer "Lưu & sang bài tiếp".
+  const { data: nextRows } = await sb
+    .from("lessons")
+    .select("id")
+    .eq("chapter_id", chapterId)
+    .gt("id", lessonId)
+    .order("id", { ascending: true })
+    .limit(1);
+  const nextLessonId = nextRows?.[0]?.id ?? null;
+
+  return NextResponse.json({ lessonId, chapterId, nextLessonId });
 }
