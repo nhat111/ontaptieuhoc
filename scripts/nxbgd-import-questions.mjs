@@ -126,8 +126,10 @@ async function sb(method, path, body, headers = {}) {
     const text = await res.text().catch(() => "");
     throw new Error(`Supabase ${method} ${path} → ${res.status}: ${text}`);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  // Supabase returns 201 with empty body when Prefer: return=representation
+  // isn't set (we only need IDs back for the lookups, not inserts).
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // ── HTML / math cleanup ──────────────────────────────────────────────────────
