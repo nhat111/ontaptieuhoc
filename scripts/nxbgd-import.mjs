@@ -175,7 +175,8 @@ async function processBook(bookId) {
   if (dryRun) {
     console.log(`  [dry-run] would upsert chapter "${book.name}" + ${matched.length} lessons:`);
     for (const m of matched.slice(0, 5)) {
-      console.log(`    - "${m.name}" (Bài ${m.title?.trim() || "?"}, page ${m.pageNo})`);
+      const label = (m.title && m.title.trim()) || `#${m.orderNo + 1}`;
+      console.log(`    - [${label}] "${m.name}" (page ${m.pageNo})`);
     }
     if (matched.length > 5) console.log(`    … +${matched.length - 5} more`);
     return { matched: matched.length, created: 0, existing: 0 };
