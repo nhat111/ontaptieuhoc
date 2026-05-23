@@ -149,23 +149,32 @@ export async function GET(req: NextRequest) {
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 
+  // loigiaihay/vietjack wrap each exercise in <div class="box-question …">.
+  // When present, scope extraction to those containers so the page's nav,
+  // ads, "Lựa chọn câu", and related-lesson chrome don't leak in. Each split
+  // segment is one question's markup (until the next container / EOF).
+  const boxSegments = html.split(/<div\b[^>]*class="[^"]*box-question[^"]*"[^>]*>/i).slice(1);
+  const scopes = boxSegments.length > 0 ? boxSegments : [html];
+
   // Scan <p> and <table> blocks in document order so question text and the
   // tables that go with them stay paired up.
   const BLOCK_RE = /<(p|table)\b[^>]*>([\s\S]*?)<\/\1>/gi;
   const lines: string[] = [];
-  for (const m of html.matchAll(BLOCK_RE)) {
-    const tag = m[1].toLowerCase();
-    const inner = m[2];
-    const text = tag === "table" ? tableToText(inner) : extractText(inner);
-    if (text.length === 0) continue;
-    // Filter contact/footer noise per sub-line so a table row stays even
-    // if a different row in the same block is junk.
-    const filtered = text
-      .split("\n")
-      .filter((sub) => !looksLikeContact(sub))
-      .join("\n")
-      .trim();
-    if (filtered.length > 0) lines.push(filtered);
+  for (const scope of scopes) {
+    for (const m of scope.matchAll(BLOCK_RE)) {
+      const tag = m[1].toLowerCase();
+      const inner = m[2];
+      const text = tag === "table" ? tableToText(inner) : extractText(inner);
+      if (text.length === 0) continue;
+      // Filter contact/footer noise per sub-line so a table row stays even
+      // if a different row in the same block is junk.
+      const filtered = text
+        .split("\n")
+        .filter((sub) => !looksLikeContact(sub))
+        .join("\n")
+        .trim();
+      if (filtered.length > 0) lines.push(filtered);
+    }
   }
 
   if (!lines.length) {

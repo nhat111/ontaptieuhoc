@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { parseExamText } from "@/lib/examParser";
+import { parseLoigiaihay, looksLikeLoigiaihay } from "@/lib/loigiaihayParser";
 import { normalizeMath } from "@/lib/mathNormalizer";
 import { nanoid } from "@/lib/nanoid";
 import MathText from "@/components/MathText";
@@ -167,7 +168,13 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     }
 
     const normalized = normalizeMath(source);
-    const parsed = parseExamText(normalized);
+    let parsed = parseExamText(normalized);
+    // Fallback: loigiaihay/vietjack "Giải Bài N" solution pages don't use the
+    // "Câu N. + A./B." format, so try the dedicated parser when the standard
+    // one finds nothing and the text looks like a solution page.
+    if (!parsed.length && looksLikeLoigiaihay(normalized)) {
+      parsed = parseLoigiaihay(normalized);
+    }
     if (!parsed.length) {
       setError("Không tìm thấy câu hỏi nào. Kiểm tra lại định dạng (Câu 1. / A. / B. ...)");
       return;
