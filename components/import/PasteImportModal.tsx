@@ -122,8 +122,12 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
         setUrlError(data?.error ?? `Tải thất bại (HTTP ${res.status})`);
         return;
       }
-      setText(data.text ?? "");
+      const fetched = data.text ?? "";
+      setText(fetched);
       setMode("text");
+      // Auto-parse so the user sees the preview immediately. Passing the
+      // freshly-fetched text avoids the setState async gotcha.
+      handleParse(fetched, "text");
     } catch {
       setUrlError("Không thể kết nối máy chủ.");
     } finally {
@@ -145,19 +149,21 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     });
   }
 
-  function handleParse() {
+  function handleParse(overrideText?: string, overrideMode?: "text" | "html") {
     setError(null);
     setPreview(null);
 
+    const sourceText = overrideText ?? text;
+    const sourceMode = overrideMode ?? mode;
     let source: string;
     let answerMap: Map<number, string> = new Map();
 
-    if (mode === "html") {
-      answerMap = extractHtmlAnswers(text);
-      const preprocessed = preprocessHtmlMath(text);
+    if (sourceMode === "html") {
+      answerMap = extractHtmlAnswers(sourceText);
+      const preprocessed = preprocessHtmlMath(sourceText);
       source = stripHtml(preprocessed);
     } else {
-      source = text;
+      source = sourceText;
     }
 
     const normalized = normalizeMath(source);
@@ -421,7 +427,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
           <div className="flex flex-wrap items-center justify-end gap-2">
             {!preview ? (
               <button
-                onClick={handleParse}
+                onClick={() => handleParse()}
                 disabled={!text.trim()}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
               >

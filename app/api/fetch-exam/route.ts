@@ -35,6 +35,23 @@ function extractText(html: string): string {
   return html.trim();
 }
 
+// Convert a <table> body into newline-separated rows of pipe-joined cells.
+// loigiaihay puts a lot of question data (Hoàn thành bảng / Điền số …) in
+// tables; without this they'd be silently dropped.
+function tableToText(tableHtml: string): string {
+  const rows = [...tableHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  return rows
+    .map((rowMatch) => {
+      const cells = [...rowMatch[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)];
+      return cells
+        .map((c) => extractText(c[1]))
+        .filter((s) => s.length > 0)
+        .join(" | ");
+    })
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
+
 export async function GET(req: NextRequest) {
   const rawUrl = req.nextUrl.searchParams.get("url");
   if (!rawUrl) return NextResponse.json({ error: "Missing url" }, { status: 400 });
@@ -109,10 +126,16 @@ export async function GET(req: NextRequest) {
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 
-  const pMatches = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
-  const lines = pMatches
-    .map((m) => extractText(m[1]))
-    .filter((l) => l.length > 0);
+  // Scan <p> and <table> blocks in document order so question text and the
+  // tables that go with them stay paired up.
+  const BLOCK_RE = /<(p|table)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+  const lines: string[] = [];
+  for (const m of html.matchAll(BLOCK_RE)) {
+    const tag = m[1].toLowerCase();
+    const inner = m[2];
+    const text = tag === "table" ? tableToText(inner) : extractText(inner);
+    if (text.length > 0) lines.push(text);
+  }
 
   if (!lines.length) {
     return NextResponse.json({ error: "Không tìm thấy nội dung." }, { status: 422 });
