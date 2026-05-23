@@ -64,7 +64,7 @@ export function parseLoigiaihay(text: string): DraftQuestion[] {
     const optLineIdx = problemLines.findIndex(isOptionLine);
     if (optLineIdx >= 0) {
       const options = parseOptionLine(problemLines[optLineIdx]);
-      const stem = problemLines.slice(0, optLineIdx).join(" ").trim();
+      const stem = problemLines.slice(0, optLineIdx).join("\n").trim();
       let correct: string | null = null;
       if (answerText) {
         const aNorm = answerText.replace(/\s+/g, "");
@@ -75,7 +75,7 @@ export function parseLoigiaihay(text: string): DraftQuestion[] {
       out.push({
         id: out.length + 1,
         type: "mcq",
-        question: stem || problemLines.join(" "),
+        question: stem || problemLines.join("\n"),
         options,
         correctAnswer: correct,
       });
@@ -83,9 +83,9 @@ export function parseLoigiaihay(text: string): DraftQuestion[] {
       out.push({
         id: out.length + 1,
         type: "short",
-        question: problemLines.join(" "),
+        question: problemLines.join("\n"),
         options: [],
-        correctAnswer: answerText || null,
+        correctAnswer: answerLines.join("\n") || null,
       });
     }
   }

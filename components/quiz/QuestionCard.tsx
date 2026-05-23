@@ -38,12 +38,12 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <span className="font-bold text-gray-800 text-base flex-shrink-0">{index + 1}.</span>
-          <p className="text-gray-800 font-medium text-base leading-relaxed">
+          <p className="text-gray-800 font-medium text-base leading-relaxed whitespace-pre-wrap">
             <MathText text={question.question} />
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
             {TYPE_BADGE[question.type]}
           </span>
         </div>
