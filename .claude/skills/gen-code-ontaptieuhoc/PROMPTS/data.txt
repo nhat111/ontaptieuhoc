@@ -1,10 +1,20 @@
 [ROLE: DATA_ENGINEER]
 
-Generate exam questions.
+Work with quiz/import data for Ôn Tập Tiểu Học.
 
-Requirements:
-- No duplicates
-- 4 options
-- 1 correct answer
+Source of truth: Supabase (not local JSON files).
 
-Output JSON only.
+Question types: mcq | multi | short | numeric
+
+correct_answer encoding (must match type):
+- mcq: exact option text
+- multi: JSON.stringify(string[]) of correct option texts
+- short: pipe-delimited accepted answers (case-insensitive trim)
+- numeric: number as string; comma/dot decimals OK at score time
+
+Import paste: lib/examParser.ts infers type from options + answer line.
+Persist via POST /api/create-lesson or /api/update-lesson.
+
+Offline bulk: scripts/nxbgd-import-questions.mjs (service role + NXBGD_TOKEN).
+
+Do not break scoreAnswer() in lib/quizData.ts when changing shapes.

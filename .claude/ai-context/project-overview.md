@@ -1,40 +1,55 @@
 # Project Overview
 
 ## Stack
-- Next.js 16.2.4 (App Router)
-- React 19
-- TypeScript 5
+- Next.js 16 (App Router) · React 19 · TypeScript 5 (strict)
 - TailwindCSS 3.4
-- Supabase JS 2.x (database only — no auth)
-- KaTeX 0.16 (math rendering)
-- Tiptap v3 (rich text editor, used in import)
+- Supabase: Postgres + Auth + Storage (`@supabase/supabase-js`, `@supabase/ssr`)
+- KaTeX 0.16 (math display)
+- Tiptap v3 (rich text in import editor)
+- Path alias `@/*` → repo root
 
 ## Purpose
-Free exam practice platform for Vietnamese primary school students (Lớp 1–5).
-Bám sát chương trình SGK mới. No login required.
+**Ôn Tập Tiểu Học** — nền tảng ôn tập / làm bài trắc nghiệm miễn phí cho học sinh tiểu học Việt Nam (Lớp 1–5). Mọi chuỗi UI bằng tiếng Việt.
 
-## Core Features (implemented)
-- Home: grade selector with cards (Lớp 1–5)
-- Grade page: subject tabs → chapters → lessons list from Supabase
-- Quiz: multiple-choice, 15-min timer, question palette, result page
-- Import (`/import`): create a new lesson + questions manually or via paste-import; KaTeX support
-- AI Import (`/import/ai`): upload image / PDF / URL → Claude parses questions server-side → review → save
-- Teacher (`/teacher`): add questions to an existing lesson; cascade selectors (grade → subject → chapter → lesson)
+Làm bài **không bắt buộc đăng nhập**. Đăng nhập (Supabase Auth) để lưu tiến độ và gắn `user_id` vào `quiz_results`.
 
-## NOT implemented
-- Authentication / user accounts
-- Progress tracking
-- Subscriptions
-- AI tutor
-- Zustand (not in dependencies)
+## Core features (implemented)
 
-## UI Style
-- Clean, minimal, mobile-first
-- Blue/indigo primary palette
-- Per-grade color theming (red/orange/green/blue/purple for grades 1–5)
-- Vietnamese language throughout
+| Khu vực | Route | Mô tả ngắn |
+|---------|-------|------------|
+| Trang chủ | `/` | Chọn lớp, CTA "Xem đề mẫu" → `/de-thi` |
+| Lớp / môn | `/lop/[grade]?subject=&view=lesson\|exam` | Tab môn, danh sách chương/bài, bảng xếp hạng |
+| Đề kiểm tra (list) | `/de-thi` | Tất cả `lessons.type = 'exam'` theo lớp |
+| Quiz | `/quiz?lessonId=N` | Màn hình Start → timer → nộp → `/result` |
+| Kết quả | `/result` | Đọc `sessionStorage.quizResult` (không refresh-friendly) |
+| Tiến độ | `/progress` | Lịch sử quiz của user đã đăng nhập |
+| Tạo bài học | `/import` | `ImportClient` — lesson mới |
+| Tạo đề KT | `/import/exam` | Cùng component, `examMode` |
+| Sửa bài/đề | `/import/edit/[id]` | Load `GET /api/lesson/[id]`, `POST /api/update-lesson` |
+| Dashboard chương | `/import/chapter/[id]` | Tiến độ bài trong chương (admin/import) |
+| Đăng nhập | `/login`, `/reset-password` | Email + password Supabase |
+| Callback | `/auth/callback` | Đổi magic link `code` → session |
+
+## NOT implemented (removed or never built)
+- `/teacher` — đã bỏ; thêm/sửa câu qua `/import` và `/import/edit/[id]`
+- `/import/ai`, `/api/ai-import` — chưa có (chỉ có `ANTHROPIC_API_KEY` trong `.env.local.example` để dùng sau)
+- AI tutor, subscription, Zustand
+
+## Question types
+`mcq` · `multi` · `short` · `numeric` — scoring trong `lib/quizData.ts → scoreAnswer`. Chi tiết encoding `correct_answer` xem `database/schema.md`.
 
 ## Environment variables
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Supabase anon/publishable key
-- `ANTHROPIC_API_KEY` — required for `/import/ai` only; server-side only (no NEXT_PUBLIC_ prefix)
+| Biến | Vai trò |
+|------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL project |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Anon/publishable — browser + SSR session client |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** — mọi API route + SSR data (bypass RLS) |
+| `ANTHROPIC_API_KEY` | Tùy chọn, chưa dùng trong app |
+
+Copy từ `.env.local.example` → `.env.local`.
+
+## Offline scripts (`scripts/`)
+- `nxbgd-import.mjs` — import khung chương/bài từ API NXBGD
+- `nxbgd-import-questions.mjs` — kéo câu hỏi vào `questions` (cần `NXBGD_TOKEN`, service role)
+
+Schema DB: `schema.sql` (chạy một lần trong Supabase SQL Editor). Một số cột (`lessons.type`, `quiz_results.user_id`) có thể đã có trên production nhưng cần `ALTER` nếu DB mới — xem comment trong `schema.sql` và `CLAUDE.md`.

@@ -1,35 +1,51 @@
-# Workflow Guide
+# Workflow Guide — Ôn Tập Tiểu Học
 
-## Step 1: UI
+Reference: `.claude/ai-context/` · `CLAUDE.md`
 
-Use UI_DESIGNER to recreate screen
+## App flows (current)
 
-## Step 2: Component Split
+```
+/  →  /lop/[grade]  →  /quiz?lessonId=  →  /result
+         ↓
+      /de-thi (all exams)
 
-Use COMPONENT_ENGINEER
+/import | /import/exam  →  create  →  /quiz?lessonId=
+/import/edit/[id]       →  update
+/import/chapter/[id]    →  chapter dashboard
 
-## Step 3: Add Logic
+/login  →  /progress (quiz history)
+```
 
-Use STATE_MANAGER
+## Dev workflow (feature build)
 
-## Step 4: Data
+### 1. UI
+- Match existing Header, cards, grade colors
+- Vietnamese strings; `MathText` for math content
 
-Use DATA_ENGINEER
+### 2. Components
+- Place under `components/<area>/`
+- Server page in `app/` fetches data; pass props to client child
 
-## Step 5: Refactor
+### 3. Logic (client)
+- Quiz: `QuizClient` — `started` gates timer; `scoreAnswer` for grading
+- Import: `ImportClient` — draft `localStorage`, API save
 
-Use REFACTOR_ENGINEER
+### 4. Data
+- Reads/writes: `lib/db.ts` or `app/api/*` with service role
+- Paste import: `lib/examParser.ts` + `mathNormalizer.ts`
+- Bulk external: `scripts/nxbgd-import*.mjs` (offline)
 
----
+### 5. Refactor
+- Behavior unchanged; no drive-by renames
 
 ## Rules
 
-- Do NOT mix roles
-- Always complete 1 step before next
-- Keep code simple
+- One concern per PR-sized change
+- Test manually: `npm run dev` — no automated test suite
+- `await` dynamic route `params` / `searchParams` in server components
 
----
+## Obsolete (ignore)
 
-## Flow
-
-homepage → exam list → quiz → result
+- `homepage → exam list → quiz` with local JSON only
+- `/teacher` as separate editor
+- AI import route (not shipped)

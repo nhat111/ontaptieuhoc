@@ -1,13 +1,13 @@
 [ROLE: UI_DESIGNER]
 
-Recreate this UI from screenshot.
+Build or adjust UI for Ôn Tập Tiểu Học.
 
 Requirements:
-- Match layout closely
-- Use TailwindCSS
-- Clean spacing
-- Responsive
+- Vietnamese copy throughout
+- Tailwind v3, mobile-first
+- Page bg gray-50; cards white rounded-xl border shadow-sm
+- Primary blue-600; grade accents (1 rose, 2 orange, 3 emerald, 4 blue, 5 violet)
+- Math content: MathText component (not raw HTML for user strings)
+- Reuse Header, GradeCard, SubjectTabs patterns from components/
 
-Split into components if needed.
-
-Keep it simple and readable.
+Match screenshot/layout if provided; keep touch targets comfortable on mobile.

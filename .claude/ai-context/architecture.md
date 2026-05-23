@@ -1,71 +1,88 @@
 # Architecture
 
-## Folder Structure
+## Folder structure
 
 ```
-/app                        Next.js App Router pages + API routes
+/app
+  page.tsx                    Landing — chọn lớp
+  layout.tsx                  Root (KaTeX CSS)
+  /lop/[grade]                Môn + chương + bài (+ leaderboard)
+  /de-thi                     Danh sách đề kiểm tra (type=exam)
+  /quiz                       Server fetch → QuizClient
+  /result                     Client — sessionStorage
+  /progress                   Lịch sử quiz (auth required)
+  /login, /reset-password
+  /auth/callback              Magic link / OAuth code exchange
+  /import                     Tạo bài học
+  /import/exam                Tạo đề kiểm tra
+  /import/edit/[id]           Sửa bài/đề
+  /import/chapter/[id]        Dashboard chương (tiến độ bài)
   /api
-    /subjects               GET ?grade=N → Subject[]
-    /chapters               GET ?subjectId=N → Chapter[]
-    /create-lesson          POST → create lesson + questions in Supabase
-    /ai-import              POST → call Anthropic API server-side, return parsed questions
-    /fetch-exam             GET ?url=... → scrape URL, return plain text
-  /lop/[grade]              Grade/subject page (server component)
-  /quiz                     Quiz page (server shell + QuizClient)
-  /result                   Result page (client, reads sessionStorage)
-  /import                   Manual import/create lesson page
-  /import/ai                AI-powered import page (image / file / URL → Claude → questions)
-  /teacher                  Teacher question editor (add questions to existing lesson)
-  layout.tsx                Root layout (KaTeX CSS loaded here)
-  page.tsx                  Home — grade selector
+    subjects, chapters        GET/POST cascade cho import
+    lesson/[id]               GET — hydrate edit form
+    create-lesson, update-lesson
+    quiz-result               POST — insert quiz_results (+ user_id nếu có session)
+    fetch-exam                GET ?url= — scrape <p> cho paste-import
+    upload-image              POST multipart → Storage bucket question-images
+    auth/logout
 
-/components                 Shared UI
-  Header.tsx                Nav: Home · Lớp 1–5 · Tạo bài · Teacher
-  GradeCard.tsx
-  ChapterItem.tsx
-  Sidebar.tsx
-  SubjectTabs.tsx
-  MathText.tsx              KaTeX renderer wrapper
-  LessonItem.tsx
-  /quiz
-    QuizClient.tsx          Main quiz state machine (client)
-    QuestionCard.tsx
-    AnswerOption.tsx
-    QuestionPalette.tsx
-  /result
-    ResultSummary.tsx
-    ResultItem.tsx
-  /import
-    ImportClient.tsx        Full import/create-lesson UI (client)
-    QuestionCard.tsx        Question editor card in import
-    PasteImportModal.tsx    Paste raw text → parse into questions
-    TiptapEditor.tsx        Rich text / math editor
-  /teacher
-    QuestionEditor.tsx      Reusable question editor card (used by /teacher page)
+/components
+  Header.tsx                  Nav + auth menu
+  GradeCard, SubjectTabs, ChapterItem, LessonItem, Sidebar
+  MathText.tsx                KaTeX wrapper
+  Spinner.tsx
+  /quiz    QuizClient, QuestionCard, AnswerOption, QuestionPalette
+  /result  ResultSummary, ResultItem
+  /import  ImportClient, QuestionCard, PasteImportModal, TiptapEditor
 
 /lib
-  db.ts                     All Supabase queries (server + client)
-  quizData.ts               Types: Question, LessonMeta, QuizResult
-  examParser.ts             Parse pasted exam text → DraftQuestion[]
-  mathNormalizer.ts         Normalize plain-text math to KaTeX format
-  focusedEditor.ts          Insert LaTeX into currently-focused editor
-  nanoid.ts                 Tiny ID generator
-  supabase/
-    client.ts               Browser Supabase client
-    server.ts               Server Supabase client
+  db.ts                       Supabase queries (SSR + helpers)
+  quizData.ts                 Types, scoreAnswer, formatTime
+  examParser.ts               Paste text/HTML → draft questions
+  loigiaihayParser.ts         Parser bổ sung (loigiaihay)
+  mathNormalizer.ts           Plain math → LaTeX (paste path)
+  focusedEditor.ts            Insert LaTeX vào Tiptap đang focus
+  nanoid.ts
+  /supabase
+    server.ts                 getSupabaseServer() — service role
+    server-client.ts          createSessionClient(), getUser()
+    client.ts                 Browser — auth only
+
+/proxy.ts                     Next.js 16 middleware rename — refresh auth cookies trên /import/*
+/schema.sql                   DB definition + seed
+/scripts                      NXBGD import (Node, không chạy trong app)
 ```
 
-## Rules
-- Server components fetch from Supabase directly via `lib/db.ts`
-- Client components fetch via `/api/...` routes or `lib/db.ts` client functions
-- No global state library — local React state + sessionStorage + localStorage only
-- No `/modules` or `/services` folders
-- Anthropic API is called exclusively server-side via `/api/ai-import` (key never in client bundle)
+## Ba Supabase client — bắt buộc chọn đúng
 
-## Data Flow
-- Grade page: Server → `getSubjectsByGrade` + `getChaptersWithLessons` → rendered HTML
-- Quiz page: Server prefetches questions + lesson meta → passed as props to `QuizClient` (single source of truth)
-- Import page: Client fetches `/api/subjects`, `/api/chapters`; saves via `/api/create-lesson`
-- AI import page: Client sends image/text/url → `/api/ai-import` → Claude → parsed questions; saves via `/api/create-lesson`
-- Teacher page: Client reads subjects/chapters/lessons directly from Supabase client; inserts questions directly
-- Quiz result: Stored in `sessionStorage` as JSON → read by `/result` page
+1. **`getSupabaseServer()`** (`lib/supabase/server.ts`) — service role, bypass RLS. Dùng cho API routes và server components khi **đọc/ghi dữ liệu** (subjects, lessons, questions, quiz_results).
+2. **`createSessionClient()` / `getUser()`** (`lib/supabase/server-client.ts`) — cookie SSR. Chỉ khi cần **user hiện tại** (`quiz_results.user_id`, `/progress`). Không query bảng nội dung qua client này (sẽ dính RLS).
+3. **`createClient()`** (`lib/supabase/client.ts`) — browser. **Chỉ auth** (login/logout). Upload ảnh qua `/api/upload-image` (service role).
+
+## State & data flow
+
+- Không Zustand / Redux — `useState`, `sessionStorage`, `localStorage` (draft import).
+- Grade page: server → `getSubjectsByGrade` + `getChaptersWithLessons` + `getLeaderboardByGrade`.
+- Quiz: server prefetch → props `QuizClient`; submit → `POST /api/quiz-result` (best-effort) + `sessionStorage` → `/result`.
+- Import: client gọi `/api/subjects`, `/api/chapters`; lưu `/api/create-lesson` hoặc `/api/update-lesson`.
+- `proxy.ts`: matcher `/import/:path*`, gọi `auth.getUser()` để rotate token — **không chặn guest**.
+
+## Next.js 16
+
+- `params` / `searchParams` trong server components là **`Promise`** — luôn `await`.
+- `proxy.ts` thay cho tên `middleware` cũ.
+
+## Data model (tóm tắt)
+
+`subjects → chapters → lessons (type: 'lesson' | 'exam') → questions`
+
+- `lessons.id` = `lessonId` trong URL quiz/import.
+- `questions.explanation` có thể chứa JSON `{ "imageUrl": "..." }`.
+- `lessons.duration_minutes` (default 15) — timer quiz sau khi user bấm Start.
+
+## Conventions
+
+- SSR fetch: `try/catch` → `[]` / `null`, không crash trang.
+- User-facing strings: tiếng Việt.
+- Indent 2 spaces.
+- `(data as any)` tồn tại vài chỗ vì generated types thiếu cột `type` — không lan rộng thêm.

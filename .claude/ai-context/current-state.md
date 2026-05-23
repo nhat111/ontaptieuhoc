@@ -1,32 +1,50 @@
 # Current State
 
+_Last synced with codebase: May 2026_
+
 ## Done
 
-- Home page: grade cards (Lớp 1–5) with emoji, subject list, color themes
-- Grade page (`/lop/[grade]`): subject tabs + chapter/lesson accordion from Supabase
-- Quiz page (`/quiz?lessonId=N`): 15-min timer, question palette, submit → result
-- Result page (`/result`): score breakdown, per-question review, retry/back buttons
-- Import page (`/import`): create lesson + questions, paste-import from raw text, KaTeX, localStorage draft autosave
-- AI import page (`/import/ai`): parse questions from image / PDF+Word file / URL via Claude API (server-side via `/api/ai-import`)
-- Teacher page (`/teacher`): add questions to an existing lesson; cascade selectors (grade → subject → chapter → lesson)
-- API routes: `/api/subjects`, `/api/chapters`, `/api/create-lesson`, `/api/ai-import`, `/api/fetch-exam`
-- Supabase integration: subjects, chapters, lessons, questions, quiz_results
-- Math rendering: KaTeX via `MathText` component, LaTeX cheatsheet in import sidebar
-- Tiptap v3 editor in import flow
+### Browse & quiz
+- Home: thẻ lớp 1–5, link `/de-thi`
+- `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10, email mask `abc***`)
+- `/de-thi`: list động `lessons` với `type='exam'`
+- `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
+- `/result`: breakdown điểm, làm lại, về trang chủ
+- `POST /api/quiz-result`: ghi `quiz_results` (+ `user_id` nếu đăng nhập)
 
-## Not Done / Not Started
+### Auth & progress
+- `/login`, `/reset-password`, `/auth/callback`
+- Header: menu user, link `/progress`, đăng xuất
+- `/progress`: lịch sử 100 lần làm gần nhất (cần login)
 
-- Authentication (no Supabase Auth, no login/register pages)
-- User accounts / profiles
-- Progress tracking per user
-- Subscriptions / paywall
-- AI tutor
-- Zustand or any global state management
+### Import / content
+- `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
+- `/import/chapter/[id]` — dashboard tiến độ bài trong chương
+- API: subjects, chapters (GET/POST), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, auth/logout
+- `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
+- KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
 
-## Known Structure Notes
+### Data & ops
+- Supabase: subjects, chapters, lessons, questions, quiz_results, Storage `question-images`
+- Scripts NXBGD: `scripts/nxbgd-import.mjs`, `scripts/nxbgd-import-questions.mjs`
+- `schema.sql` + cột mở rộng (`type`, `source_id`, `duration_minutes`, …)
 
-- Quiz questions come exclusively from Supabase DB (server-fetched as props to `QuizClient`) — no localStorage fallback
-- `quiz_results` table: inserts score/total per lesson but no user identity (no auth)
-- AI import (`/import/ai`) requires `ANTHROPIC_API_KEY` in `.env.local`; calls are server-side only
-- Teacher page (`/teacher`) adds questions to an *existing* lesson; Import page (`/import`) *creates* a new lesson — they are complementary, not duplicates
-- `components/teacher/QuestionEditor.tsx` is the shared editor component used by `/teacher`
+## Not done / deferred
+
+- AI import (`/import/ai`, Claude) — env có placeholder, route chưa có
+- AI tutor, subscription
+- Test suite (`npm run lint` only; `tsc --noEmit` thủ công)
+- Enforce `lessons.status` locked/completed trên UI (DB có, app chủ yếu dùng `active`)
+
+## Removed / obsolete docs
+
+- **`/teacher`** — không còn trong repo; dùng `/import/edit/[id]` để sửa bài có sẵn
+- File `feature-specs/teacher.md` đã xóa — xem `feature-specs/import.md`
+
+## Known notes
+
+- Quiz data: chỉ từ DB qua server props — không fallback localStorage khi làm bài
+- Refresh `/quiz` → về màn Start (timer không persist)
+- Refresh `/result` không có `sessionStorage` → redirect `/`
+- Guest vẫn làm quiz; `quiz_results.user_id` = null
+- Leaderboard cần service role + `auth.admin.listUsers`

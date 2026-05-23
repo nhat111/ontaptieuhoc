@@ -1,33 +1,51 @@
 # Quiz Submission Flow
 
 ```
-User opens /quiz?lessonId=N
+User → /quiz?lessonId=N
 ↓
-Server: getQuestionsFromDB(N) + getLessonMetaFromDB(N)
+Server (page.tsx): getQuestionsFromDB + getLessonMetaFromDB
 ↓
-QuizClient renders — questions and lesson come directly from server props
+QuizClient — Start screen (started=false)
 ↓
-15-min timer starts
+User clicks "Bắt đầu làm bài" → started=true
 ↓
-User answers questions (palette shows progress)
+Timer: durationMinutes * 60 (from lessons.duration_minutes)
 ↓
-User clicks "Nộp bài" OR timer hits 0
+User answers (mcq | multi | short | numeric)
+  palette tracks null vs answered
 ↓
-submit(answers):
-  - JSON.stringify({ questions, answers, lessonId, lessonTitle })
-  - sessionStorage.setItem("quizResult", ...)
-  - router.push("/result")
+"Cộp bài" OR timer → 0
 ↓
-/result page:
-  - reads sessionStorage on mount; redirects to / if key absent
-  - calculates correct / wrong / unanswered
-  - renders ResultSummary + ResultItem list
-  - "Làm lại" → /quiz?lessonId=N
-  - "Quay lại" → /
+submit(finalAnswers):
+  1. scoreAnswer() per question
+  2. POST /api/quiz-result { lessonId, score, total }  [errors swallowed]
+  3. sessionStorage.quizResult = JSON
+  4. router.push("/result")
+↓
+/result:
+  read sessionStorage; missing → redirect /
+  ResultSummary + per-question ResultItem
+  "Làm lại" → /quiz?lessonId=N
 ```
 
+## Data persistence
+
+| Layer | Content |
+|-------|---------|
+| `quiz_results` row | `lesson_id`, `score`, `total`, `user_id?`, `created_at` |
+| `sessionStorage` | Full `questions`, `answers`, `lessonId`, `lessonTitle` for UI review |
+
+Refresh `/result` → mất sessionStorage → về home.
+
+## Scoring
+
+- Logic: `lib/quizData.ts → scoreAnswer(q, answer)`
+- Multi: so sánh set (length + membership)
+- Short: split `|` accepted list
+- Numeric: float tolerance 1e-9
+
 ## Notes
-- Single data source: Supabase DB via server-side fetch — no localStorage override
-- No Supabase write during quiz (quiz_results insert exists in lib/db.ts but is not called)
-- No auth — results are not tied to any user
-- sessionStorage is tab-scoped and cleared on tab close
+
+- Không lưu timer progress
+- API failure không chặn xem kết quả (sessionStorage vẫn set)
+- Leaderboard trên `/lop/[grade]` dùng aggregate `quiz_results` — không đọc sessionStorage

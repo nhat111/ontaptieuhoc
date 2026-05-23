@@ -1,11 +1,13 @@
 [ROLE: STATE_MANAGER]
 
-Add logic to this UI.
+Add or change client logic in this repo (quiz, import, result).
 
-Features:
-- Handle state with React hooks
-- Navigation (next/prev)
-- Store answers
-- Timer if needed
+Patterns to follow:
+- Quiz: QuizClient — started=false Start screen; timer only after Start; answers (string|null)[];
+  multi answers as JSON.stringify(string[]); normalize "" and "[]" to null;
+  submit → POST /api/quiz-result (fire-and-forget) + sessionStorage.quizResult → /result
+- Import: ImportClient — localStorage draft keys ontap_import_draft_v1 / ontap_exam_draft_v1;
+  preserve pendingSubjectId/pendingChapterId refs on draft restore
+- No Zustand; use useState/useRef/useEffect only
 
-Keep logic clean and separated.
+Keep logic in existing files; do not introduce global state libraries.

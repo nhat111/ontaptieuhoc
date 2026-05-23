@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Shorter feature index: `.claude/ai-context/README.md` · Codegen skill: `.claude/skills/gen-code-ontaptieuhoc/SKILL.md`.
+
 ## Project
 
 **Ôn Tập Tiểu Học** — a Vietnamese free online quiz platform for primary school students (grades 1–5). All user-facing strings are in Vietnamese; preserve language and tone when editing UI text.
@@ -27,7 +29,13 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
 - `ANTHROPIC_API_KEY` — only needed if/when AI-powered exam import is added (mentioned in example but no `/import/ai` route currently exists).
 
-DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). When working with the schema, also be aware that `lessons.type` (`'lesson' | 'exam'`, plus legacy NULL) is **referenced everywhere but not in `schema.sql`** — it exists in production. Add it with `ALTER TABLE lessons ADD COLUMN type TEXT;` if seeding a fresh DB. `quiz_results.user_id` is similarly referenced (nullable FK to `auth.users`) but missing from schema.sql.
+DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
+
+- `lessons.type` (`'lesson' | 'exam'`, legacy NULL treated as lesson): `ALTER TABLE lessons ADD COLUMN type TEXT;`
+- `quiz_results.user_id` (nullable FK → `auth.users`): add UUID column + FK when enabling progress tracking
+- NXBGD idempotency: `chapters.source_id`, `lessons.source_id` (+ unique partial indexes) — see `schema.sql` comments
+
+**Removed routes (do not recreate):** `/teacher`, `/import/ai` (no `/api/ai-import`; `ANTHROPIC_API_KEY` reserved for future use).
 
 ## Architecture
 
@@ -64,15 +72,18 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 - `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration). Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
 - `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly.
 - `/progress` — authenticated user's quiz history.
-- `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. Auth-protected via `proxy.ts`.
+- `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. **`proxy.ts` only refreshes auth cookies on `/import/*` — guests can create/edit; it is not an auth gate.**
+- `/import/chapter/[id]` — server dashboard: lesson fill progress in a chapter (`getChapterContext`, `getLessonsInChapter`); linked from `ImportClient`.
 - `/login`, `/reset-password`, `/auth/callback` — Supabase email-password auth + magic-link callback that exchanges `code` for a session.
+
+Browse and quiz work **without login**; auth is optional (progress + `quiz_results.user_id`).
 
 ### API routes (`app/api/*`)
 
 All use the service-role client unless noted:
 
 - `GET /api/subjects?grade=N`, `GET|POST /api/chapters` — used by the import form's cascading dropdowns.
-- `GET /api/lesson/[id]` — returns lesson + questions normalized into the `QDraft` shape (4-option array, `correctIdx`, optional `imageUrl` extracted from `explanation` JSON).
+- `GET /api/lesson/[id]` — returns lesson + questions as `QDraft` (`type`, variable `options`, `correctIdx` / `correctIdxs` / `answer`, optional `imageUrl` from `explanation` JSON).
 - `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts).
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
 - `GET /api/fetch-exam?url=...` — scrapes a remote page's `<p>` tags into plain text for the paste-import flow.
@@ -86,7 +97,7 @@ All use the service-role client unless noted:
 - **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The hydration race is handled via `pendingSubjectId`/`pendingChapterId` refs — preserve this when refactoring the cascading-fetch effects, or restored drafts will lose their subject/chapter selection.
 - Distinguishes lesson vs. exam through `examMode` prop AND `initialData.type`; both flow into the `type` column in the API payload.
 - Keyboard shortcuts (global `keydown` listener): `Ctrl/Cmd+S` saves, `Ctrl/Cmd+Enter` adds a blank question.
-- **Paste-import (`PasteImportModal`)** accepts either plain text or HTML. The parser at `lib/examParser.ts` recognizes question starts (`Câu N.` / `Câu N:`), single & two-column options (`A. ...   B. ...` with 2+ spaces), and unified answer markers (`Đáp án: X`, `Answer: X`, `Chọn X.` — last form is the loigiaihay.com convention). Type is inferred at commit time, not from explicit markers: ≥2 options + single letter → `mcq`; ≥2 options + multiple letters (`Đáp án: A, C`) → `multi`; no options + numeric-looking answer → `numeric`; no options + free text → `short`. The "letter list" pattern (`Đáp án: B`) is only interpreted as a letter answer when options exist — without options it falls through to short/numeric so things like `Đáp án: Cần Thơ` don't get mis-parsed as "answer = C".
+- **Paste-import (`PasteImportModal`)** accepts plain text or HTML. Primary parser: `lib/examParser.ts` (question starts `Câu N.` / `Câu N:`, options `A.`…, answer markers `Đáp án:`, `Answer:`, `Chọn X.`). **URL import:** `GET /api/fetch-exam?url=` returns HTML/plain text; if it looks like a loigiaihay/vietjack solution page, `lib/loigiaihayParser.ts` (`parseLoigiaihay`) is used instead of `examParser`. Type is inferred at commit time: ≥2 options + one letter → `mcq`; ≥2 options + multiple letters → `multi`; no options + numeric → `numeric`; else → `short`. Letter answers (`Đáp án: B`) only apply when options exist — otherwise `Đáp án: Cần Thơ` stays `short`.
 - **Tiptap → focused editor singleton**: `lib/focusedEditor.ts` tracks whichever Tiptap instance currently has focus so the LaTeX cheat-sheet buttons in the sidebar can insert into the right field. `onMouseDown` with `preventDefault` is required on those buttons or focus shifts before insertion.
 - **Image uploads** go through `POST /api/upload-image` → public Supabase Storage bucket `question-images` (service-role, bypasses RLS). Bucket must exist and be public for the returned URLs to be readable.
 
@@ -106,6 +117,15 @@ All use the service-role client unless noted:
 ### Leaderboard
 
 `getLeaderboardByGrade` in `lib/db.ts` does a 4-table join in app code (subjects → chapters → lessons → quiz_results) plus an `auth.admin.listUsers({ perPage: 1000 })` call to resolve emails, which it then masks to `abc***`. Top 10 by average best-score-per-lesson. Wrapped in `try/catch` returning `[]` because it requires service-role access.
+
+### Offline NXBGD import (`scripts/`)
+
+Node scripts (not part of Next.js runtime) to bulk-load content from NXBGD API into Supabase via service role:
+
+- `scripts/nxbgd-import.mjs` — chapter/lesson skeletons (`source_id`)
+- `scripts/nxbgd-import-questions.mjs` — questions into existing lessons (needs `NXBGD_TOKEN`; idempotent skip if lesson already has questions)
+
+Run with `node --env-file=.env.local scripts/...`. See `.claude/ai-context/scripts/nxbgd-import.md`.
 
 ## Conventions
 

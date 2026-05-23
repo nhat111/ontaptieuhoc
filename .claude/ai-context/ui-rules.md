@@ -1,38 +1,45 @@
 # UI Rules
 
 ## Design
-- Minimal, clean, educational
-- Mobile-first responsive layout
-- Vietnamese language throughout
+- Minimal, clean, educational — mobile-first
+- Toàn bộ copy user-facing: **tiếng Việt**
 
 ## Color system
-- Primary: blue-600 / indigo-600
-- Per-grade accent colors:
-  - Lớp 1: red
+- Primary: `blue-600` / `indigo-600` (logo, CTA đăng nhập)
+- Per-grade accents (cards, badges):
+  - Lớp 1: rose/red
   - Lớp 2: orange
-  - Lớp 3: green
+  - Lớp 3: emerald/green
   - Lớp 4: blue
-  - Lớp 5: purple
+  - Lớp 5: violet/purple
+- `/de-thi` dùng `GRADE_COLOR` map tương tự
 
-## Component conventions
-- Rounded corners: `rounded-xl` or `rounded-2xl`
-- Card backgrounds: `bg-white` with `border border-gray-100 shadow-sm`
-- Page background: `bg-gray-50`
-- Large touch targets (min 44px height for interactive elements)
-- Consistent spacing: `px-4 py-6` for page containers, `max-w-6xl mx-auto` for content width
+## Layout
+- Page bg: `bg-gray-50`
+- Cards: `bg-white border border-gray-100 shadow-sm rounded-xl|2xl`
+- Content width: `max-w-6xl mx-auto px-4`
+- Touch targets ≥ ~44px cho nút chính
 
-## Math rendering
-- Use `<MathText text={...} />` for any content that may contain KaTeX (`$...$` or `$$...$$`)
-- Import KaTeX CSS in root layout only (already done in `app/layout.tsx`)
+## Math
+- Luôn dùng `<MathText text={...} />` cho nội dung có thể chứa `$...$`, `$$...$$`, `\(...\)`, `\[...\]`
+- KaTeX CSS import **một lần** trong `app/layout.tsx`
+- Trong DB giữ LaTeX raw — render ở consumer
 
 ## Typography
-- Headings: `font-extrabold` or `font-bold`
-- Body: default (no font override at root level)
-- Teacher page uses DM Sans via Google Fonts (scoped to that page)
+- Tiêu đề trang: `text-2xl`–`text-3xl font-extrabold text-gray-800`
+- Breadcrumb: `text-xs text-gray-400` + `›`
+- Badge: `rounded-full px-4 py-1.5 text-sm font-semibold`
 
-## Patterns to reuse
-- Breadcrumb nav: `text-xs text-gray-400` with `›` separators
-- Section headers: `text-3xl font-extrabold text-gray-800`
-- Status badge/pill: `bg-X-100 text-X-600 font-semibold px-4 py-1.5 rounded-full`
-- Loading state: show spinner or `text-gray-400` placeholder text
-- Empty state: centered card with large emoji + message text
+## Patterns
+- **Header** sticky `z-50`, nav desktop + hamburger mobile
+- **Loading**: `app/**/loading.tsx` + `Spinner.tsx` ở vài route
+- **Empty state**: emoji + text xám, căn giữa
+- Import editor: sidebar LaTeX — nút insert dùng `onMouseDown` + `preventDefault` để không mất focus Tiptap
+
+## Auth UI
+- Chưa login: nút "Đăng nhập" góc phải
+- Đã login: avatar initials + dropdown (Tiến độ, Tạo bài, Đăng xuất)
+
+## Không dùng
+- Trang Teacher / DM Sans riêng (đã bỏ)
+- Dark mode (chưa có)
