@@ -35,6 +35,29 @@ function extractText(html: string): string {
   return html.trim();
 }
 
+// Drop whole lines that look like contact / footer noise (URLs, emails,
+// Vietnamese phone numbers, copyright, "Liên hệ" / "Hotline" blocks).
+// Conservative — only fires on whole-line patterns so we don't chew
+// into the middle of a real exam question that incidentally mentions
+// "www" or has long numeric content.
+function looksLikeContact(line: string): boolean {
+  const s = line.trim();
+  if (!s) return false;
+  // Email anywhere on the line.
+  if (/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/.test(s)) return true;
+  // URL anywhere on the line.
+  if (/\b(?:https?:\/\/|www\.)[^\s]+/i.test(s)) return true;
+  // Lines that BEGIN with contact-context keywords.
+  if (/^(?:liên hệ|hotline|đường dây nóng|điện thoại|đt\b|tel\b|email|fax|địa chỉ|fanpage|facebook|copyright|©|bản quyền)/i.test(s)) return true;
+  // Lines that are mostly just a Vietnamese phone number (10-11 digits with
+  // optional separators, possibly inside parens / dots / spaces). Lets
+  // legitimate math content like "42 951" pass since they're shorter and
+  // surrounded by Vietnamese words.
+  const phoneOnly = s.replace(/[\s().+\-]/g, "");
+  if (/^(?:0|84)\d{9,10}$/.test(phoneOnly) && phoneOnly.length <= 12) return true;
+  return false;
+}
+
 // Convert a <table> body into newline-separated rows of pipe-joined cells.
 // loigiaihay puts a lot of question data (Hoàn thành bảng / Điền số …) in
 // tables; without this they'd be silently dropped.
@@ -134,7 +157,15 @@ export async function GET(req: NextRequest) {
     const tag = m[1].toLowerCase();
     const inner = m[2];
     const text = tag === "table" ? tableToText(inner) : extractText(inner);
-    if (text.length > 0) lines.push(text);
+    if (text.length === 0) continue;
+    // Filter contact/footer noise per sub-line so a table row stays even
+    // if a different row in the same block is junk.
+    const filtered = text
+      .split("\n")
+      .filter((sub) => !looksLikeContact(sub))
+      .join("\n")
+      .trim();
+    if (filtered.length > 0) lines.push(filtered);
   }
 
   if (!lines.length) {
