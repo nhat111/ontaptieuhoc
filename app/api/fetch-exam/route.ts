@@ -100,6 +100,15 @@ export async function GET(req: NextRequest) {
   }
   clearTimeout(timer);
 
+  // Drop <script>, <style>, <noscript> blocks (and HTML comments) entirely
+  // before scanning for <p> — loigiaihay et al. embed ads/GTM/recommendation
+  // widgets whose content would otherwise leak into the parsed text.
+  html = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
+
   const pMatches = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
   const lines = pMatches
     .map((m) => extractText(m[1]))
