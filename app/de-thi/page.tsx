@@ -2,6 +2,10 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import { getAllExams, type ExamListItem } from "@/lib/db";
 
+// Live exam list — read from the DB on each request rather than freezing it
+// into a static page at build time (which also needs Supabase env at build).
+export const dynamic = "force-dynamic";
+
 function groupByGrade(exams: ExamListItem[]): Map<number, ExamListItem[]> {
   const m = new Map<number, ExamListItem[]>();
   for (const e of exams) {
