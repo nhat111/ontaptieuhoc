@@ -98,8 +98,38 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
   const [mode, setMode] = useState<"text" | "html">("text");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<QDraft[] | null>(null);
+  const [url, setUrl] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   if (!open) return null;
+
+  async function handleFetchUrl() {
+    setUrlError(null);
+    setError(null);
+    setPreview(null);
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    if (!/^https?:\/\//i.test(trimmed)) {
+      setUrlError("URL phải bắt đầu bằng http:// hoặc https://");
+      return;
+    }
+    setFetchingUrl(true);
+    try {
+      const res = await fetch(`/api/fetch-exam?url=${encodeURIComponent(trimmed)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setUrlError(data?.error ?? `Tải thất bại (HTTP ${res.status})`);
+        return;
+      }
+      setText(data.text ?? "");
+      setMode("text");
+    } catch {
+      setUrlError("Không thể kết nối máy chủ.");
+    } finally {
+      setFetchingUrl(false);
+    }
+  }
 
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     if (mode === "html") return; // HTML mode — keep raw HTML as-is
@@ -197,6 +227,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     setPreview(null);
     setError(null);
     setMode("text");
+    setUrl("");
+    setUrlError(null);
     onClose();
   }
 
@@ -238,6 +270,42 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-auto p-5 space-y-4">
+          {/* Fetch from URL */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
+              Tải nội dung từ URL <span className="font-normal text-gray-400">(vd: loigiaihay.com, vietjack.com)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !fetchingUrl) { e.preventDefault(); handleFetchUrl(); } }}
+                placeholder="https://loigiaihay.com/..."
+                className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              <button
+                onClick={handleFetchUrl}
+                disabled={fetchingUrl || !url.trim()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                {fetchingUrl ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    Đang tải…
+                  </>
+                ) : "Tải về"}
+              </button>
+            </div>
+            {urlError && <p className="mt-2 text-xs text-red-500">✗ {urlError}</p>}
+            <p className="mt-1.5 text-[11px] text-gray-400">
+              Tải xong sẽ tự fill vào ô bên dưới ở chế độ "Văn bản". Có thể sửa trước khi bấm "Phân tích đề".
+            </p>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-gray-700">Nội dung đề</label>
