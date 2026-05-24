@@ -92,14 +92,13 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   }
 
   function openPdf(withAnswers: boolean) {
-    const html = buildExamHtml(lesson, questions, { withAnswers });
+    // autoPrint script in the document waits for images to load before
+    // opening the print dialog, so figures aren't blank in the PDF.
+    const html = buildExamHtml(lesson, questions, { withAnswers, autoPrint: true });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html);
     w.document.close();
-    // Let layout settle, then open the print dialog (user picks "Save as PDF").
-    w.onload = () => { w.focus(); w.print(); };
-    setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 400);
   }
 
   // ── Start screen ─────────────────────────────────────────────────────────

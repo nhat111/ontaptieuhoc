@@ -58,6 +58,8 @@ function answerLabel(q: Question): string {
 
 export interface BuildExamOptions {
   withAnswers?: boolean;
+  /** Inject a script that calls window.print() after images finish loading. */
+  autoPrint?: boolean;
 }
 
 // Build a self-contained HTML document for the exam, usable both as a Word
@@ -76,6 +78,23 @@ export function buildExamHtml(
 
   const qHtml = questions
     .map((q, i) => {
+      const allImages =
+        q.images && q.images.length > 0
+          ? q.images
+          : q.imageUrl
+          ? [{ url: q.imageUrl, position: "after" as const }]
+          : [];
+      const imgTag = (url: string) =>
+        `<div class="img"><img src="${escapeHtml(url)}" alt=""/></div>`;
+      const before = allImages
+        .filter((im) => im.position === "before")
+        .map((im) => imgTag(im.url))
+        .join("");
+      const after = allImages
+        .filter((im) => im.position !== "before")
+        .map((im) => imgTag(im.url))
+        .join("");
+
       const num = `<p class="q"><b>Câu ${i + 1}.</b> ${escapeHtml(latexToPlain(q.question)).replace(/\n/g, "<br/>")}</p>`;
       let opts = "";
       if ((q.type === "mcq" || q.type === "multi") && q.options.length) {
@@ -88,7 +107,7 @@ export function buildExamHtml(
       } else {
         opts = `<p class="blank">…………………………………………………………………</p>`;
       }
-      return num + opts;
+      return before + num + after + opts;
     })
     .join("\n");
 
@@ -109,6 +128,8 @@ export function buildExamHtml(
   .opts { margin: 0 0 6px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
   .opt { }
   .blank { margin: 2px 0 8px 18px; color: #555; letter-spacing: 1px; }
+  .img { margin: 6px 0; }
+  .img img { max-width: 100%; max-height: 320px; object-fit: contain; }
   .ak { font-size: 14pt; margin-top: 28px; border-top: 1px solid #999; padding-top: 12px; }
   .answers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 12px; }
   .ans { font-size: 12pt; }
@@ -119,5 +140,6 @@ export function buildExamHtml(
 <div class="meta">${metaBits.join(" · ")}</div>
 ${qHtml}
 ${answersHtml}
+${opts.autoPrint ? `<script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},200);});</script>` : ""}
 </body></html>`;
 }
