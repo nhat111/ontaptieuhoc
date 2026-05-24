@@ -207,10 +207,22 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
       .order('order_index')
 
     return (data ?? []).map((q: any) => {
+      let images: { url: string; position: 'before' | 'after' }[] = []
       let imageUrl: string | undefined
       try {
         const exp = typeof q.explanation === 'string' ? JSON.parse(q.explanation) : q.explanation
+        if (Array.isArray(exp?.images)) {
+          images = exp.images
+            .filter((img: any) => img && typeof img.url === 'string' && img.url)
+            .map((img: any) => ({
+              url: img.url as string,
+              position: img.position === 'before' ? 'before' : 'after',
+            }))
+        } else if (exp?.imageUrl) {
+          images = [{ url: exp.imageUrl, position: 'after' }]
+        }
         if (exp?.imageUrl) imageUrl = exp.imageUrl
+        else if (images[0]?.url) imageUrl = images[0].url
       } catch {}
       return {
         id: q.id,
@@ -218,6 +230,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
         question: q.content,
         options: (q.options ?? []) as string[],
         correctAnswer: q.correct_answer,
+        images,
         imageUrl,
       }
     })

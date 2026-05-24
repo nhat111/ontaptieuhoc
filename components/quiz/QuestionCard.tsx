@@ -33,14 +33,39 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
     onSelect(JSON.stringify([...next]));
   }
 
+  // Normalize images so legacy `imageUrl` (without `images` array) still renders.
+  const allImages =
+    question.images && question.images.length > 0
+      ? question.images
+      : question.imageUrl
+      ? [{ url: question.imageUrl, position: "after" as const }]
+      : [];
+  const imagesBefore = allImages.filter((img) => img.position === "before");
+  const imagesAfter = allImages.filter((img) => img.position !== "before");
+
   return (
     <div id={`question-${index}`} className="p-6 scroll-mt-20">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <span className="font-bold text-gray-800 text-base flex-shrink-0">{index + 1}.</span>
-          <p className="text-gray-800 font-medium text-base leading-relaxed whitespace-pre-wrap">
-            <MathText text={question.question} />
-          </p>
+          <div className="flex-1 min-w-0">
+            {imagesBefore.length > 0 && (
+              <div className="mb-3 space-y-3">
+                {imagesBefore.map((img, ii) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={`b-${ii}`}
+                    src={img.url}
+                    alt={`Hình minh hoạ câu ${index + 1}`}
+                    className="max-h-72 max-w-full rounded-xl border border-gray-200 object-contain"
+                  />
+                ))}
+              </div>
+            )}
+            <p className="text-gray-800 font-medium text-base leading-relaxed whitespace-pre-wrap">
+              <MathText text={question.question} />
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
@@ -49,14 +74,17 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
         </div>
       </div>
 
-      {question.imageUrl && (
-        <div className="pl-5 mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={question.imageUrl}
-            alt={`Hình minh hoạ câu ${index + 1}`}
-            className="max-h-72 max-w-full rounded-xl border border-gray-200 object-contain"
-          />
+      {imagesAfter.length > 0 && (
+        <div className="pl-5 mb-4 space-y-3">
+          {imagesAfter.map((img, ii) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`a-${ii}`}
+              src={img.url}
+              alt={`Hình minh hoạ câu ${index + 1}`}
+              className="max-h-72 max-w-full rounded-xl border border-gray-200 object-contain"
+            />
+          ))}
         </div>
       )}
 
