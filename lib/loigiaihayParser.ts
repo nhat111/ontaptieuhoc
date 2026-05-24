@@ -123,14 +123,17 @@ export function parseLoigiaihay(text: string): DraftQuestion[] {
             question: stem || `Ý ${letter})`,
             options: options.map((o) => o.text),
             correctAnswer: correct,
+            solution: textMap.get(letter) || undefined,
           });
         } else {
           // Open-ended sub-part → short, answer from matching solution sub-part.
+          const sol = textMap.get(letter) || null;
           push({
             type: "short",
             question: seg.join("\n"),
             options: [],
-            correctAnswer: textMap.get(letter) || null,
+            correctAnswer: sol,
+            solution: sol || undefined,
           });
         }
       }
@@ -158,13 +161,16 @@ export function parseLoigiaihay(text: string): DraftQuestion[] {
         question: stem || problemLines.join("\n"),
         options: options.map((o) => o.text),
         correctAnswer: correct,
+        solution: answerLines.join("\n") || undefined,
       });
     } else {
+      const sol = answerLines.join("\n") || null;
       push({
         type: "short",
         question: problemLines.join("\n"),
         options: [],
-        correctAnswer: answerLines.join("\n") || null,
+        correctAnswer: sol,
+        solution: sol || undefined,
       });
     }
   }

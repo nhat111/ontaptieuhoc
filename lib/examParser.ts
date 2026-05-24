@@ -11,6 +11,8 @@ export type DraftQuestion = {
   // numeric: number as string
   // null if no answer marker was found (UI can prompt user to set it)
   correctAnswer: string | null;
+  // optional worked solution ("lời giải") captured from the source
+  solution?: string;
 };
 
 const Q_START = /^Câu\s*\d+[:.]/i;
