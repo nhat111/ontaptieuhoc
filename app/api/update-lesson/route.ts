@@ -1,13 +1,26 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
+type QImagePayload = { url: string; position: "before" | "after" };
+
 type QPayload = {
   type?: "mcq" | "multi" | "short" | "numeric";
   content: string;
   options: string[];
   correctAnswer: string;
+  images?: QImagePayload[];
+  /** @deprecated legacy single-image — first element of images mirrored here */
   imageUrl?: string;
 };
+
+function buildExplanation(q: QPayload): string | null {
+  const images = (q.images ?? []).filter((img) => img && typeof img.url === "string" && img.url);
+  if (images.length > 0) {
+    return JSON.stringify({ images, imageUrl: images[0].url });
+  }
+  if (q.imageUrl) return JSON.stringify({ imageUrl: q.imageUrl });
+  return null;
+}
 
 export async function POST(req: NextRequest) {
   const { lessonId, chapterId, title, indexLabel, questions, type, durationMinutes } = await req.json();
@@ -51,7 +64,7 @@ export async function POST(req: NextRequest) {
     options: q.options ?? [],
     correct_answer: q.correctAnswer,
     type: q.type ?? "mcq",
-    explanation: q.imageUrl ? JSON.stringify({ imageUrl: q.imageUrl }) : null,
+    explanation: buildExplanation(q),
     order_index: i + 1,
   }));
 

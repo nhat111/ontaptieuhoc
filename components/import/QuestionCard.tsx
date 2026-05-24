@@ -5,6 +5,11 @@ import MathText from "@/components/MathText";
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
+export type QImage = {
+  url: string;
+  position: "before" | "after";
+};
+
 export type QDraft = {
   id: string;
   type: QType;
@@ -13,6 +18,8 @@ export type QDraft = {
   correctIdx: number; // mcq
   correctIdxs: number[]; // multi
   answer: string; // short/numeric: pipe-delimited accepted answers for short, raw for numeric
+  images: QImage[]; // multiple images per question, each positioned before/after question content
+  /** @deprecated legacy single-image field; new code uses `images` */
   imageUrl?: string;
 };
 
@@ -125,12 +132,32 @@ export default function QuestionCard({
         alert("Upload ảnh thất bại: " + (data?.error ?? `lỗi ${res.status}`));
         return;
       }
-      patch({ imageUrl: data.url });
+      // Default new images to "after" — same place as legacy single-image was rendered.
+      const next: QImage[] = [...(question.images ?? []), { url: data.url, position: "after" }];
+      patch({ images: next, imageUrl: undefined });
     } catch {
       alert("Upload ảnh thất bại: không thể kết nối máy chủ.");
     } finally {
       setUploading(false);
     }
+  }
+
+  function updateImage(i: number, partial: Partial<QImage>) {
+    const next = (question.images ?? []).map((img, idx) => (idx === i ? { ...img, ...partial } : img));
+    patch({ images: next });
+  }
+
+  function removeImage(i: number) {
+    const next = (question.images ?? []).filter((_, idx) => idx !== i);
+    patch({ images: next });
+  }
+
+  function moveImage(i: number, dir: -1 | 1) {
+    const arr = [...(question.images ?? [])];
+    const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    patch({ images: arr });
   }
 
   const isFilled = (() => {
@@ -274,41 +301,121 @@ export default function QuestionCard({
             />
           </div>
 
-          {/* Image */}
-          <div className="flex items-center gap-3">
-            {question.imageUrl ? (
-              <div className="relative inline-block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={question.imageUrl} alt="question" className="h-24 rounded-lg border border-gray-200 object-contain" />
-                <button
-                  onClick={() => patch({ imageUrl: undefined })}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
-                >✕</button>
+          {/* Images */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-gray-500">
+                Hình ảnh minh hoạ{question.images && question.images.length > 0 ? ` (${question.images.length})` : ""}
+              </label>
+              <p className="text-[10px] text-gray-400">
+                Có thể thêm nhiều ảnh · Chọn vị trí <span className="font-medium">Trước</span> hoặc <span className="font-medium">Sau</span> câu hỏi
+              </p>
+            </div>
+
+            {question.images && question.images.length > 0 && (
+              <div className="space-y-2 mb-2">
+                {question.images.map((img, ii) => (
+                  <div
+                    key={ii}
+                    className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-2"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.url}
+                      alt={`Hình ${ii + 1}`}
+                      className="h-20 w-20 rounded-lg border border-gray-200 object-contain bg-white flex-shrink-0"
+                    />
+
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      {/* Position toggle */}
+                      <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden text-[11px] font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => updateImage(ii, { position: "before" })}
+                          className={`px-2.5 py-1 transition-colors ${
+                            img.position === "before"
+                              ? "bg-blue-600 text-white"
+                              : "bg-white text-gray-500 hover:text-blue-600"
+                          }`}
+                          title="Hiển thị trước câu hỏi"
+                        >
+                          ↑ Trước
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateImage(ii, { position: "after" })}
+                          className={`px-2.5 py-1 border-l border-gray-200 transition-colors ${
+                            img.position === "after"
+                              ? "bg-blue-600 text-white"
+                              : "bg-white text-gray-500 hover:text-blue-600"
+                          }`}
+                          title="Hiển thị sau câu hỏi"
+                        >
+                          ↓ Sau
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-400 truncate" title={img.url}>{img.url}</p>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(ii, -1)}
+                        disabled={ii === 0}
+                        title="Đổi thứ tự lên"
+                        className="w-6 h-6 rounded text-gray-400 hover:bg-gray-200 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(ii, 1)}
+                        disabled={ii === (question.images?.length ?? 0) - 1}
+                        title="Đổi thứ tự xuống"
+                        className="w-6 h-6 rounded text-gray-400 hover:bg-gray-200 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeImage(ii)}
+                      title="Xoá ảnh"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
-              >
-                {uploading ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    Đang tải lên…
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Thêm ảnh
-                  </>
-                )}
-              </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
+            >
+              {uploading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                    <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  Đang tải lên…
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {question.images && question.images.length > 0 ? "Thêm ảnh khác" : "Thêm ảnh"}
+                </>
+              )}
+            </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
 

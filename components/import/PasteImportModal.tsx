@@ -180,7 +180,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
       return;
     }
     const drafts: QDraft[] = parsed.map((q, i) => {
-      const base = { id: nanoid(), content: q.question, imageUrl: undefined as string | undefined };
+      const base = { id: nanoid(), content: q.question, images: [] as QDraft["images"] };
 
       if (q.type === "mcq") {
         const opts = [...q.options];

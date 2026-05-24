@@ -2,12 +2,21 @@
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
+// One question may have multiple images, each positioned before or after the
+// question text (and before the answer options).
+export type QImage = {
+  url: string;
+  position: "before" | "after";
+};
+
 export type Question = {
   id: number;
   type: QType;
   question: string;
   options: string[]; // [] for short/numeric
   correctAnswer: string; // see scoreAnswer below for per-type encoding
+  images?: QImage[];
+  /** @deprecated legacy single-image field, mirrors images[0]?.url */
   imageUrl?: string;
 };
 

@@ -1,6 +1,24 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import type { QDraft, QType } from "@/components/import/QuestionCard";
+import type { QDraft, QImage, QType } from "@/components/import/QuestionCard";
+
+function decodeImages(explanation: unknown): QImage[] {
+  try {
+    const exp = typeof explanation === "string" ? JSON.parse(explanation) : explanation;
+    if (Array.isArray(exp?.images)) {
+      return exp.images
+        .filter((img: any) => img && typeof img.url === "string" && img.url)
+        .map((img: any) => ({
+          url: img.url as string,
+          position: img.position === "before" ? "before" : "after",
+        }));
+    }
+    if (exp?.imageUrl) {
+      return [{ url: exp.imageUrl, position: "after" }];
+    }
+  } catch {}
+  return [];
+}
 
 export async function GET(
   _req: NextRequest,
@@ -51,11 +69,7 @@ export async function GET(
   const qDrafts: QDraft[] = (questions ?? []).map((q: any) => {
     const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
     const type: QType = (q.type as QType | null) ?? "mcq";
-    let imageUrl: string | undefined;
-    try {
-      const exp = typeof q.explanation === "string" ? JSON.parse(q.explanation) : q.explanation;
-      if (exp?.imageUrl) imageUrl = exp.imageUrl;
-    } catch {}
+    const images = decodeImages(q.explanation);
 
     const ca = q.correct_answer ?? "";
     let correctIdx = 0;
@@ -85,7 +99,7 @@ export async function GET(
       correctIdx,
       correctIdxs,
       answer,
-      imageUrl,
+      images,
     };
   });
 

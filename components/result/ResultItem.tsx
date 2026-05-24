@@ -27,26 +27,54 @@ export default function ResultItem({ question, userAnswer, index }: ResultItemPr
   const isCorrect = !isSkipped && scoreAnswer(question, userAnswer);
   const status = STATUS[isSkipped ? "skipped" : isCorrect ? "correct" : "incorrect"];
 
+  // Normalize images so legacy `imageUrl` (without `images` array) still renders.
+  const allImages =
+    question.images && question.images.length > 0
+      ? question.images
+      : question.imageUrl
+      ? [{ url: question.imageUrl, position: "after" as const }]
+      : [];
+  const imagesBefore = allImages.filter((img) => img.position === "before");
+  const imagesAfter = allImages.filter((img) => img.position !== "before");
+
   return (
     <div className={`bg-white rounded-xl border-2 ${status.border} p-4`}>
       <div className="flex items-start gap-3 mb-3">
         <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${status.cls}`}>
           {status.icon}
         </span>
-        <p className="text-sm font-semibold text-gray-800 leading-relaxed">
-          <span className="text-gray-400 mr-1">Câu {index + 1}.</span>
-          <MathText text={question.question} />
-        </p>
+        <div className="flex-1 min-w-0">
+          {imagesBefore.length > 0 && (
+            <div className="mb-2 space-y-2">
+              {imagesBefore.map((img, ii) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`b-${ii}`}
+                  src={img.url}
+                  alt={`Hình minh hoạ câu ${index + 1}`}
+                  className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain"
+                />
+              ))}
+            </div>
+          )}
+          <p className="text-sm font-semibold text-gray-800 leading-relaxed">
+            <span className="text-gray-400 mr-1">Câu {index + 1}.</span>
+            <MathText text={question.question} />
+          </p>
+        </div>
       </div>
 
-      {question.imageUrl && (
-        <div className="ml-10 mb-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={question.imageUrl}
-            alt={`Hình minh hoạ câu ${index + 1}`}
-            className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain"
-          />
+      {imagesAfter.length > 0 && (
+        <div className="ml-10 mb-3 space-y-2">
+          {imagesAfter.map((img, ii) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`a-${ii}`}
+              src={img.url}
+              alt={`Hình minh hoạ câu ${index + 1}`}
+              className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain"
+            />
+          ))}
         </div>
       )}
 

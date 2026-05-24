@@ -50,11 +50,24 @@ function blankQuestion(): QDraft {
     correctIdx: 0,
     correctIdxs: [],
     answer: "",
+    images: [],
   };
 }
 
 // Backfill defaults for drafts saved before QDraft gained type/correctIdxs/answer.
+// Also normalizes legacy single `imageUrl` to the new `images` array.
 function migrateDraftQuestion(q: any): QDraft {
+  let images: QDraft["images"] = [];
+  if (Array.isArray(q.images)) {
+    images = q.images
+      .filter((img: any) => img && typeof img.url === "string")
+      .map((img: any) => ({
+        url: img.url,
+        position: img.position === "before" ? "before" : "after",
+      }));
+  } else if (typeof q.imageUrl === "string" && q.imageUrl) {
+    images = [{ url: q.imageUrl, position: "after" }];
+  }
   return {
     id: q.id ?? nanoid(),
     type: q.type ?? "mcq",
@@ -63,7 +76,7 @@ function migrateDraftQuestion(q: any): QDraft {
     correctIdx: typeof q.correctIdx === "number" ? q.correctIdx : 0,
     correctIdxs: Array.isArray(q.correctIdxs) ? q.correctIdxs : [],
     answer: q.answer ?? "",
-    imageUrl: q.imageUrl,
+    images,
   };
 }
 
@@ -103,7 +116,14 @@ function validateQuestions(qs: QDraft[]): string | null {
 
 // Encode QDraft → API payload per type.
 function encodeQuestion(q: QDraft) {
-  const base = { type: q.type, content: q.content, imageUrl: q.imageUrl };
+  const images = (q.images ?? []).filter((img) => img && img.url);
+  const base = {
+    type: q.type,
+    content: q.content,
+    images,
+    // Mirror the first image into legacy `imageUrl` so any old reader still works.
+    imageUrl: images[0]?.url,
+  };
   switch (q.type) {
     case "mcq":
       return { ...base, options: q.options, correctAnswer: q.options[q.correctIdx] ?? "" };
