@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Question, LessonMeta, formatTime, scoreAnswer } from "@/lib/quizData";
+import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
@@ -75,6 +76,32 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   const isLow = timeLeft < 60;
 
+  const safeName = (lesson.title || `de-${lessonId}`).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
+
+  function downloadDoc(withAnswers: boolean) {
+    const html = buildExamHtml(lesson, questions, { withAnswers });
+    const blob = new Blob([html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${safeName}${withAnswers ? "-co-dap-an" : ""}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function openPdf(withAnswers: boolean) {
+    const html = buildExamHtml(lesson, questions, { withAnswers });
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    // Let layout settle, then open the print dialog (user picks "Save as PDF").
+    w.onload = () => { w.focus(); w.print(); };
+    setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 400);
+  }
+
   // ── Start screen ─────────────────────────────────────────────────────────
   if (!started) {
     return (
@@ -139,6 +166,31 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             <p className="text-[11px] text-gray-400 mt-3">
               Đồng hồ bắt đầu đếm sau khi bấm. Hết giờ tự nộp bài.
             </p>
+
+            {questions.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xs text-gray-400 mr-1">Tải đề:</span>
+                <button
+                  onClick={() => downloadDoc(false)}
+                  className="text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg px-3 py-1.5 transition-colors"
+                >
+                  Word (.doc)
+                </button>
+                <button
+                  onClick={() => openPdf(false)}
+                  className="text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg px-3 py-1.5 transition-colors"
+                >
+                  PDF
+                </button>
+                <button
+                  onClick={() => downloadDoc(true)}
+                  className="text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50 rounded-lg px-3 py-1.5 transition-colors"
+                  title="Tải kèm đáp án"
+                >
+                  + Đáp án
+                </button>
+              </div>
+            )}
 
             <a
               href={`/import/edit/${lessonId}`}
