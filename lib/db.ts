@@ -209,6 +209,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
     return (data ?? []).map((q: any) => {
       let images: { url: string; position: 'before' | 'after' }[] = []
       let imageUrl: string | undefined
+      let explanation: string | undefined
       try {
         const exp = typeof q.explanation === 'string' ? JSON.parse(q.explanation) : q.explanation
         if (Array.isArray(exp?.images)) {
@@ -223,6 +224,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
         }
         if (exp?.imageUrl) imageUrl = exp.imageUrl
         else if (images[0]?.url) imageUrl = images[0].url
+        if (typeof exp?.solution === 'string' && exp.solution.trim()) explanation = exp.solution
       } catch {}
       return {
         id: q.id,
@@ -232,6 +234,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
         correctAnswer: q.correct_answer,
         images,
         imageUrl,
+        explanation,
       }
     })
   } catch {

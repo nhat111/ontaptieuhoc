@@ -21,6 +21,7 @@ export type QDraft = {
   images: QImage[]; // multiple images per question, each positioned before/after question content
   /** @deprecated legacy single-image field; new code uses `images` */
   imageUrl?: string;
+  solution?: string; // optional worked solution ("lời giải"), shown on the result page
 };
 
 const LABELS = ["A", "B", "C", "D", "E", "F"];
@@ -519,6 +520,26 @@ export default function QuestionCard({
               </p>
             </div>
           )}
+
+          {/* Optional worked solution — shown to the learner on the result page */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+              Lời giải <span className="font-normal text-gray-400">(tùy chọn — hiện ở trang kết quả)</span>
+            </label>
+            <textarea
+              value={question.solution ?? ""}
+              onChange={(e) => patch({ solution: e.target.value })}
+              placeholder="Giải thích cách làm / đáp án đúng…"
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y"
+            />
+            {question.solution?.trim() && (
+              <div className="mt-2 px-2 py-1 bg-amber-50 rounded text-xs text-gray-700 whitespace-pre-wrap">
+                <span className="text-[10px] font-semibold text-amber-500 mr-1">Preview</span>
+                <MathText text={question.solution} />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -18,6 +18,7 @@ export type Question = {
   images?: QImage[];
   /** @deprecated legacy single-image field, mirrors images[0]?.url */
   imageUrl?: string;
+  explanation?: string; // optional worked solution / "lời giải", shown on the result page
 };
 
 export type LessonMeta = {

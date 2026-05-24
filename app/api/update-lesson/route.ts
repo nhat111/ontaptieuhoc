@@ -11,15 +11,20 @@ type QPayload = {
   images?: QImagePayload[];
   /** @deprecated legacy single-image — first element of images mirrored here */
   imageUrl?: string;
+  solution?: string;
 };
 
 function buildExplanation(q: QPayload): string | null {
   const images = (q.images ?? []).filter((img) => img && typeof img.url === "string" && img.url);
+  const blob: Record<string, unknown> = {};
   if (images.length > 0) {
-    return JSON.stringify({ images, imageUrl: images[0].url });
+    blob.images = images;
+    blob.imageUrl = images[0].url;
+  } else if (q.imageUrl) {
+    blob.imageUrl = q.imageUrl;
   }
-  if (q.imageUrl) return JSON.stringify({ imageUrl: q.imageUrl });
-  return null;
+  if (typeof q.solution === "string" && q.solution.trim()) blob.solution = q.solution.trim();
+  return Object.keys(blob).length > 0 ? JSON.stringify(blob) : null;
 }
 
 export async function POST(req: NextRequest) {

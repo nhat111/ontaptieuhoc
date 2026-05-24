@@ -77,6 +77,7 @@ function migrateDraftQuestion(q: any): QDraft {
     correctIdxs: Array.isArray(q.correctIdxs) ? q.correctIdxs : [],
     answer: q.answer ?? "",
     images,
+    solution: typeof q.solution === "string" ? q.solution : undefined,
   };
 }
 
@@ -123,6 +124,7 @@ function encodeQuestion(q: QDraft) {
     images,
     // Mirror the first image into legacy `imageUrl` so any old reader still works.
     imageUrl: images[0]?.url,
+    solution: q.solution?.trim() || undefined,
   };
   switch (q.type) {
     case "mcq":

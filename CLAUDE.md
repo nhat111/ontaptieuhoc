@@ -54,7 +54,7 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 ### Data model
 
-`subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.explanation` is reused as a JSON blob to carry `{ imageUrl }` for image attachments — there is no dedicated image column.
+`subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.explanation` is reused as a JSON blob carrying `{ images: [{url, position}], imageUrl, solution }` — image attachments (no dedicated image column) plus an optional worked solution ("lời giải") shown on `/result`. Legacy rows may hold just `{ imageUrl }`.
 
 `questions.type` (added later — `ALTER TABLE questions ADD COLUMN type TEXT NOT NULL DEFAULT 'mcq';` if upgrading) is one of `'mcq' | 'multi' | 'short' | 'numeric'`. `options` is variable length 2–6 for `mcq`/`multi`, `[]` for `short`/`numeric`. `correct_answer` encoding is **per-type** — get this wrong and scoring breaks silently:
 - `mcq`: the literal text of the correct option (must match one of `options`).

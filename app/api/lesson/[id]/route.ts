@@ -70,6 +70,11 @@ export async function GET(
     const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
     const type: QType = (q.type as QType | null) ?? "mcq";
     const images = decodeImages(q.explanation);
+    let solution: string | undefined;
+    try {
+      const exp = typeof q.explanation === "string" ? JSON.parse(q.explanation) : q.explanation;
+      if (typeof exp?.solution === "string" && exp.solution.trim()) solution = exp.solution;
+    } catch {}
 
     const ca = q.correct_answer ?? "";
     let correctIdx = 0;
@@ -100,6 +105,7 @@ export async function GET(
       correctIdxs,
       answer,
       images,
+      solution,
     };
   });
 
