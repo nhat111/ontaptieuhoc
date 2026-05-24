@@ -142,11 +142,6 @@ export default function QuestionCard({
     }
   }
 
-  function updateImage(i: number, partial: Partial<QImage>) {
-    const next = (question.images ?? []).map((img, idx) => (idx === i ? { ...img, ...partial } : img));
-    patch({ images: next });
-  }
-
   function removeImage(i: number) {
     const next = (question.images ?? []).filter((_, idx) => idx !== i);
     patch({ images: next });
@@ -308,7 +303,7 @@ export default function QuestionCard({
                 Hình ảnh minh hoạ{question.images && question.images.length > 0 ? ` (${question.images.length})` : ""}
               </label>
               <p className="text-[10px] text-gray-400">
-                Có thể thêm nhiều ảnh · Chọn vị trí <span className="font-medium">Trước</span> hoặc <span className="font-medium">Sau</span> câu hỏi
+                Có thể thêm nhiều ảnh · Dùng mũi tên để đổi thứ tự
               </p>
             </div>
 
@@ -326,34 +321,7 @@ export default function QuestionCard({
                       className="h-20 w-20 rounded-lg border border-gray-200 object-contain bg-white flex-shrink-0"
                     />
 
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      {/* Position toggle */}
-                      <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden text-[11px] font-semibold">
-                        <button
-                          type="button"
-                          onClick={() => updateImage(ii, { position: "before" })}
-                          className={`px-2.5 py-1 transition-colors ${
-                            img.position === "before"
-                              ? "bg-blue-600 text-white"
-                              : "bg-white text-gray-500 hover:text-blue-600"
-                          }`}
-                          title="Hiển thị trước câu hỏi"
-                        >
-                          ↑ Trước
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateImage(ii, { position: "after" })}
-                          className={`px-2.5 py-1 border-l border-gray-200 transition-colors ${
-                            img.position === "after"
-                              ? "bg-blue-600 text-white"
-                              : "bg-white text-gray-500 hover:text-blue-600"
-                          }`}
-                          title="Hiển thị sau câu hỏi"
-                        >
-                          ↓ Sau
-                        </button>
-                      </div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-gray-400 truncate" title={img.url}>{img.url}</p>
                     </div>
 
