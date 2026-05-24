@@ -37,14 +37,19 @@ export default function LessonItem({
 }) {
   const badge = (viewType === "exam" ? examBadge : lessonBadge)[lesson.status];
 
+  // Tách số ra khỏi index_label ("Bài 6" → "6", "Đề 3" → "3")
+  const indexNum = lesson.index?.match(/\d+/)?.[0] ?? lesson.index;
+  // Tên hiển thị đầy đủ: "Bài 6 · Luyện tập"
+  const fullTitle = lesson.index ? `${lesson.index} · ${lesson.title}` : lesson.title;
+
   return (
     <div className="flex gap-3">
       {/* Timeline */}
       <div className="flex flex-col items-center">
         <div
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 z-10 ${circleStyle[lesson.status]}`}
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 z-10 ${circleStyle[lesson.status]}`}
         >
-          {lesson.status === "locked" ? "🔒" : lesson.index}
+          {lesson.status === "locked" ? "🔒" : indexNum}
         </div>
         {!isLast && <div className="w-0.5 bg-gray-200 flex-1 mt-1 min-h-4" />}
       </div>
@@ -67,7 +72,7 @@ export default function LessonItem({
                     : "text-gray-800 group-hover:text-blue-600"
                 }`}
               >
-                {lesson.title}
+                {fullTitle}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">{lesson.questionCount} câu hỏi</p>
             </div>
