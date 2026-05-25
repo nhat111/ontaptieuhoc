@@ -315,7 +315,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
             </div>
             {urlError && <p className="mt-2 text-xs text-red-500">✗ {urlError}</p>}
             <p className="mt-1.5 text-[11px] text-gray-400">
-              Tải xong sẽ tự fill vào ô bên dưới ở chế độ "Văn bản". Có thể sửa trước khi bấm "Phân tích đề".
+              Tải xong sẽ tự fill vào ô bên dưới ở chế độ “Văn bản”. Có thể sửa trước khi bấm “Phân tích đề”.
             </p>
           </div>
 
