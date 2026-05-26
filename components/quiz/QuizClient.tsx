@@ -27,6 +27,15 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(questions.length).fill(null));
   const [current, setCurrent] = useState(0);
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const [isPremium, setIsPremium] = useState(false);
+
+  // Check premium status once so the start screen can gate the export buttons.
+  useEffect(() => {
+    fetch("/api/me/premium")
+      .then((r) => r.json())
+      .then((d) => setIsPremium(!!d.isPremium))
+      .catch(() => {});
+  }, []);
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
@@ -78,7 +87,15 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   const safeName = (lesson.title || `de-${lessonId}`).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
 
+  // Export is a Premium feature — non-premium users are sent to the upgrade page.
+  function requirePremium(): boolean {
+    if (isPremium) return true;
+    router.push("/nang-cap");
+    return false;
+  }
+
   function downloadDoc(withAnswers: boolean) {
+    if (!requirePremium()) return;
     const html = buildExamHtml(lesson, questions, { withAnswers });
     const blob = new Blob([html], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
@@ -92,6 +109,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   }
 
   function openPdf(withAnswers: boolean) {
+    if (!requirePremium()) return;
     // autoPrint script in the document waits for images to load before
     // opening the print dialog, so figures aren't blank in the PDF.
     const html = buildExamHtml(lesson, questions, { withAnswers, autoPrint: true });
@@ -168,7 +186,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
             {questions.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                <span className="text-xs text-gray-400 mr-1">Tải đề:</span>
+                <span className="text-xs text-gray-400 mr-1">Tải đề{isPremium ? ":" : " 🔒:"}</span>
                 <button
                   onClick={() => downloadDoc(false)}
                   className="text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg px-3 py-1.5 transition-colors"
