@@ -18,6 +18,7 @@ export default function Header() {
   const path = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -29,6 +30,17 @@ export default function Header() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Surface the Admin nav link for admins.
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    fetch("/api/me/premium")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(!!d.isAdmin))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
+
+  const navItems = isAdmin ? [...NAV, { label: "Quản trị", href: "/admin" }] : NAV;
 
   useEffect(() => { setMobileOpen(false); }, [path]);
 
@@ -66,7 +78,7 @@ export default function Header() {
 
         {/* Nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-          {NAV.map(({ label, href }) => {
+          {navItems.map(({ label, href }) => {
             const active = href === "/" ? path === "/" : path.startsWith(href.replace("/#", "/"));
             return (
               <Link
@@ -173,7 +185,7 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white">
           <nav className="max-w-6xl mx-auto px-4 py-2 flex flex-col">
-            {NAV.map(({ label, href }) => {
+            {navItems.map(({ label, href }) => {
               const active = href === "/" ? path === "/" : path.startsWith(href.replace("/#", "/"));
               return (
                 <Link
