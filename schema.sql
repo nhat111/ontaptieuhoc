@@ -164,3 +164,17 @@ INSERT INTO questions (lesson_id, content, options, correct_answer, order_index)
   (4, 'Ngày sau thứ Hai là?',          '["Chủ nhật","Thứ Ba","Thứ Tư","Thứ Sáu"]',    'Thứ Ba',   3),
   (4, '500g + 300g = ?',               '["700g","800g","900g","1kg"]',                  '800g',     4),
   (4, '1 tuần có bao nhiêu ngày?',     '["5","6","7","8"]',                             '7',        5);
+
+-- ============================================================================
+-- Premium (phase 1: manual activation)
+-- Browse + take quizzes free; downloading printable exams (Word/PDF) and
+-- premium reports are gated behind is_premium. Activated manually after a
+-- bank/MoMo transfer (set profiles.is_premium = true in the dashboard), or
+-- automatically by a future payment webhook.
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  is_premium    BOOLEAN NOT NULL DEFAULT false,
+  premium_until TIMESTAMPTZ,   -- NULL + is_premium=true ⇒ lifetime; else must be in the future
+  note          TEXT,          -- free-text (e.g. transfer ref) for manual activation
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);

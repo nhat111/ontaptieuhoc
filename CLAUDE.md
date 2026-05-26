@@ -37,6 +37,8 @@ DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to pr
 
 **Removed routes (do not recreate):** `/teacher`, `/import/ai` (no `/api/ai-import`; `ANTHROPIC_API_KEY` reserved for future use).
 
+**Premium (phase 1, manual):** `profiles (user_id, is_premium, premium_until, note)` table gates exam download (Word/PDF) — browsing/quizzes stay free. `lib/premium.ts → isUserPremium(userId)` (service-role read); `GET /api/me/premium` returns `{ loggedIn, isPremium }` for client gating; `QuizClient` redirects non-premium users to `/nang-cap` (manual bank/MoMo transfer + activate by setting `is_premium` in the dashboard). The gate is client-side only for now — fine for printable exams; not real DRM.
+
 ## Architecture
 
 ### Three Supabase clients — pick the right one
