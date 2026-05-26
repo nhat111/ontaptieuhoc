@@ -175,6 +175,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   is_premium    BOOLEAN NOT NULL DEFAULT false,
   premium_until TIMESTAMPTZ,   -- NULL + is_premium=true ⇒ lifetime; else must be in the future
+  is_admin      BOOLEAN NOT NULL DEFAULT false,  -- full-access admin (set manually in dashboard)
   note          TEXT,          -- free-text (e.g. transfer ref) for manual activation
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Nếu DB cũ đã có profiles nhưng chưa có is_admin:
+--   ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT false;
+-- Cấp quyền admin cho 1 tài khoản:
+--   INSERT INTO profiles (user_id, is_admin) VALUES ('<auth-user-uuid>', true)
+--   ON CONFLICT (user_id) DO UPDATE SET is_admin = true;
