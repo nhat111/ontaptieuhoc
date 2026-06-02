@@ -24,6 +24,14 @@ const GRADE_COLOR: Record<number, { badge: string; ring: string }> = {
   5: { badge: "bg-violet-100 text-violet-700", ring: "ring-violet-100" },
 };
 
+const GRADE_SURFACE: Record<number, string> = {
+  1: "from-blue-50 to-orange-50/40",
+  2: "from-blue-50 to-orange-50/50",
+  3: "from-blue-50 to-orange-50/30",
+  4: "from-blue-50 to-orange-50/40",
+  5: "from-blue-50 to-orange-50/50",
+};
+
 export default async function ExamListPage() {
   const exams = await getAllExams();
   const groups = groupByGrade(exams);
@@ -33,15 +41,20 @@ export default async function ExamListPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <section className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-10 sm:py-14 text-center">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Đề kiểm tra</h1>
-          <p className="text-blue-100 text-sm sm:text-base mb-5">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+        <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-indigo-900/30" />
+        <div className="relative max-w-5xl mx-auto px-4 py-10 sm:py-14 text-center">
+          <span className="mb-3 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-blue-50">
+            Kho đề luyện tập theo lớp
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight">Đề kiểm tra</h1>
+          <p className="mb-5 text-sm text-blue-100 sm:text-base">
             Chọn đề để xem chi tiết · {exams.length} đề
           </p>
           <Link
             href="/import/exam"
-            className="inline-flex items-center gap-1.5 bg-white text-blue-700 hover:bg-blue-50 font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-2xl bg-yellow-400 px-6 py-3 text-sm font-bold text-gray-900 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-yellow-400/30"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -63,11 +76,12 @@ export default async function ExamListPage() {
             {grades.map((g) => {
               const items = groups.get(g)!;
               const color = GRADE_COLOR[g] ?? GRADE_COLOR[1];
+              const surface = GRADE_SURFACE[g] ?? GRADE_SURFACE[1];
               return (
-                <section key={g}>
-                  <div className="flex items-baseline justify-between mb-3">
-                    <h2 className="text-base font-bold text-gray-700">
-                      Lớp {g || "?"}{" "}
+                <section key={g} className={`rounded-3xl border border-blue-100/80 bg-gradient-to-br ${surface} p-4 sm:p-5`}>
+                  <div className="mb-4 flex items-baseline justify-between">
+                    <h2 className="text-base font-bold text-slate-700">
+                      Lớp {g || "?"}
                       <span className="text-xs font-normal text-gray-400 ml-1">
                         ({items.length} đề)
                       </span>
@@ -75,39 +89,40 @@ export default async function ExamListPage() {
                     {g > 0 && (
                       <Link
                         href={`/lop/${g}?view=exam`}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-orange-50 hover:text-orange-700"
                       >
-                        Xem theo môn →
+                        Xem theo môn
+                        <span>→</span>
                       </Link>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {items.map((exam) => (
                       <Link
                         key={exam.id}
                         href={`/quiz?lessonId=${exam.id}`}
-                        className={`group bg-white rounded-2xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all p-4 ring-2 ring-transparent hover:${color.ring}`}
+                        className={`group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md ring-2 ring-transparent hover:${color.ring}`}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="mb-2 flex items-start justify-between gap-2">
                           <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${color.badge}`}>
                             Lớp {g}
                           </span>
                           {exam.subjectName && (
-                            <span className="text-[11px] text-gray-400">{exam.subjectName}</span>
+                            <span className="text-[11px] rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">{exam.subjectName}</span>
                           )}
                         </div>
-                        <h3 className="font-semibold text-sm text-gray-800 group-hover:text-blue-700 mb-2 line-clamp-2">
+                        <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-800 group-hover:text-blue-700">
                           {exam.title}
                         </h3>
-                        <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                          <span className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                             {exam.questionCount} câu
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                               <circle cx="12" cy="12" r="9" />
                               <path strokeLinecap="round" d="M12 7v5l3 2" />

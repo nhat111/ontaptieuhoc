@@ -45,13 +45,13 @@ export default function GradeCard({ grade, subjects, color, emoji, totalTopics }
           {subjects.slice(0, 2).map((subject) => (
             <li
               key={subject}
-              className="max-w-[88px] truncate rounded-lg border border-white/60 bg-white/80 px-2 py-0.5 text-[10px] font-medium leading-tight text-slate-700 sm:max-w-none sm:text-xs"
+              className={`max-w-[88px] truncate rounded-lg border border-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight sm:max-w-none sm:text-xs ${color.badge} ${color.text}`}
             >
               {subject}
             </li>
           ))}
           {subjects.length > 2 && (
-            <li className="rounded-lg border border-white/60 bg-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight text-slate-500 sm:text-xs">
+            <li className={`rounded-lg border border-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight sm:text-xs ${color.badge} ${color.text}`}>
               +{subjects.length - 2} môn
             </li>
           )}

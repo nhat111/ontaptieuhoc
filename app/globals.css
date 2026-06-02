@@ -2,6 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+  background: radial-gradient(1200px 600px at 20% -10%, #1e3a8a22, transparent 50%),
+    radial-gradient(1000px 500px at 100% 0%, #312e8122, transparent 45%),
+    #0f172a;
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .bg-gray-50 {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .bg-white {
+  background-color: #111827 !important;
+}
+
+html[data-theme="dark"] .bg-white\/90 {
+  background-color: rgba(17, 24, 39, 0.9) !important;
+}
+
+html[data-theme="dark"] .border-gray-100,
+html[data-theme="dark"] .border-slate-100,
+html[data-theme="dark"] .border-slate-200,
+html[data-theme="dark"] .border-slate-200\/80 {
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .text-gray-800,
+html[data-theme="dark"] .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .text-gray-700,
+html[data-theme="dark"] .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+html[data-theme="dark"] .text-gray-600,
+html[data-theme="dark"] .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .text-gray-500,
+html[data-theme="dark"] .text-slate-500,
+html[data-theme="dark"] .text-gray-400,
+html[data-theme="dark"] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .hover\:bg-slate-50:hover,
+html[data-theme="dark"] .hover\:bg-gray-50:hover {
+  background-color: #1f2937 !important;
+}
+
+html[data-theme="dark"] .bg-slate-50,
+html[data-theme="dark"] .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+html[data-theme="dark"] .shadow-sm,
+html[data-theme="dark"] .shadow-md,
+html[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35) !important;
+}
+
 /* Tiptap editor */
 .tiptap-editor .ProseMirror {
   outline: none;

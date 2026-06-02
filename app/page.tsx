@@ -90,6 +90,8 @@ const features = [
     title: "Bám sát SGK mới",
     short: "Chuẩn chương trình",
     color: "bg-blue-50 text-blue-600",
+    surface: "bg-blue-50/70 border-blue-100",
+    chip: "bg-blue-100 text-blue-700",
   },
   {
     icon: (
@@ -100,6 +102,8 @@ const features = [
     title: "Theo dõi tiến độ",
     short: "Lưu kết quả",
     color: "bg-emerald-50 text-emerald-600",
+    surface: "bg-emerald-50/70 border-emerald-100",
+    chip: "bg-emerald-100 text-emerald-700",
   },
   {
     icon: (
@@ -110,6 +114,8 @@ const features = [
     title: "Hoàn toàn miễn phí",
     short: "Không thu phí",
     color: "bg-orange-50 text-orange-600",
+    surface: "bg-orange-50/70 border-orange-100",
+    chip: "bg-orange-100 text-orange-700",
   },
 ];
 
@@ -215,13 +221,13 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-4 pb-16 pt-8">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="group flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-gray-200 hover:shadow-md sm:p-4">
+            <div key={f.title} className={`group flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-4 ${f.surface}`}>
               <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${f.color}`}>
                 {f.icon}
               </div>
               <div className="min-w-0">
                 <h3 className="truncate text-sm font-bold text-gray-800">{f.title}</h3>
-                <span className="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 transition-colors group-hover:bg-gray-200">
+                <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${f.chip}`}>
                   {f.short}
                 </span>
               </div>
