@@ -18,47 +18,49 @@ export default function GradeCard({ grade, subjects, color, emoji, totalTopics }
   return (
     <a
       href={`/lop/${grade}`}
-      className={`group relative flex flex-col rounded-2xl border ${color.border} ${color.bg} overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer ring-0 hover:ring-4 ${color.ring}`}
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border ${color.border} ${color.bg} shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg`}
     >
       {/* Accent top bar */}
-      <div className={`h-1.5 w-full bg-gradient-to-r ${color.accent}`} />
+      <div className={`h-1.5 w-full bg-gradient-to-r ${color.accent} opacity-90`} />
 
-      <div className="p-4 flex flex-col flex-1 gap-3">
+      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4">
         {/* Emoji + badge row */}
         <div className="flex items-center justify-between">
-          <span className={`text-xs font-bold ${color.badge} ${color.text} px-2 py-0.5 rounded-full`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${color.badge} ${color.text}`}>
+            <span className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${color.accent}`} />
             Lớp {grade}
           </span>
-          <span className="text-2xl sm:text-3xl leading-none">{emoji}</span>
+          <span className="text-2xl leading-none sm:text-3xl">{emoji}</span>
         </div>
 
         {/* Title */}
-        <div>
-          <h2 className="text-base sm:text-lg font-extrabold text-gray-800 leading-tight">Lớp {grade}</h2>
-          <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">{totalTopics} chủ đề · {subjects.length} môn</p>
-        </div>
+        <h2 className="text-base font-extrabold leading-tight text-slate-800 sm:text-lg">
+          Ôn tập lớp {grade}
+        </h2>
 
-        {/* Subjects — show max 3 on mobile */}
+        <p className="text-[11px] text-slate-500/90 sm:text-xs">{totalTopics} chủ đề</p>
+
+        {/* Subjects — keep concise to avoid text-heavy cards */}
         <ul className="flex flex-wrap gap-1">
-          {subjects.slice(0, 3).map((subject) => (
+          {subjects.slice(0, 2).map((subject) => (
             <li
               key={subject}
-              className={`text-[10px] sm:text-xs font-medium ${color.badge} ${color.text} px-2 py-0.5 rounded-lg leading-tight`}
+              className="max-w-[88px] truncate rounded-lg border border-white/60 bg-white/80 px-2 py-0.5 text-[10px] font-medium leading-tight text-slate-700 sm:max-w-none sm:text-xs"
             >
               {subject}
             </li>
           ))}
-          {subjects.length > 3 && (
-            <li className={`text-[10px] sm:text-xs font-medium ${color.badge} ${color.text} px-2 py-0.5 rounded-lg leading-tight`}>
-              +{subjects.length - 3}
+          {subjects.length > 2 && (
+            <li className="rounded-lg border border-white/60 bg-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight text-slate-500 sm:text-xs">
+              +{subjects.length - 2} môn
             </li>
           )}
         </ul>
 
         {/* CTA */}
-        <div className={`mt-auto flex items-center gap-1 text-xs font-semibold ${color.hover} transition-colors pt-1`}>
-          <span>Vào học</span>
-          <span className="group-hover:translate-x-1 transition-transform">→</span>
+        <div className={`mt-auto flex items-center gap-1 pt-1 text-xs font-semibold transition-colors ${color.hover}`}>
+          <span>Bắt đầu</span>
+          <span className="transition-transform group-hover:translate-x-1">→</span>
         </div>
       </div>
     </a>

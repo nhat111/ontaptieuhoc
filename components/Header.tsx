@@ -14,6 +14,12 @@ const NAV = [
   { label: "Tạo đề kiểm tra", href: "/import/exam" },
 ];
 
+function isActivePath(path: string, href: string) {
+  if (href === "/") return path === "/";
+  if (href.startsWith("/#")) return path === "/";
+  return path.startsWith(href);
+}
+
 export default function Header() {
   const path = usePathname();
   const router = useRouter();
@@ -44,10 +50,10 @@ export default function Header() {
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? "";
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5 rounded-xl px-1 py-0.5 transition-colors hover:bg-slate-50">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
             <rect width="36" height="36" rx="9" fill="#2563EB"/>
             <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fillOpacity="0.85"/>
@@ -65,17 +71,17 @@ export default function Header() {
         </Link>
 
         {/* Nav */}
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 p-1 text-sm font-medium">
           {NAV.map(({ label, href }) => {
-            const active = href === "/" ? path === "/" : path.startsWith(href.replace("/#", "/"));
+            const active = isActivePath(path, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`rounded-full px-3 py-1.5 transition-all ${
                   active
-                    ? "bg-blue-50 text-blue-600 font-semibold"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-white text-blue-700 font-semibold shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-600 hover:bg-white hover:text-blue-700"
                 }`}
               >
                 {label}
@@ -91,7 +97,7 @@ export default function Header() {
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Mở menu"
             aria-expanded={mobileOpen}
-            className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+            className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               {mobileOpen ? (
@@ -106,7 +112,7 @@ export default function Header() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-slate-50"
               >
                 <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
                   {initials}
@@ -122,29 +128,29 @@ export default function Header() {
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                    <div className="px-3 py-2 border-b border-gray-50">
-                      <p className="text-xs text-gray-400">Đăng nhập với</p>
-                      <p className="text-sm font-medium text-gray-700 truncate">{user.email}</p>
+                  <div className="absolute right-0 z-20 mt-1.5 w-52 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                    <div className="border-b border-slate-100 px-3 py-2">
+                      <p className="text-xs text-slate-400">Đăng nhập với</p>
+                      <p className="truncate text-sm font-medium text-slate-700">{user.email}</p>
                     </div>
                     <Link
                       href="/progress"
                       onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       Tiến độ học tập
                     </Link>
                     <Link
                       href="/import"
                       onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       Tạo bài học
                     </Link>
                     <Link
                       href="/import/exam"
                       onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       Tạo đề kiểm tra
                     </Link>
@@ -161,7 +167,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-200"
             >
               Đăng nhập
             </Link>
@@ -171,19 +177,19 @@ export default function Header() {
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white">
+        <div className="md:hidden border-t border-slate-100 bg-white">
           <nav className="max-w-6xl mx-auto px-4 py-2 flex flex-col">
             {NAV.map(({ label, href }) => {
-              const active = href === "/" ? path === "/" : path.startsWith(href.replace("/#", "/"));
+              const active = isActivePath(path, href);
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     active
-                      ? "bg-blue-50 text-blue-600 font-semibold"
-                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                      ? "bg-blue-50 text-blue-700 font-semibold"
+                      : "text-slate-700 hover:bg-slate-50 hover:text-blue-700"
                   }`}
                 >
                   {label}
