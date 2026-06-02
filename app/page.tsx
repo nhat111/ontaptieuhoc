@@ -88,7 +88,7 @@ const features = [
       </svg>
     ),
     title: "Bám sát SGK mới",
-    desc: "Nội dung được biên soạn theo chương trình giáo dục phổ thông 2018, sát với sách giáo khoa hiện hành.",
+    short: "Chuẩn chương trình",
     color: "bg-blue-50 text-blue-600",
   },
   {
@@ -98,7 +98,7 @@ const features = [
       </svg>
     ),
     title: "Theo dõi tiến độ",
-    desc: "Đăng nhập để lưu kết quả, xem lịch sử làm bài và theo dõi điểm số qua từng lần luyện tập.",
+    short: "Lưu kết quả",
     color: "bg-emerald-50 text-emerald-600",
   },
   {
@@ -108,14 +108,14 @@ const features = [
       </svg>
     ),
     title: "Hoàn toàn miễn phí",
-    desc: "Không đăng ký tốn kém, không quảng cáo làm phiền. Mọi học sinh đều có thể ôn tập thoải mái.",
+    short: "Không thu phí",
     color: "bg-orange-50 text-orange-600",
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 text-slate-800">
       <Header />
 
       {/* ── Hero ── */}
@@ -125,7 +125,7 @@ export default function HomePage() {
         <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-900/20 pointer-events-none" />
 
-        <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+        <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:py-24">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
@@ -133,13 +133,13 @@ export default function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-4">
+          <h1 className="mb-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
             Ôn tập thông minh<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">
               cho học sinh Tiểu học
             </span>
           </h1>
-          <p className="text-blue-100 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-blue-100 sm:text-lg">
             Bộ đề ôn tập bám sát chương trình SGK mới · Lớp 1 đến Lớp 5 · Hoàn toàn miễn phí
           </p>
 
@@ -147,7 +147,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="#grades"
-              className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-7 py-3.5 rounded-2xl transition-all shadow-lg hover:shadow-yellow-400/30 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-7 py-3.5 font-bold text-gray-900 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-yellow-400/30 sm:w-auto"
             >
               Chọn lớp học
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -156,7 +156,7 @@ export default function HomePage() {
             </a>
             <Link
               href="/de-thi"
-              className="w-full sm:w-auto bg-white/15 hover:bg-white/25 border border-white/30 text-white font-semibold px-7 py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white/15 px-7 py-3.5 font-semibold text-white transition-all hover:bg-white/25 sm:w-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
@@ -166,14 +166,19 @@ export default function HomePage() {
           </div>
 
           {/* Stats inline */}
-          <div className="mt-12 grid grid-cols-3 gap-2 sm:gap-6 max-w-md sm:max-w-lg mx-auto">
+          <div className="mx-auto mt-12 grid max-w-md grid-cols-3 gap-2 sm:max-w-lg sm:gap-6">
             {[
               { value: "500+", label: "Bộ đề" },
               { value: "5 lớp", label: "Lớp 1 → 5" },
               { value: "0đ", label: "Miễn phí" },
             ].map((s) => (
-              <div key={s.label} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl py-3 px-2">
-                <div className="text-xl sm:text-2xl font-extrabold text-white">{s.value}</div>
+              <div
+                key={s.label}
+                className="group rounded-2xl border border-white/15 bg-white/10 px-2 py-3 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-lg hover:shadow-indigo-900/20"
+              >
+                <div className="text-xl sm:text-2xl font-extrabold text-white transition-transform duration-200 group-hover:scale-105">
+                  {s.value}
+                </div>
                 <div className="text-xs text-blue-200 mt-0.5 font-medium">{s.label}</div>
               </div>
             ))}
@@ -189,8 +194,11 @@ export default function HomePage() {
       </section>
 
       {/* ── Grade Cards ── */}
-      <section id="grades" className="max-w-6xl mx-auto px-4 pt-14 pb-10">
-        <div className="text-center mb-10">
+      <section id="grades" className="mx-auto max-w-6xl px-4 pb-10 pt-14">
+        <div className="mb-10 text-center">
+          <span className="mb-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+            Bắt đầu từ lớp hiện tại của con
+          </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-2">Chọn lớp của bạn</h2>
           <p className="text-gray-500 text-sm sm:text-base">Chọn lớp để bắt đầu ôn tập ngay hôm nay</p>
         </div>
@@ -203,17 +211,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section className="max-w-6xl mx-auto px-4 py-10 pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* ── Features (ultra-compact) ── */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-8">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex gap-4 items-start">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${f.color}`}>
+            <div key={f.title} className="group flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-gray-200 hover:shadow-md sm:p-4">
+              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${f.color}`}>
                 {f.icon}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-sm mb-1">{f.title}</h3>
-                <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-bold text-gray-800">{f.title}</h3>
+                <span className="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 transition-colors group-hover:bg-gray-200">
+                  {f.short}
+                </span>
               </div>
             </div>
           ))}
@@ -221,22 +231,86 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-white border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="36" height="36" rx="9" fill="#2563EB"/>
-              <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fillOpacity="0.85"/>
-              <path d="M28 25V12C28 11.4 27.6 11 27 11H19V26H27C27.6 26 28 25.6 28 25Z" fill="white"/>
-              <rect x="17" y="11" width="2" height="15" rx="0.5" fill="#BFDBFE"/>
-              <path d="M21 19L23.5 22L27 16" stroke="#F97316" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <div className="leading-none">
-              <p className="text-sm font-extrabold text-blue-700">Ôn Tập Tiểu Học</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Miễn phí · Dành cho học sinh Việt Nam</p>
+      <footer className="relative overflow-hidden border-t border-slate-200 bg-[#f6f6f7]">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-200/40 to-transparent" />
+        <div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="36" height="36" rx="9" fill="#2563EB"/>
+                <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fillOpacity="0.85"/>
+                <path d="M28 25V12C28 11.4 27.6 11 27 11H19V26H27C27.6 26 28 25.6 28 25Z" fill="white"/>
+                <rect x="17" y="11" width="2" height="15" rx="0.5" fill="#BFDBFE"/>
+                <path d="M21 19L23.5 22L27 16" stroke="#F97316" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div className="leading-none">
+                <p className="text-lg font-extrabold text-blue-700">Ôn Tập Tiểu Học</p>
+                <p className="mt-0.5 text-xs text-slate-500">Luyện tập miễn phí cho học sinh Việt Nam</p>
+              </div>
             </div>
+            <p className="text-sm leading-relaxed text-slate-600">
+              Học mỗi ngày 15 phút, bám sát chương trình từ lớp 1 đến lớp 5.
+            </p>
           </div>
-          <p className="text-xs text-gray-400">© 2026 Ôn Tập Tiểu Học. All rights reserved.</p>
+
+          <div>
+            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
+              Về chúng tôi
+            </h3>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
+              <li><Link href="/" className="hover:text-blue-700">Giới thiệu</Link></li>
+              <li><Link href="/de-thi" className="hover:text-blue-700">Kho đề miễn phí</Link></li>
+              <li><Link href="/login" className="hover:text-blue-700">Đăng nhập</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
+              Luyện tập online
+            </h3>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
+              <li><Link href="/lop/1" className="hover:text-blue-700">Lớp 1–2</Link></li>
+              <li><Link href="/lop/3" className="hover:text-blue-700">Lớp 3–4</Link></li>
+              <li><Link href="/lop/5" className="hover:text-blue-700">Lớp 5</Link></li>
+              <li><Link href="/import/exam" className="hover:text-blue-700">Tạo đề kiểm tra</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
+              Kết nối
+            </h3>
+            <div className="mt-4 flex items-center gap-2.5">
+              <a
+                href="#"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
+                aria-label="YouTube"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+                  <path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.13C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.57A3.02 3.02 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.13c1.88.57 9.38.57 9.38.57s7.5 0 9.38-.57a3.02 3.02 0 0 0 2.12-2.13A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.6 15.57V8.43L15.86 12 9.6 15.57Z" />
+                </svg>
+              </a>
+              <a
+                href="#"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
+                aria-label="Facebook"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+                  <path d="M13.5 21v-8.2h2.75L16.7 9.9h-3.2V8.2c0-.84.24-1.42 1.46-1.42h1.86V3.9A24.7 24.7 0 0 0 14.1 3c-2.7 0-4.55 1.64-4.55 4.66v2.24H6.8v2.9h2.75V21h3.95Z" />
+                </svg>
+              </a>
+              <a
+                href="#"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
+                aria-label="TikTok"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+                  <path d="M17.9 8.46a6.86 6.86 0 0 1-4.02-1.29v5.88a5.12 5.12 0 1 1-4.43-5.07v2.58a2.57 2.57 0 1 0 1.86 2.49V2.5h2.57c.2 1.91 1.73 3.44 3.64 3.64v2.32c.13 0 .25 0 .38-.02Z" />
+                </svg>
+              </a>
+            </div>
+            <p className="mt-6 text-xs text-slate-500">© 2026 Ôn Tập Tiểu Học</p>
+          </div>
         </div>
       </footer>
     </div>
