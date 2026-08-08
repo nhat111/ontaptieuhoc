@@ -1,11 +1,18 @@
 "use client";
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Question, LessonMeta, formatTime, scoreAnswer } from "@/lib/quizData";
+import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
+import {
+  getShuffleOptions,
+  getShuffleQuestions,
+  setShuffleOptions,
+  setShuffleQuestions,
+  subscribeQuizPrefs,
+} from "@/lib/quizPrefs";
 import {
   allQuestionsSegments,
   cancelSpeech,
@@ -29,7 +36,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   const lessonId = Number(searchParams.get("lessonId") ?? "1");
 
-  const questions = initialQuestions;
+  // Câu hỏi là state vì có thể bị trộn khi bắt đầu làm bài.
+  const [questions, setQuestions] = useState(initialQuestions);
   const lesson = initialLesson;
   const durationMinutes = lesson.durationMinutes ?? 15;
   const totalSeconds = durationMinutes * 60;
@@ -47,6 +55,19 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       .then((d) => setIsPremium(!!d.isPremium))
       .catch(() => {});
   }, []);
+
+  // ── Trộn thứ tự ──────────────────────────────────────────────────────────
+  const shuffleQ = useSyncExternalStore(subscribeQuizPrefs, getShuffleQuestions, () => false);
+  const shuffleO = useSyncExternalStore(subscribeQuizPrefs, getShuffleOptions, () => false);
+
+  // Trộn đúng một lần lúc bấm Bắt đầu, không trộn lại giữa chừng — nếu không
+  // câu hỏi sẽ nhảy lung tung dưới tay bé đang làm.
+  function start() {
+    if (shuffleQ || shuffleO) {
+      setQuestions(shuffleQuiz(initialQuestions, { questions: shuffleQ, options: shuffleO }));
+    }
+    setStarted(true);
+  }
 
   // ── Nghe cả bài ──────────────────────────────────────────────────────────
   const [readingAll, setReadingAll] = useState(false);
@@ -243,8 +264,86 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </div>
             ) : null}
 
+            {questions.length > 0 && (
+              <div className="mb-6 space-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
+                {/* Nghe cả bài ngay ở màn hình đầu — nghe trước khi đồng hồ chạy */}
+                {speechOk && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={readAll}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
+                        readingAll
+                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {readingAll ? (
+                        <>
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <rect x="5" y="5" width="10" height="10" rx="1.5" />
+                          </svg>
+                          Dừng đọc
+                          {readingIdx !== null && (
+                            <span className="font-normal opacity-90">· câu {readingIdx + 1}</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
+                            <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
+                          </svg>
+                          Nghe cả bài ({questions.length} câu)
+                        </>
+                      )}
+                    </button>
+                    <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-0.5">
+                      <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
+                      {RATE_OPTIONS.map((o) => (
+                        <button
+                          key={o.value}
+                          onClick={() => changeRate(o.value)}
+                          className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
+                            rate === o.value ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Trộn thứ tự — áp dụng khi bấm Bắt đầu */}
+                <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={shuffleQ}
+                      onChange={(e) => setShuffleQuestions(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                    />
+                    Trộn thứ tự câu hỏi
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={shuffleO}
+                      onChange={(e) => setShuffleOptions(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                    />
+                    Trộn thứ tự đáp án
+                  </label>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  Trộn giúp bé không học vẹt theo vị trí. Áp dụng khi bấm Bắt đầu và giữ nguyên
+                  suốt bài; lựa chọn được nhớ cho lần sau.
+                </p>
+              </div>
+            )}
+
             <button
-              onClick={() => setStarted(true)}
+              onClick={start}
               disabled={questions.length === 0}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base px-10 py-3.5 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 mx-auto"
             >

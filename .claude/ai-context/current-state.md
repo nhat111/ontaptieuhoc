@@ -9,7 +9,8 @@ _Last synced with codebase: May 2026_
 - `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10, email mask `abc***`)
 - `/de-thi`: list động `lessons` với `type='exam'`
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
-- **Nghe**: nút 🔊 từng câu, và **"Nghe cả bài"** đọc liền mạch cả đề (xướng "Câu N", tự cuộn tới câu đang đọc). Tốc độ Chậm/Vừa/Nhanh lưu ở localStorage, mặc định 0.7. Web Speech API của trình duyệt — miễn phí, không cần key
+- **Trộn thứ tự**: 2 tuỳ chọn ở màn hình đầu (trộn câu hỏi / trộn đáp án), lưu localStorage (`lib/quizPrefs.ts`), trộn 1 lần lúc bấm Bắt đầu
+- **Nghe**: nút 🔊 từng câu, và **"Nghe cả bài"** (có ở cả màn hình đầu lẫn lúc đang làm) đọc liền mạch cả đề (xướng "Câu N", tự cuộn tới câu đang đọc). Tốc độ Chậm/Vừa/Nhanh lưu ở localStorage, mặc định 0.7. Web Speech API của trình duyệt — miễn phí, không cần key
 - `/result`: breakdown điểm, làm lại, quay lại `/lop/[grade]` (breadcrumb lấy `grade`/`subjectName` từ payload `sessionStorage`)
 - `POST /api/quiz-result`: ghi `quiz_results` (+ `user_id` nếu đăng nhập)
 
