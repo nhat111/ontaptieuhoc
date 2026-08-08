@@ -162,6 +162,47 @@ export async function ensureSubjectId(grade: number, name: string): Promise<numb
   }
 }
 
+/**
+ * Chương mặc định của một môn, tạo nếu chưa có.
+ *
+ * `lessons.chapter_id` là NOT NULL, và `/lop/[grade]` nhóm bài theo chương nên
+ * bài không thuộc chương nào sẽ không bao giờ hiện lên web. Vì vậy khi người
+ * dùng không chọn chương, ta gom vào một chương mặc định thay vì nới ràng buộc
+ * — bài vẫn hiển thị bình thường và có thể đổi tên chương sau.
+ */
+export async function ensureDefaultChapterId(
+  grade: number,
+  subjectName: string,
+  lessonType: 'lesson' | 'exam' = 'lesson'
+): Promise<number | null> {
+  const title = lessonType === 'exam' ? 'Đề kiểm tra' : 'Chưa phân chương'
+
+  try {
+    const subjectId = await ensureSubjectId(grade, subjectName)
+    if (!subjectId) return null
+
+    const sb = getSupabaseServer()
+    const { data: existing } = await sb
+      .from('chapters')
+      .select('id')
+      .eq('subject_id', subjectId)
+      .eq('title', title)
+      .limit(1)
+      .maybeSingle()
+    if (existing) return existing.id
+
+    const { data: created, error } = await sb
+      .from('chapters')
+      .insert({ title, subject_id: subjectId, order_index: 999 })
+      .select('id')
+      .single()
+    if (error) return null
+    return created?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 // ---- Chapters (server-side, returns rich component types for server pages) ----
 
 export async function getChaptersWithLessons(

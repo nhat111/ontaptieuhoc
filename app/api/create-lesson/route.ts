@@ -1,4 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { ensureDefaultChapterId } from "@/lib/db";
+import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 
 type QImagePayload = { url: string; position: "before" | "after" };
@@ -28,10 +30,30 @@ function buildExplanation(q: QPayload): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const { chapterId, title, indexLabel, questions, type, durationMinutes } = await req.json();
+  const { chapterId, grade, subject, title, indexLabel, questions, type, durationMinutes } =
+    await req.json();
 
-  if (!chapterId || !title?.trim() || !questions?.length) {
-    return NextResponse.json({ error: "Thiếu thông tin bài học." }, { status: 400 });
+  if (!title?.trim() || !questions?.length) {
+    return NextResponse.json({ error: "Thiếu tên bài và nội dung câu hỏi." }, { status: 400 });
+  }
+
+  const lessonType = type === "exam" ? "exam" : "lesson";
+
+  // Chương là tuỳ chọn: không chọn thì gom vào chương mặc định của môn, vì
+  // `lessons.chapter_id` là NOT NULL và trang lớp nhóm bài theo chương.
+  let resolvedChapterId: number | null = Number(chapterId) || null;
+  if (!resolvedChapterId) {
+    const g = Number(grade);
+    if (!g || typeof subject !== "string" || !getSubjects(g).includes(subject)) {
+      return NextResponse.json(
+        { error: "Chưa xác định được môn học." },
+        { status: 400 }
+      );
+    }
+    resolvedChapterId = await ensureDefaultChapterId(g, subject, lessonType);
+    if (!resolvedChapterId) {
+      return NextResponse.json({ error: "Không tạo được chương mặc định." }, { status: 500 });
+    }
   }
 
   const sb = getSupabaseServer();
@@ -44,10 +66,10 @@ export async function POST(req: NextRequest) {
     .insert({
       title: title.trim(),
       index_label: indexLabel?.trim() || "01",
-      chapter_id: chapterId,
+      chapter_id: resolvedChapterId,
       status: "active",
       order_index: 99,
-      type: type === "exam" ? "exam" : "lesson",
+      type: lessonType,
       duration_minutes: dur,
     })
     .select("id")

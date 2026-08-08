@@ -382,14 +382,20 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     setError(null);
     setSaveResult(null);
 
-    if (!chapterId) { setError("Chưa chọn chương."); return; }
+    // Chương là tuỳ chọn — không chọn thì máy chủ gom vào chương mặc định
+    // của môn (xem ensureDefaultChapterId). Bắt buộc chỉ còn môn + tên + nội dung.
+    if (!subject) { setError("Chưa chọn môn học."); return; }
     if (!lessonTitle.trim()) { setError("Chưa nhập tên bài học."); return; }
     const qErr = validateQuestions(questions);
     if (qErr) { setError(qErr); return; }
 
     setSaving(true);
     const payload = {
+      // chapterId có thể null; khi đó máy chủ dùng grade+subject để tìm/tạo
+      // chương mặc định.
       chapterId,
+      grade,
+      subject,
       title: lessonTitle,
       indexLabel,
       durationMinutes,
@@ -431,7 +437,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     } finally {
       setSaving(false);
     }
-  }, [chapterId, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
+  }, [chapterId, grade, subject, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
 
   // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
   useEffect(() => {
@@ -583,20 +589,17 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
               {/* Chapter */}
               <div className="col-span-2">
                 <label className="text-xs text-gray-500 block mb-1">
-                  Chương {loadingChapters && <span className="text-blue-400">⟳</span>}
+                  Chương <span className="text-gray-400">(tuỳ chọn)</span>{" "}
+                  {loadingChapters && <span className="text-blue-400">⟳</span>}
                 </label>
                 <div className="flex gap-1.5">
                   <select
                     value={chapterId ?? ""}
-                    onChange={(e) => setChapterId(Number(e.target.value))}
-                    disabled={loadingChapters || chapters.length === 0}
+                    onChange={(e) => setChapterId(e.target.value ? Number(e.target.value) : null)}
                     className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {chapters.length === 0 && !loadingChapters && (
-                      <option value="">
-                        {subject ? "— Chưa có chương —" : "— Chọn môn học trước —"}
-                      </option>
-                    )}
+                    {/* Bỏ trống được — máy chủ sẽ gom vào chương mặc định của môn. */}
+                    <option value="">— Không phân chương —</option>
                     {chapters.map((c) => (
                       <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
@@ -784,7 +787,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
             <button
               onClick={() => handleSave(false)}
-              disabled={saving || !chapterId || !lessonTitle.trim()}
+              disabled={saving || !subject || !lessonTitle.trim()}
               title="Ctrl+S"
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
@@ -811,7 +814,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             {editMode && (
               <button
                 onClick={() => handleSave(true)}
-                disabled={saving || !chapterId || !lessonTitle.trim()}
+                disabled={saving || !subject || !lessonTitle.trim()}
                 title="Lưu rồi chuyển sang bài kế tiếp trong cùng chương"
                 className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
               >

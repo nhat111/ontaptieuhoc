@@ -1,4 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { ensureDefaultChapterId } from "@/lib/db";
+import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 
 type QImagePayload = { url: string; position: "before" | "after" };
@@ -28,9 +30,25 @@ function buildExplanation(q: QPayload): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const { lessonId, chapterId, title, indexLabel, questions, type, durationMinutes } = await req.json();
+  const { lessonId, chapterId, grade, subject, title, indexLabel, questions, type, durationMinutes } =
+    await req.json();
 
-  if (!lessonId || !chapterId || !title?.trim() || !questions?.length) {
+  const lessonType = type === "exam" ? "exam" : "lesson";
+
+  // Chương tuỳ chọn, giống create-lesson: bỏ trống thì gom vào chương mặc định
+  // của môn (lessons.chapter_id là NOT NULL).
+  let resolvedChapterId: number | null = Number(chapterId) || null;
+  if (lessonId && !resolvedChapterId) {
+    const g = Number(grade);
+    if (g && typeof subject === "string" && getSubjects(g).includes(subject)) {
+      resolvedChapterId = await ensureDefaultChapterId(g, subject, lessonType);
+    }
+    if (!resolvedChapterId) {
+      return NextResponse.json({ error: "Chưa xác định được môn học." }, { status: 400 });
+    }
+  }
+
+  if (!lessonId || !resolvedChapterId || !title?.trim() || !questions?.length) {
     return NextResponse.json({ error: "Thiếu thông tin bài học." }, { status: 400 });
   }
 
@@ -44,7 +62,7 @@ export async function POST(req: NextRequest) {
     .update({
       title: title.trim(),
       index_label: indexLabel?.trim() || "01",
-      chapter_id: chapterId,
+      chapter_id: resolvedChapterId,
       type: type === "exam" ? "exam" : "lesson",
       duration_minutes: dur,
     })
@@ -81,11 +99,11 @@ export async function POST(req: NextRequest) {
   const { data: nextRows } = await sb
     .from("lessons")
     .select("id")
-    .eq("chapter_id", chapterId)
+    .eq("chapter_id", resolvedChapterId)
     .gt("id", lessonId)
     .order("id", { ascending: true })
     .limit(1);
   const nextLessonId = nextRows?.[0]?.id ?? null;
 
-  return NextResponse.json({ lessonId, chapterId, nextLessonId });
+  return NextResponse.json({ lessonId, chapterId: resolvedChapterId, nextLessonId });
 }

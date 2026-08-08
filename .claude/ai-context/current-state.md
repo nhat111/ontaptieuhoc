@@ -21,6 +21,7 @@ _Last synced with codebase: May 2026_
 - `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
 - `/import/chapter/[id]` — dashboard tiến độ bài trong chương
 - API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, auth/logout — **không còn `/api/subjects`**
+- Tạo bài/đề: **chương là tuỳ chọn** — bắt buộc chỉ còn môn + tên + câu hỏi. Không chọn chương thì máy chủ gom vào chương mặc định của môn (`ensureDefaultChapterId`), vì `lessons.chapter_id` NOT NULL và trang lớp nhóm bài theo chương
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
 - **Quét ảnh đề**: nút trong `PasteImportModal` → `POST /api/ocr-exam` (Claude vision `claude-opus-5`, output theo `json_schema`). Đọc được cả đáp án khoanh bút; không thấy dấu khoanh thì trả `correctIndex: -1` và báo người dùng tự tick. Cần `ANTHROPIC_API_KEY` — chưa cấu hình thì `GET /api/ocr-exam` trả `{available:false}` và nút bị **ẩn hẳn**, không ai bấm vào lỗi.

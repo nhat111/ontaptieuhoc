@@ -107,7 +107,7 @@ All use the service-role client unless noted:
 
 - `GET|POST /api/chapters?grade=N&subject=<tên môn>` — used by the import form's chapter dropdown. Chapters are addressed by (grade, subject name), never by a `subjects.id`; POST calls `ensureSubjectId` so a subject newly added to `lib/subjects.ts` gets its row created on first use. (There is no `/api/subjects` — the catalogue is static, see **Subjects** below.)
 - `GET /api/lesson/[id]` — returns lesson + questions as `QDraft` (`type`, variable `options`, `correctIdx` / `correctIdxs` / `answer`, optional `imageUrl` from `explanation` JSON).
-- `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts).
+- `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts). **`chapterId` is optional**: omit it and send `grade` + `subject` instead, and the route resolves a default chapter via `ensureDefaultChapterId(grade, subject, type)` — titled `Đề kiểm tra` for exams, `Chưa phân chương` for lessons. `lessons.chapter_id` is `NOT NULL` and `/lop/[grade]` groups lessons by chapter, so a chapter-less lesson would never render — hence a default chapter rather than a nullable column. Required fields are only subject, title and questions.
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
 - `GET /api/fetch-exam?url=...` — scrapes a remote page's `<p>` tags into plain text for the paste-import flow.
 - `POST /api/upload-image` — accepts a multipart `file` field, uploads to the `question-images` bucket via service-role, returns `{ url }`. Used by `QuestionCard` (10 MB cap, jpg/png/webp/gif/svg only).
