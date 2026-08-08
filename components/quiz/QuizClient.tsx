@@ -52,7 +52,14 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
     sessionStorage.setItem(
       "quizResult",
-      JSON.stringify({ questions, answers: finalAnswers, lessonId, lessonTitle: lesson.title })
+      JSON.stringify({
+        questions,
+        answers: finalAnswers,
+        lessonId,
+        lessonTitle: lesson.title,
+        grade: lesson.grade ?? null,
+        subjectName: lesson.subjectName ?? null,
+      })
     );
     router.push("/result");
   };

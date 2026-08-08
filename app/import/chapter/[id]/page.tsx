@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { getChapterContext, getLessonsInChapter } from "@/lib/db";
+
+// Editor dashboard — nothing to index.
+export const metadata: Metadata = {
+  title: "Tiến độ chương",
+  robots: { index: false, follow: false },
+};
 
 export default async function ChapterDashboardPage({
   params,

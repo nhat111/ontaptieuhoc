@@ -9,7 +9,7 @@ _Last synced with codebase: May 2026_
 - `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10, email mask `abc***`)
 - `/de-thi`: list động `lessons` với `type='exam'`
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
-- `/result`: breakdown điểm, làm lại, về trang chủ
+- `/result`: breakdown điểm, làm lại, quay lại `/lop/[grade]` (breadcrumb lấy `grade`/`subjectName` từ payload `sessionStorage`)
 - `POST /api/quiz-result`: ghi `quiz_results` (+ `user_id` nếu đăng nhập)
 
 ### Auth & progress
@@ -23,6 +23,13 @@ _Last synced with codebase: May 2026_
 - API: subjects, chapters (GET/POST), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, auth/logout
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
+
+### SEO
+- `app/sitemap.ts` (`/sitemap.xml`, dynamic) + `app/robots.ts` (`/robots.txt`)
+- `metadataBase` + title template `%s · Ôn Tập Tiểu Học` + OG/Twitter mặc định trong `app/layout.tsx`
+- `generateMetadata` cho `/lop/[grade]` (theo môn + `view=exam`, canonical bỏ môn mặc định) và `/quiz` (bài 0 câu → `noindex`)
+- Trang editor/tài khoản (`/import*`, `/progress`, `/nang-cap`) → `robots: { index: false }`
+- Base URL qua `lib/siteUrl.ts` (`NEXT_PUBLIC_SITE_URL` → `VERCEL_*` → localhost)
 
 ### Data & ops
 - Supabase: subjects, chapters, lessons, questions, quiz_results, Storage `question-images`

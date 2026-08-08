@@ -34,6 +34,10 @@ export type QuizResult = {
   answers: (string | null)[];
   lessonId: number;
   lessonTitle?: string;
+  // Carried over from LessonMeta so /result can build a correct breadcrumb —
+  // it has no server props of its own, only this sessionStorage payload.
+  grade?: number | null;
+  subjectName?: string | null;
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;

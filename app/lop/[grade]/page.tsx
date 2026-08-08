@@ -1,8 +1,56 @@
+import type { Metadata } from "next";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
 import Sidebar from "@/components/Sidebar";
 import { getSubjectsByGrade, getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ grade: string }>;
+  searchParams: Promise<{ subject?: string; view?: string }>;
+}): Promise<Metadata> {
+  const { grade } = await params;
+  const { subject: subjectParam, view } = await searchParams;
+  const isExam = view === "exam";
+
+  const subjects = await getSubjectsByGrade(parseInt(grade));
+  const activeSubject = subjects.find((s) => s.name === subjectParam) ?? subjects[0] ?? null;
+  const subjectName = activeSubject?.name ?? "";
+
+  // A grade with no subjects yet leaves subjectName empty, which would
+  // otherwise leave a double space in the middle of the sentence.
+  const squish = (s: string) => s.replace(/\s+/g, " ").trim();
+
+  const kind = isExam ? "Đề kiểm tra" : "Bài tập";
+  const title = squish(`${kind} ${subjectName} lớp ${grade}`);
+  const description = squish(
+    isExam
+      ? `Tổng hợp đề kiểm tra ${subjectName} lớp ${grade} theo chương, có đáp án. Làm bài trực tuyến miễn phí và chấm điểm ngay.`
+      : `Bài tập ${subjectName} lớp ${grade} bám sát sách giáo khoa, chia theo chương và theo bài. Luyện tập trực tuyến miễn phí, chấm điểm ngay.`
+  );
+
+  // Canonical drops the default subject so /lop/3 and /lop/3?subject=<first>
+  // are not indexed as two separate pages.
+  const isDefaultSubject = !subjectParam || activeSubject?.name !== subjectParam;
+  const query = [
+    !isDefaultSubject ? `subject=${encodeURIComponent(subjectParam!)}` : null,
+    isExam ? "view=exam" : null,
+  ]
+    .filter(Boolean)
+    .join("&");
+  const canonical = `/lop/${grade}${query ? `?${query}` : ""}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical },
+    twitter: { title, description },
+  };
+}
 
 export default async function GradePage({
   params,

@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getSupabaseServer } from './supabase/server'
 import type { Question as QuizQuestion, LessonMeta, QType } from './quizData'
 
@@ -198,7 +199,11 @@ export async function getChaptersWithLessons(
 
 // ---- Server-side quiz functions (for server components) ----
 
-export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion[]> {
+// `cache` de-dupes these two per request: /quiz calls each of them twice, once
+// from generateMetadata and once from the page body.
+export const getQuestionsFromDB = cache(async function getQuestionsFromDB(
+  lessonId: number
+): Promise<QuizQuestion[]> {
   try {
     const { data } = await getSupabaseServer()
       .from('questions')
@@ -240,9 +245,11 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
   } catch {
     return []
   }
-}
+})
 
-export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta> {
+export const getLessonMetaFromDB = cache(async function getLessonMetaFromDB(
+  lessonId: number
+): Promise<LessonMeta> {
   try {
     const sb = getSupabaseServer()
     const { data: lesson } = await sb
@@ -278,7 +285,7 @@ export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta>
     }
   } catch {}
   return { id: lessonId, title: `Bài ${lessonId}` }
-}
+})
 
 // ---- All exams (for /de-thi) ----
 
@@ -331,6 +338,40 @@ export async function getAllExams(): Promise<ExamListItem[]> {
         subjectName: (subject as any)?.name ?? '',
       }
     })
+  } catch {
+    return []
+  }
+}
+
+// ---- Sitemap ----
+
+/** Every subject across all grades, for the `/lop/[grade]?subject=` sitemap entries. */
+export async function getAllSubjects(): Promise<SubjectRow[]> {
+  try {
+    const { data } = await getSupabaseServer()
+      .from('subjects')
+      .select('*')
+      .order('grade')
+      .order('order_index')
+    return data ?? []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Ids of every lesson that actually has questions — a `/quiz?lessonId=` page
+ * with no questions is a dead end, so it is kept out of the sitemap.
+ */
+export async function getIndexableLessonIds(): Promise<number[]> {
+  try {
+    const { data } = await getSupabaseServer()
+      .from('lessons')
+      .select('id, questions(count)')
+      .order('id')
+    return (data ?? [])
+      .filter((l: any) => (l.questions?.[0]?.count ?? 0) > 0)
+      .map((l: any) => l.id as number)
   } catch {
     return []
   }

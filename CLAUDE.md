@@ -28,6 +28,7 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — anon/publishable, used by browser + session clients.
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
 - `ANTHROPIC_API_KEY` — only needed if/when AI-powered exam import is added (mentioned in example but no `/import/ai` route currently exists).
+- `NEXT_PUBLIC_SITE_URL` — absolute origin (no trailing slash). Drives `app/sitemap.ts`, `app/robots.ts` and `metadataBase` (canonical + Open Graph URLs). Optional in dev; **set it in production** or canonical tags point at the Vercel preview domain. `lib/siteUrl.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
 
 DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
 
@@ -72,11 +73,18 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 - `/de-thi` — server-rendered list of all `type='exam'` lessons grouped by grade.
 - `/lop/[grade]?subject=...&view=lesson|exam` — server-rendered subject tabs + chapters + leaderboard sidebar.
 - `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration). Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
-- `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly.
+- `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly. The payload carries `grade` / `subjectName` (copied from `LessonMeta`) purely so the breadcrumb and the "Quay lại danh sách" button can point at the right `/lop/[grade]` — the page has no server props to look them up from. Payloads stashed before those fields existed just render fewer crumbs.
 - `/progress` — authenticated user's quiz history.
 - `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. **`proxy.ts` only refreshes auth cookies on `/import/*` — guests can create/edit; it is not an auth gate.**
 - `/import/chapter/[id]` — server dashboard: lesson fill progress in a chapter (`getChapterContext`, `getLessonsInChapter`); linked from `ImportClient`.
 - `/login`, `/reset-password`, `/auth/callback` — Supabase email-password auth + magic-link callback that exchanges `code` for a session.
+- `/sitemap.xml`, `/robots.txt` — `app/sitemap.ts` (dynamic, `force-dynamic`: home, `/de-thi`, `/lop/1..5` in both views, one URL per subject tab, and `/quiz?lessonId=` for every lesson that has ≥1 question) and `app/robots.ts` (disallows `/api/`, `/import`, `/result`, `/progress`, auth and `/nang-cap`).
+
+### SEO
+
+`app/layout.tsx` sets `metadataBase`, a `%s · Ôn Tập Tiểu Học` title template and the default Open Graph/Twitter block; every other page only overrides what differs. `generateMetadata` exists on `/lop/[grade]` (title/description vary by subject + `view=exam`; canonical drops the default subject so `/lop/3` and `/lop/3?subject=<first>` aren't indexed twice) and on `/quiz` (a lesson with 0 questions gets `robots: noindex`). Editor and per-account pages (`/import*`, `/progress`, `/nang-cap`) export `robots: { index: false }`; the client-component pages (`/result`, `/login`, `/reset-password`, `/import/edit/[id]`) can't export metadata, so `robots.txt` is what covers them.
+
+`getQuestionsFromDB` and `getLessonMetaFromDB` are wrapped in React `cache()` because `/quiz` calls each twice per request — once in `generateMetadata`, once in the page body.
 
 Browse and quiz work **without login**; auth is optional (progress + `quiz_results.user_id`).
 
