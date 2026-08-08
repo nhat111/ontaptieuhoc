@@ -1,12 +1,12 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
+import { getSubjects } from "@/lib/subjects";
 
 const grades = [
   {
     grade: 1,
     emoji: "🌱",
-    subjects: ["Tiếng Việt", "Toán", "Tự nhiên XH"],
     totalTopics: 24,
     color: {
       bg: "bg-rose-50",
@@ -21,7 +21,6 @@ const grades = [
   {
     grade: 2,
     emoji: "🌿",
-    subjects: ["Tiếng Việt", "Toán", "Tự nhiên XH", "Đạo đức"],
     totalTopics: 30,
     color: {
       bg: "bg-orange-50",
@@ -36,7 +35,6 @@ const grades = [
   {
     grade: 3,
     emoji: "🌳",
-    subjects: ["Tiếng Việt", "Toán", "Khoa học", "Lịch sử", "Tiếng Anh"],
     totalTopics: 38,
     color: {
       bg: "bg-emerald-50",
@@ -51,7 +49,6 @@ const grades = [
   {
     grade: 4,
     emoji: "🌟",
-    subjects: ["Tiếng Việt", "Toán", "Khoa học", "Địa lý", "Tiếng Anh"],
     totalTopics: 42,
     color: {
       bg: "bg-blue-50",
@@ -66,7 +63,6 @@ const grades = [
   {
     grade: 5,
     emoji: "🏆",
-    subjects: ["Tiếng Việt", "Toán", "Khoa học", "Lịch sử & ĐL", "Tiếng Anh"],
     totalTopics: 48,
     color: {
       bg: "bg-violet-50",
@@ -212,7 +208,7 @@ export default function HomePage() {
         {/* 2 cols mobile · 3 cols tablet · 5 cols desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {grades.map((g) => (
-            <GradeCard key={g.grade} {...g} />
+            <GradeCard key={g.grade} {...g} subjects={[...getSubjects(g.grade)]} />
           ))}
         </div>
       </section>

@@ -55,6 +55,19 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 - **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It only refreshes Supabase auth cookies on `/import/*` navigations (`supabase.auth.getUser()` triggers token rotation); there is no auth gate — `/import` and `/import/exam` are intentionally open to guests so anyone can create lessons/exams.
 - `searchParams` and `params` in server components are `Promise<...>` — always `await` them (see `app/quiz/page.tsx`, `app/lop/[grade]/page.tsx`).
 
+### Subjects — static catalogue, not a queried table
+
+**`lib/subjects.ts` is the single source of truth for which subjects exist.** Subjects are fixed data, so they are declared in code; nothing reads the `subjects` table to build a list. Adding/renaming a subject means editing that file only.
+
+The `subjects` table still exists because `chapters.subject_id` is a FK to it, but it is addressed by the **(grade, name)** pair, never by a hard-coded id — ids are `SERIAL` and differ between databases (the seed comment says "subject id = 1" while the sample chapter insert uses `61`).
+
+- **Reads** filter through an embedded join: `.select('…, subjects!inner(grade, name)').eq('subjects.grade', g).eq('subjects.name', n)`. The `!inner` is required or the filter won't restrict rows.
+- **Writes** call `ensureSubjectId(grade, name)` in `lib/db.ts`, which selects-or-inserts, so a subject added to `lib/subjects.ts` works without a manual SQL insert.
+- A subject present in the DB but **missing from `lib/subjects.ts` is invisible** on the site — its chapters and lessons never render. `node --env-file=.env.local scripts/check-subjects.mjs` diffs code against DB and reports both directions.
+- Renaming a subject in code without renaming it in the DB empties that tab. Run `UPDATE subjects SET name = '<new>' WHERE grade = <g> AND name = '<old>';` alongside.
+
+`app/page.tsx` (grade cards) and `/lop/[grade]` (tabs) both render from this catalogue, so they can no longer drift apart.
+
 ### Data model
 
 `subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.explanation` is reused as a JSON blob carrying `{ images: [{url, position}], imageUrl, solution }` — image attachments (no dedicated image column) plus an optional worked solution ("lời giải") shown on `/result`. Legacy rows may hold just `{ imageUrl }`.
@@ -92,7 +105,7 @@ Browse and quiz work **without login**; auth is optional (progress + `quiz_resul
 
 All use the service-role client unless noted:
 
-- `GET /api/subjects?grade=N`, `GET|POST /api/chapters` — used by the import form's cascading dropdowns.
+- `GET|POST /api/chapters?grade=N&subject=<tên môn>` — used by the import form's chapter dropdown. Chapters are addressed by (grade, subject name), never by a `subjects.id`; POST calls `ensureSubjectId` so a subject newly added to `lib/subjects.ts` gets its row created on first use. (There is no `/api/subjects` — the catalogue is static, see **Subjects** below.)
 - `GET /api/lesson/[id]` — returns lesson + questions as `QDraft` (`type`, variable `options`, `correctIdx` / `correctIdxs` / `answer`, optional `imageUrl` from `explanation` JSON).
 - `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts).
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
@@ -104,7 +117,7 @@ All use the service-role client unless noted:
 
 `ImportClient.tsx` is the central editor. Key behaviors:
 
-- **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The hydration race is handled via `pendingSubjectId`/`pendingChapterId` refs — preserve this when refactoring the cascading-fetch effects, or restored drafts will lose their subject/chapter selection.
+- **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The chapter hydration race is handled via the `pendingChapterId` ref — preserve this when refactoring the chapter fetch effect, or restored drafts will lose their chapter selection. Subjects need no such ref: they come from `lib/subjects.ts` synchronously and the selection is derived, not stored. Drafts persist the subject **name**; drafts written before that (which stored a numeric `subjectId`) fall back to the grade's first subject.
 - Distinguishes lesson vs. exam through `examMode` prop AND `initialData.type`; both flow into the `type` column in the API payload.
 - Keyboard shortcuts (global `keydown` listener): `Ctrl/Cmd+S` saves, `Ctrl/Cmd+Enter` adds a blank question.
 - **Paste-import (`PasteImportModal`)** accepts plain text or HTML. Primary parser: `lib/examParser.ts` (question starts `Câu N.` / `Câu N:`, options `A.`…, answer markers `Đáp án:`, `Answer:`, `Chọn X.`). **URL import:** `GET /api/fetch-exam?url=` returns HTML/plain text; if it looks like a loigiaihay/vietjack solution page, `lib/loigiaihayParser.ts` (`parseLoigiaihay`) is used instead of `examParser`. Type is inferred at commit time: ≥2 options + one letter → `mcq`; ≥2 options + multiple letters → `multi`; no options + numeric → `numeric`; else → `short`. Letter answers (`Đáp án: B`) only apply when options exist — otherwise `Đáp án: Cần Thơ` stays `short`.

@@ -20,7 +20,7 @@ _Last synced with codebase: May 2026_
 ### Import / content
 - `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
 - `/import/chapter/[id]` — dashboard tiến độ bài trong chương
-- API: subjects, chapters (GET/POST), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, auth/logout
+- API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, auth/logout — **không còn `/api/subjects`**
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
 
@@ -31,9 +31,17 @@ _Last synced with codebase: May 2026_
 - Trang editor/tài khoản (`/import*`, `/progress`, `/nang-cap`) → `robots: { index: false }`
 - Base URL qua `lib/siteUrl.ts` (`NEXT_PUBLIC_SITE_URL` → `VERCEL_*` → localhost)
 
+### Môn học (static)
+- `lib/subjects.ts` là nguồn sự thật duy nhất — khai báo trong code, không query bảng `subjects`
+- Bảng `subjects` chỉ còn là đích FK của `chapters.subject_id`, đối chiếu bằng cặp (grade, name)
+- Đọc: join lồng `subjects!inner` · Ghi: `ensureSubjectId(grade, name)` (select-or-insert)
+- Trang chủ + tab `/lop/[grade]` + sitemap + dropdown import đều đọc chung danh mục này
+- Đối chiếu code ↔ DB: `node --env-file=.env.local scripts/check-subjects.mjs`
+
 ### Data & ops
 - Supabase: subjects, chapters, lessons, questions, quiz_results, Storage `question-images`
 - Scripts NXBGD: `scripts/nxbgd-import.mjs`, `scripts/nxbgd-import-questions.mjs`
+- `scripts/check-subjects.mjs`: so danh mục môn trong code với DB (chỉ đọc)
 - `schema.sql` + cột mở rộng (`type`, `source_id`, `duration_minutes`, …)
 
 ## Not done / deferred

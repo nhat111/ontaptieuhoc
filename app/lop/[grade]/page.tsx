@@ -3,7 +3,8 @@ import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
 import Sidebar from "@/components/Sidebar";
-import { getSubjectsByGrade, getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
+import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
+import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 
 export async function generateMetadata({
   params,
@@ -16,9 +17,8 @@ export async function generateMetadata({
   const { subject: subjectParam, view } = await searchParams;
   const isExam = view === "exam";
 
-  const subjects = await getSubjectsByGrade(parseInt(grade));
-  const activeSubject = subjects.find((s) => s.name === subjectParam) ?? subjects[0] ?? null;
-  const subjectName = activeSubject?.name ?? "";
+  const gradeNum = parseInt(grade);
+  const subjectName = resolveSubject(gradeNum, subjectParam) ?? "";
 
   // A grade with no subjects yet leaves subjectName empty, which would
   // otherwise leave a double space in the middle of the sentence.
@@ -33,8 +33,9 @@ export async function generateMetadata({
   );
 
   // Canonical drops the default subject so /lop/3 and /lop/3?subject=<first>
-  // are not indexed as two separate pages.
-  const isDefaultSubject = !subjectParam || activeSubject?.name !== subjectParam;
+  // are not indexed as two separate pages. An unknown ?subject= resolves back
+  // to the default too, so it collapses onto the same canonical.
+  const isDefaultSubject = subjectName === getDefaultSubject(gradeNum);
   const query = [
     !isDefaultSubject ? `subject=${encodeURIComponent(subjectParam!)}` : null,
     isExam ? "view=exam" : null,
@@ -64,15 +65,13 @@ export default async function GradePage({
   const activeView = view === "exam" ? "exam" : "baitap";
   const gradeNum = parseInt(grade);
 
-  const subjects = await getSubjectsByGrade(gradeNum);
-
-  // Chọn môn học theo query param, mặc định là môn đầu tiên
-  const activeSubject =
-    subjects.find((s) => s.name === subjectParam) ?? subjects[0] ?? null;
+  // Môn học lấy từ lib/subjects.ts — không query DB nữa.
+  const subjects = getSubjects(gradeNum);
+  const activeSubject = resolveSubject(gradeNum, subjectParam);
 
   const [chapters, leaderboard] = await Promise.all([
     activeSubject
-      ? getChaptersWithLessons(activeSubject.id, activeView === "exam" ? "exam" : "lesson")
+      ? getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
       : Promise.resolve([]),
     getLeaderboardByGrade(gradeNum),
   ]);
@@ -85,8 +84,8 @@ export default async function GradePage({
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <SubjectTabs
-            subjects={subjects.map((s) => s.name)}
-            activeSubject={activeSubject?.name}
+            subjects={[...subjects]}
+            activeSubject={activeSubject ?? undefined}
             grade={grade}
           />
         </div>
@@ -99,12 +98,12 @@ export default async function GradePage({
           <span>›</span>
           <a href={`/lop/${grade}`} className="hover:text-blue-600 transition-colors">Lớp {grade}</a>
           <span>›</span>
-          <span className="text-gray-600 font-medium">{activeSubject?.name ?? "Toán"}</span>
+          <span className="text-gray-600 font-medium">{activeSubject ?? "Toán"}</span>
         </div>
 
         {/* Page title */}
         <h1 className="text-2xl font-extrabold text-gray-800">
-          {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject?.name ?? "Toán"} lớp {grade}
+          {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject ?? "Toán"} lớp {grade}
         </h1>
         <p className="text-gray-500 text-sm mt-1 mb-4">
           {activeView === "exam"
@@ -145,7 +144,7 @@ export default async function GradePage({
                 <p className="text-4xl mb-3">{activeView === "exam" ? "📝" : "📭"}</p>
                 <p className="font-medium text-gray-500">
                   {activeView === "exam"
-                    ? `Chưa có đề kiểm tra ${activeSubject?.name ?? ""} lớp ${grade}`
+                    ? `Chưa có đề kiểm tra ${activeSubject ?? ""} lớp ${grade}`
                     : "Chưa có nội dung cho môn học này"}
                 </p>
                 {activeView === "exam" && (

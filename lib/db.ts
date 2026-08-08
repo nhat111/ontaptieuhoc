@@ -73,10 +73,10 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
   try {
     const sb = getSupabaseServer()
 
-    const { data: subjects } = await sb.from('subjects').select('id').eq('grade', grade)
-    if (!subjects?.length) return []
-
-    const { data: chapters } = await sb.from('chapters').select('id').in('subject_id', subjects.map((s: any) => s.id))
+    const { data: chapters } = await sb
+      .from('chapters')
+      .select('id, subjects!inner(grade)')
+      .eq('subjects.grade', grade)
     if (!chapters?.length) return []
 
     const { data: lessons } = await sb.from('lessons').select('id').in('chapter_id', chapters.map((c: any) => c.id))
@@ -126,33 +126,59 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
 }
 
 // ---- Subjects ----
+//
+// The subject catalogue lives in `lib/subjects.ts`, not in the DB — see that
+// file. The `subjects` table is still the FK target for `chapters.subject_id`,
+// so it is resolved by the (grade, name) pair rather than by a hard-coded id
+// (ids are SERIAL and differ between databases).
 
-export async function getSubjectsByGrade(grade: number): Promise<SubjectRow[]> {
+/**
+ * Id of the `subjects` row for a (grade, name) pair, creating it when missing
+ * so a subject added to `lib/subjects.ts` works without a manual SQL insert.
+ * Write paths only — reads filter through an embedded join instead.
+ */
+export async function ensureSubjectId(grade: number, name: string): Promise<number | null> {
   try {
-    const { data } = await getSupabaseServer()
+    const sb = getSupabaseServer()
+
+    const { data: existing } = await sb
       .from('subjects')
-      .select('*')
+      .select('id')
       .eq('grade', grade)
-      .order('order_index')
-    return data ?? []
+      .eq('name', name)
+      .limit(1)
+      .maybeSingle()
+    if (existing) return existing.id
+
+    const { data: created, error } = await sb
+      .from('subjects')
+      .insert({ name, grade, order_index: 0 })
+      .select('id')
+      .single()
+    if (error) return null
+    return created?.id ?? null
   } catch {
-    return []
+    return null
   }
 }
 
 // ---- Chapters (server-side, returns rich component types for server pages) ----
 
 export async function getChaptersWithLessons(
-  subjectId: number,
+  grade: number,
+  subjectName: string,
   lessonType: 'lesson' | 'exam' = 'lesson'
 ): Promise<ComponentChapter[]> {
   try {
     const sb = getSupabaseServer()
 
+    // `subjects!inner` makes the embedded filters actually restrict the rows,
+    // so this is one round trip instead of a subject lookup then a chapter query.
     const { data: chapters } = await sb
       .from('chapters')
-      .select('id, title, order_index')
-      .eq('subject_id', subjectId)
+      .select('id, title, order_index, subjects!inner(grade, name)')
+      .eq('subjects.grade', grade)
+      .eq('subjects.name', subjectName)
       .order('order_index')
 
     if (!chapters?.length) return []
@@ -344,20 +370,6 @@ export async function getAllExams(): Promise<ExamListItem[]> {
 }
 
 // ---- Sitemap ----
-
-/** Every subject across all grades, for the `/lop/[grade]?subject=` sitemap entries. */
-export async function getAllSubjects(): Promise<SubjectRow[]> {
-  try {
-    const { data } = await getSupabaseServer()
-      .from('subjects')
-      .select('*')
-      .order('grade')
-      .order('order_index')
-    return data ?? []
-  } catch {
-    return []
-  }
-}
 
 /**
  * Ids of every lesson that actually has questions — a `/quiz?lessonId=` page

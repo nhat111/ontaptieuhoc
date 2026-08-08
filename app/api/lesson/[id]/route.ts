@@ -46,17 +46,19 @@ export async function GET(
     .eq("id", lesson.chapter_id)
     .single();
 
-  let subjectId = 0;
+  // The editor selects a subject by name (see lib/subjects.ts), so return the
+  // name rather than the row id.
+  let subject = "";
   let grade = 1;
   if (chapter) {
-    const { data: subject } = await sb
+    const { data: subjectRow } = await sb
       .from("subjects")
-      .select("id, grade")
+      .select("name, grade")
       .eq("id", chapter.subject_id)
       .single();
-    if (subject) {
-      subjectId = subject.id;
-      grade = subject.grade;
+    if (subjectRow) {
+      subject = subjectRow.name;
+      grade = subjectRow.grade;
     }
   }
 
@@ -114,7 +116,7 @@ export async function GET(
     title: lesson.title,
     indexLabel: lesson.index_label,
     chapterId: lesson.chapter_id,
-    subjectId,
+    subject,
     grade,
     durationMinutes: (lesson as any).duration_minutes ?? 15,
     questions: qDrafts,
