@@ -90,6 +90,7 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 - `/progress` — authenticated user's quiz history.
 - `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. **`proxy.ts` only refreshes auth cookies on `/import/*` — guests can create/edit; it is not an auth gate.**
 - `/import/chapter/[id]` — server dashboard: lesson fill progress in a chapter (`getChapterContext`, `getLessonsInChapter`); linked from `ImportClient`.
+- `/import/kiem-tra` — read-only diagnostics page (Supabase reachability, row counts, and the `lib/subjects.ts` ↔ `subjects` table diff). Browser equivalent of `scripts/check-subjects.mjs`, for when the operator only has a phone. Covered by the `/import` robots disallow + `robots: { index: false }`.
 - `/login`, `/reset-password`, `/auth/callback` — Supabase email-password auth + magic-link callback that exchanges `code` for a session.
 - `/sitemap.xml`, `/robots.txt` — `app/sitemap.ts` (dynamic, `force-dynamic`: home, `/de-thi`, `/lop/1..5` in both views, one URL per subject tab, and `/quiz?lessonId=` for every lesson that has ≥1 question) and `app/robots.ts` (disallows `/api/`, `/import`, `/result`, `/progress`, auth and `/nang-cap`).
 
