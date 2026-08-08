@@ -80,7 +80,53 @@ export function cancelSpeech() {
   if (isSpeechSupported()) window.speechSynthesis.cancel();
 }
 
-export type SpeakSegment = { text: string; lang?: SpeechLang };
+export type SpeakSegment = {
+  text: string;
+  lang?: SpeechLang;
+  /** Nhãn tuỳ ý của bên gọi (vd: chỉ số câu hỏi) để biết đang đọc tới đâu. */
+  mark?: number;
+};
+
+// ── Tốc độ đọc ───────────────────────────────────────────────────────────────
+
+const RATE_KEY = "ontap_speech_rate";
+
+/** Chậm hơn hẳn mặc định của trình duyệt — bé tiểu học cần thời gian nghe kịp. */
+export const DEFAULT_RATE = 0.7;
+export const RATE_OPTIONS = [
+  { label: "Chậm", value: 0.55 },
+  { label: "Vừa", value: 0.7 },
+  { label: "Nhanh", value: 0.9 },
+] as const;
+
+export function getSpeechRate(): number {
+  if (typeof window === "undefined") return DEFAULT_RATE;
+  try {
+    const n = Number(window.localStorage.getItem(RATE_KEY));
+    // Chặn giá trị rác trong localStorage khỏi tạo ra tốc độ vô lý.
+    return Number.isFinite(n) && n >= 0.3 && n <= 1.5 ? n : DEFAULT_RATE;
+  } catch {
+    return DEFAULT_RATE;
+  }
+}
+
+// localStorage là state ngoài React; dùng store nhỏ để component subscribe qua
+// useSyncExternalStore, tránh setState-trong-effect và lệch hydration.
+const rateListeners = new Set<() => void>();
+
+export function subscribeSpeechRate(cb: () => void) {
+  rateListeners.add(cb);
+  return () => {
+    rateListeners.delete(cb);
+  };
+}
+
+export function setSpeechRate(rate: number) {
+  try {
+    window.localStorage.setItem(RATE_KEY, String(rate));
+  } catch {/* ignore */}
+  rateListeners.forEach((l) => l());
+}
 
 /**
  * Đọc lần lượt các đoạn, mỗi đoạn có thể một ngôn ngữ khác nhau (đề tiếng Anh
@@ -91,7 +137,12 @@ export type SpeakSegment = { text: string; lang?: SpeechLang };
  */
 export async function speakSegments(
   segments: SpeakSegment[],
-  opts: { rate?: number; onEnd?: () => void } = {}
+  opts: {
+    rate?: number;
+    /** Gọi khi bắt đầu đọc một đoạn, kèm `mark` của đoạn đó. */
+    onSegmentStart?: (mark: number | undefined) => void;
+    onEnd?: () => void;
+  } = {}
 ): Promise<void> {
   if (!isSpeechSupported()) return;
 
@@ -106,8 +157,7 @@ export async function speakSegments(
   }
 
   const voices = await loadVoices();
-  // Đọc chậm hơn mặc định cho bé tiểu học nghe kịp.
-  const rate = opts.rate ?? 0.85;
+  const rate = opts.rate ?? getSpeechRate();
 
   await new Promise<void>((resolve) => {
     let i = 0;
@@ -117,6 +167,7 @@ export async function speakSegments(
         return resolve();
       }
       const seg = clean[i++];
+      opts.onSegmentStart?.(seg.mark);
       const lang = seg.lang ?? detectLang(seg.text);
       const u = new SpeechSynthesisUtterance(seg.text);
       u.lang = lang;
@@ -147,15 +198,35 @@ function hasLetters(text: string): boolean {
  * ngôn ngữ của câu hỏi — nếu không, câu Toán tiếng Việt sẽ bị đọc "one, two"
  * bằng giọng Anh thay vì "một, hai".
  */
-export function questionSegments(question: string, options: string[]): SpeakSegment[] {
+export function questionSegments(
+  question: string,
+  options: string[],
+  mark?: number
+): SpeakSegment[] {
   const LABELS = ["A", "B", "C", "D", "E", "F"];
   const baseLang = detectLang(stripForSpeech(question));
 
   return [
-    { text: question, lang: baseLang },
+    { text: question, lang: baseLang, mark },
     ...options.map((opt, i) => ({
       text: `${LABELS[i] ?? i + 1}. ${opt}`,
       lang: hasLetters(opt) ? detectLang(opt) : baseLang,
+      mark,
     })),
   ];
+}
+
+/**
+ * Ghép cả bài để đọc một mạch từ câu 1 tới hết.
+ *
+ * Xướng "Câu N" trước mỗi câu để bé biết đang tới đâu; câu số đọc bằng giọng
+ * Việt kể cả khi đề tiếng Anh, vì đó là lời của app chứ không phải nội dung đề.
+ */
+export function allQuestionsSegments(
+  questions: { question: string; options: string[] }[]
+): SpeakSegment[] {
+  return questions.flatMap((q, i) => [
+    { text: `Câu ${i + 1}`, lang: "vi-VN" as const, mark: i },
+    ...questionSegments(q.question, q.options, i),
+  ]);
 }

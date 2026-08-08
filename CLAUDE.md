@@ -126,6 +126,15 @@ All use the service-role client unless noted:
 - **Tiptap → focused editor singleton**: `lib/focusedEditor.ts` tracks whichever Tiptap instance currently has focus so the LaTeX cheat-sheet buttons in the sidebar can insert into the right field. `onMouseDown` with `preventDefault` is required on those buttons or focus shifts before insertion.
 - **Image uploads** go through `POST /api/upload-image` → public Supabase Storage bucket `question-images` (service-role, bypasses RLS). Bucket must exist and be public for the returned URLs to be readable.
 
+### Đọc thành tiếng (TTS)
+
+`lib/speech.ts` wraps the browser's Web Speech API — **no API key, no cost, no network**. `SpeakButton` reads one question + its options; `QuizClient` also has a **"Nghe cả bài"** button that reads every question in order, announcing "Câu N" in Vietnamese before each and scrolling to whichever question is being read (`speakSegments`'s `onSegmentStart` carries the segment's `mark`).
+
+- Language is auto-detected per segment: Vietnamese diacritics → `vi-VN`, otherwise `en-US`. Options with no letters (`"12"`, `"3,5"`) inherit the question's language, or a Vietnamese maths question would read "one, two" in an English voice.
+- LaTeX and HTML are stripped before speaking (`stripForSpeech`).
+- Rate lives in `localStorage` (`ontap_speech_rate`, default **0.7** — deliberately slow for primary-school kids) and is exposed as Chậm/Vừa/Nhanh in the quiz header. Read through `useSyncExternalStore` + `subscribeSpeechRate`, so no setState-in-effect and no hydration mismatch.
+- Buttons hide entirely when the browser has no `speechSynthesis`.
+
 ### Math handling
 
 - **Display**: `components/MathText.tsx` parses `$...$`, `$$...$$`, `\(...\)`, `\[...\]` and renders via KaTeX (uses `dangerouslySetInnerHTML` after escaping non-math segments). `katex/dist/katex.min.css` is imported once in `app/layout.tsx`.

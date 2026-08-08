@@ -1,11 +1,22 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Question, LessonMeta, formatTime, scoreAnswer } from "@/lib/quizData";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
+import {
+  allQuestionsSegments,
+  cancelSpeech,
+  getSpeechRate,
+  isSpeechSupported,
+  setSpeechRate,
+  speakSegments,
+  subscribeSpeechRate,
+  DEFAULT_RATE,
+  RATE_OPTIONS,
+} from "@/lib/speech";
 
 interface Props {
   initialQuestions: Question[];
@@ -36,6 +47,63 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       .then((d) => setIsPremium(!!d.isPremium))
       .catch(() => {});
   }, []);
+
+  // ── Nghe cả bài ──────────────────────────────────────────────────────────
+  const [readingAll, setReadingAll] = useState(false);
+  const [readingIdx, setReadingIdx] = useState<number | null>(null);
+  // Tốc độ lưu ở localStorage: server trả mặc định, client đọc giá trị đã lưu.
+  const rate = useSyncExternalStore(
+    subscribeSpeechRate,
+    getSpeechRate,
+    () => DEFAULT_RATE
+  );
+
+  // Rời trang giữa chừng thì tắt tiếng, không để đọc tiếp ở trang khác.
+  useEffect(() => () => cancelSpeech(), []);
+
+  function readAll() {
+    if (readingAll) {
+      cancelSpeech();
+      setReadingAll(false);
+      setReadingIdx(null);
+      return;
+    }
+    setReadingAll(true);
+    speakSegments(allQuestionsSegments(questions), {
+      rate,
+      // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
+      onSegmentStart: (mark) => {
+        if (typeof mark !== "number") return;
+        setReadingIdx(mark);
+        setCurrent(mark);
+        document.getElementById(`question-${mark}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      },
+      onEnd: () => {
+        setReadingAll(false);
+        setReadingIdx(null);
+      },
+    });
+  }
+
+  function changeRate(value: number) {
+    setSpeechRate(value);
+    // Tốc độ chỉ áp dụng cho lượt đọc mới, nên dừng lượt đang chạy cho khỏi rối.
+    if (readingAll) {
+      cancelSpeech();
+      setReadingAll(false);
+      setReadingIdx(null);
+    }
+  }
+
+  // Server không có speechSynthesis nên phải trả false lúc SSR.
+  const speechOk = useSyncExternalStore(
+    () => () => {},
+    () => isSpeechSupported(),
+    () => false
+  );
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
@@ -281,6 +349,57 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             </svg>
             <span>{formatTime(timeLeft)}</span>
           </div>
+
+          {/* Nghe cả bài + tốc độ đọc — ẩn khi trình duyệt không hỗ trợ */}
+          {speechOk && questions.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={readAll}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                  readingAll
+                    ? "bg-orange-500 text-white hover:bg-orange-600"
+                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                }`}
+              >
+                {readingAll ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <rect x="5" y="5" width="10" height="10" rx="1.5" />
+                    </svg>
+                    Dừng đọc
+                    {readingIdx !== null && (
+                      <span className="font-normal opacity-90">· câu {readingIdx + 1}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
+                      <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
+                    </svg>
+                    Nghe cả bài ({questions.length} câu)
+                  </>
+                )}
+              </button>
+
+              <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 p-0.5">
+                <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
+                {RATE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => changeRate(o.value)}
+                    className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
+                      rate === o.value
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
