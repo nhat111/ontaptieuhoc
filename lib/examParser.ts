@@ -15,7 +15,12 @@ export type DraftQuestion = {
   solution?: string;
 };
 
-const Q_START = /^Câu\s*\d+[:.]/i;
+// Mở đầu câu hỏi. Ngoài "Câu 1." kiểu Việt còn nhận "Question 1.", "Bài 1." và
+// dạng chỉ có số "1:" / "1." / "1)" — đề tiếng Anh hay đánh số trần như vậy.
+// Bắt buộc có khoảng trắng + ký tự nội dung phía sau để một dòng chỉ mình con
+// số (số trang, năm) không bị hiểu nhầm là câu hỏi mới.
+const Q_START = /^(?:(?:Câu|Question|Bài)\s*)?\d{1,3}\s*[:.)]\s+\S/i;
+const Q_START_STRIP = /^(?:(?:Câu|Question|Bài)\s*)?\d{1,3}\s*[:.)]\s*/i;
 const OPT_ONE = /^([A-F])[.)]\s*(.+)/i;
 const OPT_TWO = /^([A-F])[.)]\s*(.+?)\s{2,}([A-F])[.)]\s*(.+)/i;
 // Unified answer marker — captures rest-of-line. Letter vs free text decided at commit time
@@ -87,7 +92,7 @@ export function parseExamText(text: string): DraftQuestion[] {
     if (Q_START.test(line)) {
       commit();
       draft = {
-        text: line.replace(/^Câu\s*\d+[:.]\s*/i, "").trim(),
+        text: line.replace(Q_START_STRIP, "").trim(),
         options: [],
         answerRaw: null,
       };
