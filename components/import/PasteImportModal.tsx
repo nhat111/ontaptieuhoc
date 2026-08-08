@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseExamText } from "@/lib/examParser";
 import { parseLoigiaihay, looksLikeLoigiaihay } from "@/lib/loigiaihayParser";
 import { normalizeMath } from "@/lib/mathNormalizer";
@@ -105,6 +105,20 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
+  const [ocrAvailable, setOcrAvailable] = useState(false);
+
+  // Quét ảnh cần ANTHROPIC_API_KEY phía máy chủ. Hỏi trước khi mở modal để ẩn
+  // hẳn nút khi chưa cấu hình, thay vì để người dùng bấm vào rồi nhận lỗi 503.
+  // Đặt trước `if (!open)` để thứ tự hook không đổi giữa các lần render.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/ocr-exam")
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setOcrAvailable(!!d?.available); })
+      .catch(() => { if (!cancelled) setOcrAvailable(false); });
+    return () => { cancelled = true; };
+  }, [open]);
 
   if (!open) return null;
 
@@ -342,7 +356,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-auto p-5 space-y-4">
-          {/* Quét ảnh đề */}
+          {/* Quét ảnh đề — ẩn khi máy chủ chưa có ANTHROPIC_API_KEY */}
+          {ocrAvailable && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
             <label className="text-xs font-semibold text-gray-600 block mb-1.5">
               Quét ảnh đề <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
@@ -393,6 +408,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
               Chụp thẳng, đủ sáng, rõ chữ. Kết quả hiện ở phần xem trước bên dưới — kiểm tra lại trước khi chèn.
             </p>
           </div>
+          )}
 
           {/* Fetch from URL */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">

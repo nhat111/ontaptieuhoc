@@ -23,7 +23,7 @@ _Last synced with codebase: May 2026_
 - API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, auth/logout — **không còn `/api/subjects`**
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
-- **Quét ảnh đề**: nút trong `PasteImportModal` → `POST /api/ocr-exam` (Claude vision `claude-opus-5`, output theo `json_schema`). Đọc được cả đáp án khoanh bút; không thấy dấu khoanh thì trả `correctIndex: -1` và báo người dùng tự tick. Cần `ANTHROPIC_API_KEY`.
+- **Quét ảnh đề**: nút trong `PasteImportModal` → `POST /api/ocr-exam` (Claude vision `claude-opus-5`, output theo `json_schema`). Đọc được cả đáp án khoanh bút; không thấy dấu khoanh thì trả `correctIndex: -1` và báo người dùng tự tick. Cần `ANTHROPIC_API_KEY` — chưa cấu hình thì `GET /api/ocr-exam` trả `{available:false}` và nút bị **ẩn hẳn**, không ai bấm vào lỗi.
 
 ### SEO
 - `app/sitemap.ts` (`/sitemap.xml`, dynamic) + `app/robots.ts` (`/robots.txt`)

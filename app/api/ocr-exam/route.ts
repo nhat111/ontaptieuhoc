@@ -61,6 +61,15 @@ const SCHEMA = {
 
 type OcrQuestion = { content: string; options: string[]; correctIndex: number };
 
+/**
+ * Cho client biết tính năng có dùng được không, để ẩn nút "Quét ảnh đề" khi máy
+ * chủ chưa cấu hình key — thay vì hiện nút rồi bấm vào báo lỗi.
+ * Chỉ trả boolean, không lộ giá trị key.
+ */
+export async function GET() {
+  return NextResponse.json({ available: !!process.env.ANTHROPIC_API_KEY });
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
