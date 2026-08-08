@@ -1,5 +1,5 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { ensureDefaultChapterId } from "@/lib/db";
+import { ensureDefaultChapterIdResult } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -50,10 +50,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    resolvedChapterId = await ensureDefaultChapterId(g, subject, lessonType);
-    if (!resolvedChapterId) {
-      return NextResponse.json({ error: "Không tạo được chương mặc định." }, { status: 500 });
+    const chapter = await ensureDefaultChapterIdResult(g, subject, lessonType);
+    if (!chapter.id) {
+      // Trả nguyên nhân thật ra client — đây là màn hình soạn bài của quản trị,
+      // và "không tạo được chương mặc định" thì không đủ để sửa.
+      return NextResponse.json(
+        { error: chapter.error ?? "Không tạo được chương mặc định." },
+        { status: 500 }
+      );
     }
+    resolvedChapterId = chapter.id;
   }
 
   const sb = getSupabaseServer();

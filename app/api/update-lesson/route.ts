@@ -1,5 +1,5 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { ensureDefaultChapterId } from "@/lib/db";
+import { ensureDefaultChapterIdResult } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -41,7 +41,14 @@ export async function POST(req: NextRequest) {
   if (lessonId && !resolvedChapterId) {
     const g = Number(grade);
     if (g && typeof subject === "string" && getSubjects(g).includes(subject)) {
-      resolvedChapterId = await ensureDefaultChapterId(g, subject, lessonType);
+      const chapter = await ensureDefaultChapterIdResult(g, subject, lessonType);
+      if (!chapter.id) {
+        return NextResponse.json(
+          { error: chapter.error ?? "Không tạo được chương mặc định." },
+          { status: 500 }
+        );
+      }
+      resolvedChapterId = chapter.id;
     }
     if (!resolvedChapterId) {
       return NextResponse.json({ error: "Chưa xác định được môn học." }, { status: 400 });

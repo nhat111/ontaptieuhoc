@@ -138,28 +138,67 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
  * Write paths only — reads filter through an embedded join instead.
  */
 export async function ensureSubjectId(grade: number, name: string): Promise<number | null> {
+  return (await ensureSubjectIdResult(grade, name)).id
+}
+
+/**
+ * Bản có kèm lý do thất bại. Nuốt lỗi rồi trả null khiến người dùng chỉ thấy
+ * "không tạo được" mà không biết vì sao — write path cần nói rõ nguyên nhân.
+ */
+export async function ensureSubjectIdResult(
+  grade: number,
+  name: string
+): Promise<{ id: number | null; error?: string }> {
   try {
     const sb = getSupabaseServer()
 
-    const { data: existing } = await sb
+    const { data: existing, error: selErr } = await sb
       .from('subjects')
       .select('id')
       .eq('grade', grade)
       .eq('name', name)
       .limit(1)
       .maybeSingle()
-    if (existing) return existing.id
+    if (selErr) {
+      console.error('[ensureSubjectId] select', selErr)
+      return { id: null, error: `Không đọc được bảng subjects: ${selErr.message}` }
+    }
+    if (existing) return { id: existing.id }
 
     const { data: created, error } = await sb
       .from('subjects')
       .insert({ name, grade, order_index: 0 })
       .select('id')
       .single()
-    if (error) return null
-    return created?.id ?? null
-  } catch {
-    return null
+    if (error) {
+      console.error('[ensureSubjectId] insert', error)
+      return { id: null, error: describeWriteError('subjects', error) }
+    }
+    return { id: created?.id ?? null }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[ensureSubjectId]', msg)
+    return { id: null, error: msg }
   }
+}
+
+/**
+ * Đổi lỗi Postgres thành câu tiếng Việt kèm cách sửa.
+ *
+ * `23505` trên khoá chính là bẫy hay gặp nhất ở DB này: `schema.sql` seed dữ
+ * liệu bằng id cố định nên SERIAL bị tụt lại, insert sau đó đụng id đã tồn tại.
+ */
+function describeWriteError(table: string, error: { code?: string; message: string }): string {
+  if (error.code === '23505' && /_pkey/.test(error.message)) {
+    return (
+      `Bảng "${table}" bị lệch bộ đếm id (SERIAL) nên insert trùng khoá chính. ` +
+      `Chạy trong Supabase SQL editor: ` +
+      `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1));`
+    )
+  }
+  if (error.code === '42P01') return `Chưa có bảng "${table}" trong DB — chạy schema.sql trước.`
+  if (error.code === '42703') return `Bảng "${table}" thiếu cột mà app cần: ${error.message}`
+  return `Ghi vào "${table}" thất bại: ${error.message}`
 }
 
 /**
@@ -175,31 +214,51 @@ export async function ensureDefaultChapterId(
   subjectName: string,
   lessonType: 'lesson' | 'exam' = 'lesson'
 ): Promise<number | null> {
+  return (await ensureDefaultChapterIdResult(grade, subjectName, lessonType)).id
+}
+
+/** Bản có kèm lý do thất bại — xem ensureSubjectIdResult. */
+export async function ensureDefaultChapterIdResult(
+  grade: number,
+  subjectName: string,
+  lessonType: 'lesson' | 'exam' = 'lesson'
+): Promise<{ id: number | null; error?: string }> {
   const title = lessonType === 'exam' ? 'Đề kiểm tra' : 'Chưa phân chương'
 
   try {
-    const subjectId = await ensureSubjectId(grade, subjectName)
-    if (!subjectId) return null
+    const subject = await ensureSubjectIdResult(grade, subjectName)
+    if (!subject.id) {
+      return { id: null, error: subject.error ?? `Không tạo được môn "${subjectName}" lớp ${grade}.` }
+    }
 
     const sb = getSupabaseServer()
-    const { data: existing } = await sb
+    const { data: existing, error: selErr } = await sb
       .from('chapters')
       .select('id')
-      .eq('subject_id', subjectId)
+      .eq('subject_id', subject.id)
       .eq('title', title)
       .limit(1)
       .maybeSingle()
-    if (existing) return existing.id
+    if (selErr) {
+      console.error('[ensureDefaultChapterId] select', selErr)
+      return { id: null, error: `Không đọc được bảng chapters: ${selErr.message}` }
+    }
+    if (existing) return { id: existing.id }
 
     const { data: created, error } = await sb
       .from('chapters')
-      .insert({ title, subject_id: subjectId, order_index: 999 })
+      .insert({ title, subject_id: subject.id, order_index: 999 })
       .select('id')
       .single()
-    if (error) return null
-    return created?.id ?? null
-  } catch {
-    return null
+    if (error) {
+      console.error('[ensureDefaultChapterId] insert', error)
+      return { id: null, error: describeWriteError('chapters', error) }
+    }
+    return { id: created?.id ?? null }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[ensureDefaultChapterId]', msg)
+    return { id: null, error: msg }
   }
 }
 
