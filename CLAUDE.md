@@ -27,7 +27,7 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — anon/publishable, used by browser + session clients.
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
-- `ANTHROPIC_API_KEY` — only needed if/when AI-powered exam import is added (mentioned in example but no `/import/ai` route currently exists).
+- `ANTHROPIC_API_KEY` — server-only. Used by `POST /api/ocr-exam` (quét ảnh đề bằng Claude vision). Without it that route returns 503; every other feature works.
 - `NEXT_PUBLIC_SITE_URL` — absolute origin (no trailing slash). Drives `app/sitemap.ts`, `app/robots.ts` and `metadataBase` (canonical + Open Graph URLs). Optional in dev; **set it in production** or canonical tags point at the Vercel preview domain. `lib/siteUrl.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
 
 DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
@@ -36,7 +36,7 @@ DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to pr
 - `quiz_results.user_id` (nullable FK → `auth.users`): add UUID column + FK when enabling progress tracking
 - NXBGD idempotency: `chapters.source_id`, `lessons.source_id` (+ unique partial indexes) — see `schema.sql` comments
 
-**Removed routes (do not recreate):** `/teacher`, `/import/ai` (no `/api/ai-import`; `ANTHROPIC_API_KEY` reserved for future use).
+**Removed routes (do not recreate):** `/teacher`, `/import/ai` / `/api/ai-import`. Image-to-exam scanning lives at **`POST /api/ocr-exam`** instead — a separate route, deliberately not a revival of the removed `/import/ai` surface.
 
 **Premium (phase 1, manual):** `profiles (user_id, is_premium, premium_until, note)` table gates exam download (Word/PDF) — browsing/quizzes stay free. `lib/premium.ts → isUserPremium(userId)` (service-role read); `GET /api/me/premium` returns `{ loggedIn, isPremium }` for client gating; `QuizClient` redirects non-premium users to `/nang-cap` (manual bank/MoMo transfer + activate by setting `is_premium` in the dashboard). The gate is client-side only for now — fine for printable exams; not real DRM.
 
@@ -111,6 +111,7 @@ All use the service-role client unless noted:
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
 - `GET /api/fetch-exam?url=...` — scrapes a remote page's `<p>` tags into plain text for the paste-import flow.
 - `POST /api/upload-image` — accepts a multipart `file` field, uploads to the `question-images` bucket via service-role, returns `{ url }`. Used by `QuestionCard` (10 MB cap, jpg/png/webp/gif/svg only).
+- `POST /api/ocr-exam` — multipart `file` (ảnh, 10 MB cap, jpg/png/webp/gif). Sends the image to Claude vision (`claude-opus-5`) with a `json_schema` output constraint and returns `{ title, questions: [{content, options, correctIndex}], usage }`. `correctIndex` is `-1` when no hand-drawn mark is visible — the model is told never to guess. Reads hand-circled answers, which plain OCR can't. Requires `ANTHROPIC_API_KEY`; 503 without it. `stop_reason: 'refusal'` is checked before reading content. The `fallbacks` beta is best-effort: a 400 naming it retries once without it.
 - `POST /api/auth/logout` — clears Supabase session.
 
 ### Import flow (`components/import/`)

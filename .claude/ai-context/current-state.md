@@ -20,9 +20,10 @@ _Last synced with codebase: May 2026_
 ### Import / content
 - `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
 - `/import/chapter/[id]` — dashboard tiến độ bài trong chương
-- API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, auth/logout — **không còn `/api/subjects`**
+- API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, auth/logout — **không còn `/api/subjects`**
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`
+- **Quét ảnh đề**: nút trong `PasteImportModal` → `POST /api/ocr-exam` (Claude vision `claude-opus-5`, output theo `json_schema`). Đọc được cả đáp án khoanh bút; không thấy dấu khoanh thì trả `correctIndex: -1` và báo người dùng tự tick. Cần `ANTHROPIC_API_KEY`.
 
 ### SEO
 - `app/sitemap.ts` (`/sitemap.xml`, dynamic) + `app/robots.ts` (`/robots.txt`)
@@ -46,7 +47,6 @@ _Last synced with codebase: May 2026_
 
 ## Not done / deferred
 
-- AI import (`/import/ai`, Claude) — env có placeholder, route chưa có
 - AI tutor, subscription
 - Test suite (`npm run lint` only; `tsc --noEmit` thủ công)
 - Enforce `lessons.status` locked/completed trên UI (DB có, app chủ yếu dùng `active`)

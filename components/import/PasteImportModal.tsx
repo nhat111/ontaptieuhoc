@@ -102,8 +102,67 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
   const [url, setUrl] = useState("");
   const [fetchingUrl, setFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanNote, setScanNote] = useState<string | null>(null);
 
   if (!open) return null;
+
+  // ── Quét ảnh đề ───────────────────────────────────────────────────────────
+  // Khác luồng dán/URL: không đi qua examParser mà nhận thẳng câu hỏi có cấu
+  // trúc từ /api/ocr-exam rồi đổ vào preview.
+  async function handleScanImage(file: File) {
+    setScanError(null);
+    setScanNote(null);
+    setError(null);
+    setPreview(null);
+    setScanning(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/ocr-exam", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setScanError(data?.error ?? `Quét thất bại (HTTP ${res.status})`);
+        return;
+      }
+
+      const scanned = (data.questions ?? []) as {
+        content: string;
+        options: string[];
+        correctIndex: number;
+      }[];
+
+      const drafts: QDraft[] = scanned.map((q) => {
+        const base = { id: nanoid(), content: normalizeMath(q.content), images: [] as QDraft["images"] };
+        if (q.options.length >= 2) {
+          return {
+            ...base,
+            type: "mcq" as const,
+            options: q.options.map(normalizeMath),
+            // -1 nghĩa là không nhìn thấy dấu khoanh nào; giữ 0 làm mặc định cho
+            // form nhưng vẫn đếm để cảnh báo người dùng phải tự tick.
+            correctIdx: q.correctIndex >= 0 ? q.correctIndex : 0,
+            correctIdxs: [],
+            answer: "",
+          };
+        }
+        return { ...base, type: "short" as const, options: [], correctIdx: 0, correctIdxs: [], answer: "" };
+      });
+
+      const missing = scanned.filter((q) => q.options.length >= 2 && q.correctIndex < 0).length;
+      setPreview(drafts);
+      setScanNote(
+        missing > 0
+          ? `Đọc được ${drafts.length} câu. ${missing} câu không thấy dấu khoanh đáp án — nhớ tự chọn đáp án đúng sau khi chèn.`
+          : `Đọc được ${drafts.length} câu, có đủ đáp án đúng.`
+      );
+    } catch {
+      setScanError("Không thể kết nối máy chủ.");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   async function handleFetchUrl() {
     setUrlError(null);
@@ -283,6 +342,58 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-auto p-5 space-y-4">
+          {/* Quét ảnh đề */}
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
+              Quét ảnh đề <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  scanning
+                    ? "bg-orange-300 text-white cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
+                }`}
+              >
+                {scanning ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    Đang đọc ảnh…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <circle cx="11.5" cy="13" r="3.5" />
+                    </svg>
+                    Chọn ảnh đề
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  disabled={scanning}
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
+                    e.target.value = "";
+                    if (f) handleScanImage(f);
+                  }}
+                />
+              </label>
+              <span className="text-[11px] text-gray-500">JPG, PNG, WEBP — tối đa 10MB</span>
+            </div>
+            {scanError && <p className="mt-2 text-xs text-red-500">✗ {scanError}</p>}
+            {scanNote && <p className="mt-2 text-xs text-orange-700">{scanNote}</p>}
+            <p className="mt-1.5 text-[11px] text-gray-400">
+              Chụp thẳng, đủ sáng, rõ chữ. Kết quả hiện ở phần xem trước bên dưới — kiểm tra lại trước khi chèn.
+            </p>
+          </div>
+
           {/* Fetch from URL */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
             <label className="text-xs font-semibold text-gray-600 block mb-1.5">
