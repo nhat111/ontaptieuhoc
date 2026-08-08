@@ -1,5 +1,7 @@
 import { Question, LABELS, scoreAnswer } from "@/lib/quizData";
 import MathText from "@/components/MathText";
+import SpeakButton from "@/components/SpeakButton";
+import { questionSegments } from "@/lib/speech";
 
 const STATUS = {
   skipped: { border: "border-gray-200", icon: "—", cls: "bg-gray-200 text-gray-600" },
@@ -62,6 +64,11 @@ export default function ResultItem({ question, userAnswer, index }: ResultItemPr
             <MathText text={question.question} />
           </p>
         </div>
+        {/* Nghe lại câu vừa làm — hữu ích nhất với câu sai ở đề tiếng Anh. */}
+        <SpeakButton
+          segments={questionSegments(question.question, question.options)}
+          className="flex-shrink-0"
+        />
       </div>
 
       {imagesAfter.length > 0 && (
