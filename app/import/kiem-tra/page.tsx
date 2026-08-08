@@ -52,7 +52,28 @@ function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   );
 }
 
+/**
+ * Đang trỏ vào project Supabase nào. URL là biến NEXT_PUBLIC_* nên vốn đã lộ ra
+ * trình duyệt — hiện ở đây không thêm rủi ro gì, mà lại cho biết ngay có đúng
+ * project không. Service role key CHỈ báo có/không, tuyệt đối không in giá trị.
+ */
+function readTarget() {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  let host = "";
+  try {
+    host = raw ? new URL(raw).host : "";
+  } catch {
+    host = raw; // URL sai định dạng — hiện nguyên văn để còn thấy mà sửa
+  }
+  return {
+    host,
+    projectRef: host.split(".")[0] || "",
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+}
+
 export default async function ConfigCheckPage() {
+  const target = readTarget();
   const [subjects, chapters, lessons, questions] = await Promise.all([
     readSubjects(),
     countTable("chapters"),
@@ -92,6 +113,31 @@ export default async function ConfigCheckPage() {
         {/* Kết nối DB */}
         <section className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
           <h2 className="text-sm font-bold text-gray-700 mb-2">Kết nối Supabase</h2>
+
+          <div className="mb-3 space-y-1 rounded-xl bg-gray-50 p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">Đang trỏ tới project:</span>
+              <b className="break-all text-gray-700">{target.projectRef || "(chưa cấu hình)"}</b>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">Địa chỉ:</span>
+              <code className="break-all text-gray-600">{target.host || "(trống)"}</code>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">SUPABASE_SERVICE_ROLE_KEY:</span>
+              {target.hasServiceKey ? (
+                <Pill ok>đã có</Pill>
+              ) : (
+                <Pill ok={false}>chưa đặt</Pill>
+              )}
+            </div>
+            <p className="pt-1 text-[11px] text-gray-400">
+              Mở supabase.com và đối chiếu: project ở trên có tồn tại và đang chạy không? Gói miễn
+              phí tự tạm dừng project sau một thời gian không dùng — lúc đó địa chỉ này ngừng hoạt
+              động và mọi kết nối đều hỏng.
+            </p>
+          </div>
+
           {dbOk ? (
             <>
               <Pill ok>Kết nối được</Pill>
