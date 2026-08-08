@@ -174,7 +174,10 @@ export async function ensureSubjectIdResult(
       console.error('[ensureSubjectId] insert', error)
       return { id: null, error: describeWriteError('subjects', error) }
     }
-    return { id: created?.id ?? null }
+    if (!created?.id) {
+      return { id: null, error: 'Insert vào bảng "subjects" không trả về id nào.' }
+    }
+    return { id: created.id }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[ensureSubjectId]', msg)
@@ -254,7 +257,10 @@ export async function ensureDefaultChapterIdResult(
       console.error('[ensureDefaultChapterId] insert', error)
       return { id: null, error: describeWriteError('chapters', error) }
     }
-    return { id: created?.id ?? null }
+    if (!created?.id) {
+      return { id: null, error: 'Insert vào bảng "chapters" không trả về id nào.' }
+    }
+    return { id: created.id }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[ensureDefaultChapterId]', msg)
