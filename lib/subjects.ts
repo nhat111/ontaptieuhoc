@@ -19,11 +19,11 @@ export type Grade = (typeof GRADES)[number];
 
 /** Môn học theo lớp, đúng thứ tự hiển thị trên tab. */
 export const SUBJECTS_BY_GRADE: Record<Grade, readonly string[]> = {
-  1: ["Toán", "Tiếng Việt", "Tự nhiên & Xã hội"],
-  2: ["Toán", "Tiếng Việt", "Đạo đức"],
-  3: ["Toán", "Tiếng Việt", "Khoa học"],
-  4: ["Toán", "Tiếng Việt", "Khoa học"],
-  5: ["Toán", "Tiếng Việt", "Khoa học"],
+  1: ["Toán", "Tiếng Việt", "Tiếng Anh"],
+  2: ["Toán", "Tiếng Việt", "Tiếng Anh"],
+  3: ["Toán", "Tiếng Việt", "Tiếng Anh"],
+  4: ["Toán", "Tiếng Việt", "Tiếng Anh"],
+  5: ["Toán", "Tiếng Việt", "Tiếng Anh"],
 };
 
 export function isGrade(value: unknown): value is Grade {
