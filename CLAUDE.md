@@ -28,6 +28,7 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — anon/publishable, used by browser + session clients.
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
 - `ANTHROPIC_API_KEY` — server-only. Used by `POST /api/ocr-exam` (quét ảnh đề bằng Claude vision). Without it that route returns 503; every other feature works.
+- `OPENAI_API_KEY` — server-only. Used by `POST /api/tts` (natural English voice). Without it `GET /api/tts` reports `{ available: false }` and the quiz falls back to the browser's Web Speech voices; nothing breaks.
 - `NEXT_PUBLIC_SITE_URL` — absolute origin (no trailing slash). Drives `app/sitemap.ts`, `app/robots.ts` and `metadataBase` (canonical + Open Graph URLs). Optional in dev; **set it in production** or canonical tags point at the Vercel preview domain. `lib/siteUrl.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
 
 DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
@@ -135,7 +136,20 @@ All use the service-role client unless noted:
 - Rate lives in `localStorage` (`ontap_speech_rate`, default **0.7** — deliberately slow for primary-school kids) and is exposed as Chậm/Vừa/Nhanh in the quiz header. Read through `useSyncExternalStore` + `subscribeSpeechRate`, so no setState-in-effect and no hydration mismatch.
 - Buttons hide entirely when the browser has no `speechSynthesis`.
 - **Three browser bugs are worked around in `speakSegments`** — all three only bite on long reads, which is why one question worked and the whole exam didn't: (1) Chrome/Safari stop the synthesiser after ~15 s, so a `resume()` keep-alive ticks every 5 s while speaking; (2) `onend` sometimes never fires on iOS and stalls the chain, so each utterance also carries a length-based timeout that advances it; (3) iOS only allows `speak()` inside the user-gesture task, so `speakSegments` is **synchronous** — never `await` before the first `speak()` or audio is silently blocked.
-- Voice quality is the device's, not ours. `voicesFor()` ranks candidates (prefers `Google`/`Enhanced`/`Premium`/`Neural`, penalises iOS `Compact`) and `VoicePicker` lets the user override per language (`ontap_voice_<lang>`), because only the listener can judge. Genuinely human-sounding Vietnamese needs a paid cloud TTS — not possible with the free Web Speech API.
+- Voice quality is the device's, not ours. `voicesFor()` ranks candidates (prefers `Google`/`Enhanced`/`Premium`/`Neural`, penalises iOS `Compact`, and **drops Apple's novelty/legacy voices entirely** — Boing, Bubbles, Zarvox, Fred… sit in `getVoices()` looking like ordinary en-US voices) and `VoicePicker` lets the user override per language (`ontap_voice_<lang>`), because only the listener can judge.
+- **iOS caveat that drives the whole cloud-TTS design below:** Safari does *not* expose the Enhanced/Premium voices a user downloads under Settings → Accessibility → Read & Speak (older iOS: Spoken Content) to web pages — those are reserved for Apple's own apps. Telling a user to download a better voice does nothing for this site. iOS also ships exactly one `vi-VN` voice, so `VoicePicker` hides itself for Vietnamese there.
+
+### Giọng đọc tiếng Anh qua đám mây (`lib/tts.ts`, `lib/cloudSpeech.ts`)
+
+Because of that iOS caveat, **English** exams can be read by a paid cloud TTS instead. Vietnamese deliberately stays on Web Speech (free) — the need was a child learning English mimicking wrong stress, not Vietnamese narration.
+
+- `POST /api/tts` → `{ url }` for one chunk of text. Audio is **cached by content hash** in Supabase Storage bucket `question-audio` (lazily created, same pattern as `/api/upload-image`), and the cache is checked **before** calling the provider, so each question costs money exactly once ever. `GET /api/tts` → `{ available }` so the UI never offers a button that 503s.
+- `lib/ttsVoices.ts` holds the voice catalogue + `mapRateToSpeed`, split out because `lib/tts.ts` imports node `crypto` and must never reach the browser bundle.
+- One audio file per **question** (stem + all options), not per option — fewer calls and better prosody. The chunk announces "Question N" in English, since the file is a single English voice.
+- `lib/cloudSpeech.ts` has three invariants, all commented at the top of the file: (1) `speakCloud` plays a ~5 ms silent WAV **synchronously** to unlock the audio element inside the tap — no `await` before it, or iOS blocks playback; (2) exactly one `HTMLAudioElement` for the page's lifetime, since the unlock binds to the element; (3) a `generation` counter so a stopped read's in-flight promises exit quietly. Stopping also aborts in-flight fetches — an abandoned request is still billed.
+- It downloads **all** chunks before playing any (progress shown as "Đang chuẩn bị… 3/20"). Streaming as it goes would leave unpredictable multi-second gaps between questions on a first listen.
+- On failure the code does **not** silently retry with Web Speech in the same tap — the gesture is already gone, so iOS would be mute with no error. It reports the failure and lets the next tap use the device voice.
+- The lesson is treated as English when **≥ half the question stems** detect as `en-US` (`detectLang`), not by subject name — an English exam filed under the wrong subject still gets the good voice.
 
 ### Math handling
 

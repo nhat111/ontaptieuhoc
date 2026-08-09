@@ -636,6 +636,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               index={i}
               selectedAnswer={answers[i]}
               onSelect={(answer) => handleSelect(i, answer)}
+              cloudVoice={useCloud ? cloudVoice : null}
             />
           ))}
         </div>
