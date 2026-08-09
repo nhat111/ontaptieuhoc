@@ -67,7 +67,29 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
 /** Giọng nghe tự nhiên hơn thường mang những từ khoá này trong tên. */
 const NICE_VOICE = /google|enhanced|premium|neural|natural|siri|wavenet/i;
 
+/**
+ * Giọng "novelty" và giọng đời cũ của Apple (Boing, Bubbles, Zarvox, Fred…).
+ *
+ * Chúng nằm lẫn trong `getVoices()` như giọng en-US bình thường, nhưng đọc ra
+ * tiếng robot/hiệu ứng hài chứ không phải giọng người — không bao giờ dùng để
+ * đọc đề cho bé. Lọc hẳn khỏi danh sách thay vì chỉ cho điểm thấp: còn hiện
+ * trong dropdown thì vẫn là cái bẫy để bấm nhầm.
+ */
+const NOVELTY_VOICES = new Set([
+  "agnes", "albert", "bad news", "bahh", "bells", "boing", "bruce", "bubbles",
+  "cellos", "deranged", "fred", "good news", "hysterical", "jester", "junior",
+  "kathy", "organ", "princess", "ralph", "superstar", "trinoids", "victoria",
+  "whisper", "wobble", "zarvox",
+]);
+
+function isNoveltyVoice(name: string): boolean {
+  // Tên có thể kèm hậu tố ngôn ngữ, vd "Fred (English (United States))".
+  const base = name.replace(/\s*\(.*$/, "").trim().toLowerCase();
+  return NOVELTY_VOICES.has(base);
+}
+
 function score(v: SpeechSynthesisVoice, lang: SpeechLang): number {
+  if (isNoveltyVoice(v.name ?? "")) return -1;
   const vlang = (v.lang ?? "").replace("_", "-");
   let n = 0;
   if (vlang === lang) n += 100;
