@@ -406,37 +406,13 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
             {questions.length > 0 && (
               <div className="mb-6 space-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
-                {/* Nghe cả bài ngay ở màn hình đầu — nghe trước khi đồng hồ chạy */}
+                {/* Chỉ CÀI ĐẶT giọng đọc, không có nút nghe: màn hình này chưa
+                    hiện câu hỏi nào nên bấm nghe cả bài không để làm gì, mà
+                    phần tự cuộn tới câu đang đọc cũng không có gì để cuộn.
+                    Nút nghe nằm ở thanh trên, sau khi đã bắt đầu làm bài. */}
                 {canListen && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={readAll}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors ${
-                        readingAll
-                          ? "bg-orange-500 text-white hover:bg-orange-600"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
-                      }`}
-                    >
-                      {readingAll ? (
-                        <>
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <rect x="5" y="5" width="10" height="10" rx="1.5" />
-                          </svg>
-                          Dừng đọc
-                          {readingIdx !== null && (
-                            <span className="font-normal opacity-90">· câu {readingIdx + 1}</span>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
-                            <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
-                          </svg>
-                          Nghe cả bài ({questions.length} câu)
-                        </>
-                      )}
-                    </button>
+                    <span className="text-xs font-semibold text-gray-500">Giọng đọc</span>
                     {useCloud ? (
                       // Đang dùng giọng đám mây thì danh sách giọng máy của
                       // thiết bị không còn liên quan — chọn trong giọng đám mây.
