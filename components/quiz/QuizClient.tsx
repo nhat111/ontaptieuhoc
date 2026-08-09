@@ -139,6 +139,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
   function onSegmentStart(mark: number | undefined) {
+    // Đã phát được rồi thì không còn "đang chuẩn bị" nữa, dù các câu sau vẫn
+    // đang sinh ở nền.
+    setPrep(null);
     if (typeof mark !== "number") return;
     setReadingIdx(mark);
     setCurrent(mark);

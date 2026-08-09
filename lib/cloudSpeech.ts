@@ -21,15 +21,6 @@ import type { TtsVoice } from "./ttsVoices";
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
 
-/**
- * Tải LẦN LƯỢT từng câu, không song song.
- *
- * Gói miễn phí của nhà cung cấp giới hạn số lượt gọi mỗi phút rất thấp; bắn
- * song song là dính 429 ngay từ câu đầu và hỏng cả lượt đọc. Chậm hơn nhưng
- * chạy được, mà cũng chỉ chậm đúng lần đầu — sau đó file đã nằm trong cache.
- */
-const CONCURRENCY = 1;
-
 /** Chờ bao lâu trước mỗi lần thử lại khi bị 429. */
 const RETRY_DELAYS_MS = [5000, 15000];
 
@@ -135,24 +126,6 @@ async function fetchAudioUrl(
   }
 }
 
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const out = new Array<R>(items.length);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    for (;;) {
-      const i = cursor++;
-      if (i >= items.length) return;
-      out[i] = await fn(items[i], i);
-    }
-  });
-  await Promise.all(workers);
-  return out;
-}
-
 function playOne(el: HTMLAudioElement, url: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const done = (fn: () => void) => {
@@ -179,12 +152,15 @@ export type SpeakCloudOptions = {
 };
 
 /**
- * Tải rồi phát lần lượt các đoạn.
+ * Vừa tải vừa phát: phát câu 1 ngay khi nó xong, các câu sau sinh tiếp ở nền.
  *
- * Tải HẾT trước khi phát chứ không vừa phát vừa tải câu sau: lần đầu mỗi câu
- * phải sinh audio mất vài giây, nếu vừa phát vừa tải thì giữa các câu sẽ có
- * quãng lặng dài không đoán trước. Tải xong rồi phát thì chờ một lần ở đầu,
- * sau đó liền mạch. Lần nghe sau file đã nằm trong cache nên gần như tức thì.
+ * Trước đây tải hết rồi mới phát, để tránh quãng lặng giữa các câu. Nhưng gói
+ * miễn phí bắt gọi lần lượt, nên "tải hết" nghĩa là ngồi chờ cả 8 câu trước khi
+ * nghe được tiếng nào — chờ quá lâu. Phát ngay câu đầu thì chỉ chờ một câu, và
+ * trong lúc bé nghe câu đó (cỡ 15 giây) thì câu sau thường đã sinh xong, nên
+ * thực tế không có quãng lặng nào.
+ *
+ * Lần nghe sau file đã nằm trong cache nên chạy gần như tức thì.
  */
 export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {}): void {
   const el = getAudio();
@@ -209,40 +185,52 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
   const voice = opts.voice ?? "";
   const rate = opts.rate ?? DEFAULT_RATE;
 
+  // Một ô chờ cho mỗi câu: bên tải điền vào, bên phát lấy ra theo đúng thứ tự.
+  const slots = clean.map(() => {
+    let fill: (r: FetchResult) => void = () => {};
+    const ready = new Promise<FetchResult>((res) => { fill = res; });
+    return { ready, fill };
+  });
+
+  // Bên TẢI — chạy nền, lần lượt từng câu.
   (async () => {
-    let done = 0;
-    opts.onProgress?.(0, clean.length);
-
-    const results = await mapLimit(clean, CONCURRENCY, async (seg) => {
-      const r = await fetchAudioUrl(seg.text, voice, rate, controller.signal);
-      done++;
-      if (gen === generation) opts.onProgress?.(done, clean.length);
-      return r;
-    });
-
-    if (gen !== generation) return; // đã bấm dừng trong lúc tải
-
-    const urls = results.map((r) => ("url" in r ? r.url : null));
-    if (urls.every((u) => !u)) {
-      const first = results.find((r) => "error" in r) as { error: string } | undefined;
-      opts.onFail?.(first?.error ?? "Không rõ nguyên nhân");
-      return;
+    for (let i = 0; i < clean.length; i++) {
+      if (gen !== generation) break;
+      const r = await fetchAudioUrl(clean[i].text, voice, rate, controller.signal);
+      slots[i].fill(r);
+      if (gen === generation) opts.onProgress?.(i + 1, clean.length);
     }
+    // Bấm dừng giữa chừng: phải điền nốt các ô còn trống, không thì bên phát
+    // đứng chờ mãi một promise không bao giờ được giải quyết.
+    for (const s of slots) s.fill({ error: "đã dừng" });
+  })();
+
+  // Bên PHÁT — chờ đúng câu cần rồi phát ngay, không đợi các câu sau.
+  (async () => {
+    opts.onProgress?.(0, clean.length);
+    let played = 0;
+    let firstError: string | null = null;
 
     for (let i = 0; i < clean.length; i++) {
+      const r = await slots[i].ready;
       if (gen !== generation) return;
-      const url = urls[i];
-      if (!url) continue; // câu lỗi thì bỏ qua, không chặn cả bài
+      if ("error" in r) {
+        firstError ??= r.error;
+        continue; // câu lỗi thì bỏ qua, không chặn cả bài
+      }
       opts.onSegmentStart?.(clean[i].mark);
+      played++;
       try {
-        await playOne(el, url);
+        await playOne(el, r.url);
       } catch {
         if (gen !== generation) return;
         // Lỗi phát một file không nên làm đứt cả lượt đọc.
       }
     }
 
-    if (gen === generation) opts.onEnd?.();
+    if (gen !== generation) return;
+    if (played === 0) opts.onFail?.(firstError ?? "Không rõ nguyên nhân");
+    else opts.onEnd?.();
   })();
 }
 
