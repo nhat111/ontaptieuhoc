@@ -3,8 +3,12 @@
 // Trả về boolean (không phải object) để dùng thẳng với useSyncExternalStore:
 // snapshot kiểu nguyên thuỷ so sánh theo giá trị, khỏi phải cache tham chiếu.
 
+import { DEFAULT_VOICE, isTtsVoice, type TtsVoice } from "./ttsVoices";
+
 const KEY_SHUFFLE_Q = "ontap_shuffle_questions";
 const KEY_SHUFFLE_O = "ontap_shuffle_options";
+const KEY_CLOUD_ON = "ontap_cloud_voice";
+const KEY_CLOUD_VOICE = "ontap_cloud_voice_name";
 
 const listeners = new Set<() => void>();
 
@@ -27,6 +31,44 @@ function read(key: string): boolean {
 function write(key: string, value: boolean) {
   try {
     window.localStorage.setItem(key, value ? "1" : "0");
+  } catch {/* ignore */}
+  listeners.forEach((l) => l());
+}
+
+/**
+ * Giọng đám mây bật sẵn khi máy chủ có cấu hình key: người vào nghe đề tiếng
+ * Anh muốn giọng chuẩn ngay, không phải mò bật. Nên đọc theo kiểu "khác '0' là
+ * bật" thay vì "bằng '1' là bật" như các tuỳ chọn còn lại.
+ */
+export function getCloudVoiceOn(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(KEY_CLOUD_ON) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function setCloudVoiceOn(v: boolean) {
+  try {
+    window.localStorage.setItem(KEY_CLOUD_ON, v ? "1" : "0");
+  } catch {/* ignore */}
+  listeners.forEach((l) => l());
+}
+
+export function getCloudVoice(): TtsVoice {
+  if (typeof window === "undefined") return DEFAULT_VOICE;
+  try {
+    const v = window.localStorage.getItem(KEY_CLOUD_VOICE);
+    return isTtsVoice(v) ? v : DEFAULT_VOICE;
+  } catch {
+    return DEFAULT_VOICE;
+  }
+}
+
+export function setCloudVoice(v: TtsVoice) {
+  try {
+    window.localStorage.setItem(KEY_CLOUD_VOICE, v);
   } catch {/* ignore */}
   listeners.forEach((l) => l());
 }
