@@ -21,8 +21,14 @@ import type { TtsVoice } from "./ttsVoices";
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
 
-/** Chờ bao lâu trước mỗi lần thử lại khi bị 429. */
-const RETRY_DELAYS_MS = [5000, 15000];
+/**
+ * Chờ bao lâu trước mỗi lần thử lại khi bị 429.
+ *
+ * Kéo dài tới hơn một phút vì hạn mức của gói miễn phí tính THEO PHÚT — bỏ cuộc
+ * sau 20 giây là chưa kịp qua cửa sổ đó. Chờ lâu không làm người nghe sốt ruột:
+ * việc tải chạy nền trong lúc các câu trước đang được đọc.
+ */
+const RETRY_DELAYS_MS = [5000, 15000, 30000, 60000];
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -149,6 +155,11 @@ export type SpeakCloudOptions = {
   onEnd?: () => void;
   /** Không tải được file nào; kèm lý do để hiện cho người dùng. */
   onFail?: (reason: string) => void;
+  /**
+   * Đọc xong nhưng có câu bị bỏ qua. Bắt buộc phải báo: im lặng thì người nghe
+   * chỉ thấy bài đọc dừng ngang mà không hiểu vì sao.
+   */
+  onIncomplete?: (skipped: number, total: number, reason: string) => void;
 };
 
 /**
@@ -229,8 +240,15 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
     }
 
     if (gen !== generation) return;
-    if (played === 0) opts.onFail?.(firstError ?? "Không rõ nguyên nhân");
-    else opts.onEnd?.();
+    if (played === 0) {
+      opts.onFail?.(firstError ?? "Không rõ nguyên nhân");
+    } else {
+      const skipped = clean.length - played;
+      if (skipped > 0) {
+        opts.onIncomplete?.(skipped, clean.length, firstError ?? "Không rõ nguyên nhân");
+      }
+      opts.onEnd?.();
+    }
   })();
 }
 

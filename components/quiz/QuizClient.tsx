@@ -174,6 +174,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   // Không tự đọc bằng giọng máy ngay tại đây: lúc đó đã ra khỏi luồng cú chạm,
   // mà iOS chỉ cho phát tiếng trong luồng đó — sẽ câm mà không báo gì.
   const [cloudFailed, setCloudFailed] = useState<string | null>(null);
+  // Đọc được một phần: không tắt giọng chuẩn (các câu đã có file vẫn dùng tốt),
+  // chỉ báo cho biết vì sao bài đọc dừng ngang.
+  const [cloudPartial, setCloudPartial] = useState<string | null>(null);
 
   function readAll() {
     if (readingAll) {
@@ -181,6 +184,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       return;
     }
     setReadingAll(true);
+    setCloudPartial(null);
     if (useCloud && !cloudFailed) {
       speakCloud(cloudSegments(questions), {
         rate,
@@ -196,6 +200,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
           setCloudFailed(reason);
           setReadingAll(false);
           setPrep(null);
+        },
+        onIncomplete: (skipped, total, reason) => {
+          setCloudPartial(`Bỏ qua ${skipped}/${total} câu — ${reason}`);
         },
       });
       return;
@@ -226,6 +233,15 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         <span className="text-blue-600">
           Đang chuẩn bị giọng đọc… {prep.done}/{prep.total} câu
           <span className="text-gray-400"> (lần đầu hơi lâu, lần sau nghe ngay)</span>
+        </span>
+      )}
+      {cloudPartial && !cloudFailed && (
+        <span className="text-orange-600">
+          Chưa đọc hết bài. {cloudPartial}
+          <br />
+          <span className="text-gray-500">
+            Bấm nghe lại sau ít phút — các câu đã đọc được đã lưu nên không phải chờ lại.
+          </span>
         </span>
       )}
       {cloudFailed && (
