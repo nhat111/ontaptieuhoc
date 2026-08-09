@@ -114,8 +114,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "API key không hợp lệ." }, { status: 500 });
     }
     if (status === 429) {
+      // Kèm nguyên văn để phân biệt hai chuyện rất khác nhau: vượt giới hạn
+      // mỗi phút (chờ là qua) và hết hạn mức mỗi ngày (chờ cũng vô ích).
       return NextResponse.json(
-        { error: "Hết hạn mức miễn phí hoặc đang quá tải, thử lại sau ít phút." },
+        { error: `Vượt hạn mức nhà cung cấp — ${msg.slice(0, 200)}` },
         { status: 429 }
       );
     }

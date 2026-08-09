@@ -21,8 +21,27 @@ import type { TtsVoice } from "./ttsVoices";
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
 
-/** Số câu tải song song. Đủ nhanh mà không đập vào giới hạn tần suất của API. */
-const CONCURRENCY = 4;
+/**
+ * Tải LẦN LƯỢT từng câu, không song song.
+ *
+ * Gói miễn phí của nhà cung cấp giới hạn số lượt gọi mỗi phút rất thấp; bắn
+ * song song là dính 429 ngay từ câu đầu và hỏng cả lượt đọc. Chậm hơn nhưng
+ * chạy được, mà cũng chỉ chậm đúng lần đầu — sau đó file đã nằm trong cache.
+ */
+const CONCURRENCY = 1;
+
+/** Chờ bao lâu trước mỗi lần thử lại khi bị 429. */
+const RETRY_DELAYS_MS = [5000, 15000];
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(t);
+      reject(new Error("aborted"));
+    }, { once: true });
+  });
+}
 
 export type CloudSegment = { text: string; mark?: number };
 
@@ -87,21 +106,32 @@ async function fetchAudioUrl(
   rate: number,
   signal: AbortSignal
 ): Promise<FetchResult> {
-  try {
-    const res = await fetch("/api/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice, rate }),
-      signal,
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      return { error: typeof data?.error === "string" ? data.error : `Lỗi ${res.status}` };
+  let last = "Không gọi được máy chủ";
+
+  // Bị 429 thì chờ rồi thử lại: giới hạn của gói miễn phí tính theo phút, nên
+  // đợi một lát là qua. Hết hạn mức theo NGÀY thì thử lại cũng vô ích, nhưng
+  // vẫn trả về đúng thông điệp để người dùng biết.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice, rate }),
+        signal,
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        return typeof data?.url === "string"
+          ? { url: data.url }
+          : { error: "Máy chủ không trả về file" };
+      }
+      last = typeof data?.error === "string" ? data.error : `Lỗi ${res.status}`;
+      if (res.status !== 429 || attempt >= RETRY_DELAYS_MS.length) return { error: last };
+      await sleep(RETRY_DELAYS_MS[attempt], signal);
+    } catch (e) {
+      // Huỷ giữa chừng cũng vào đây; bên gọi tự bỏ qua nhờ số thứ tự lượt đọc.
+      return { error: e instanceof Error ? e.message : last };
     }
-    return typeof data?.url === "string" ? { url: data.url } : { error: "Máy chủ không trả về file" };
-  } catch (e) {
-    // Huỷ giữa chừng cũng vào đây; bên gọi tự bỏ qua nhờ số thứ tự lượt đọc.
-    return { error: e instanceof Error ? e.message : "Không gọi được máy chủ" };
   }
 }
 
