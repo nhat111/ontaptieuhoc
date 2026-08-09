@@ -8,14 +8,19 @@ import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
 import {
+  getCloudVoice,
+  getCloudVoiceOn,
   getShuffleOptions,
   getShuffleQuestions,
+  setCloudVoice,
+  setCloudVoiceOn,
   setShuffleOptions,
   setShuffleQuestions,
   subscribeQuizPrefs,
 } from "@/lib/quizPrefs";
 import {
   allQuestionsSegments,
+  detectLang,
   stopSpeaking,
   getSpeechRate,
   isSpeechSupported,
@@ -25,6 +30,8 @@ import {
   DEFAULT_RATE,
   RATE_OPTIONS,
 } from "@/lib/speech";
+import { cloudSegments, speakCloud, stopCloud } from "@/lib/cloudSpeech";
+import { VOICE_OPTIONS, DEFAULT_VOICE, isTtsVoice } from "@/lib/ttsVoices";
 
 interface Props {
   initialQuestions: Question[];
@@ -70,6 +77,35 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     setStarted(true);
   }
 
+  // ── Giọng đám mây (chỉ cho đề tiếng Anh) ─────────────────────────────────
+  //
+  // Giọng máy sẵn có đủ dùng cho đề tiếng Việt, nhưng bé học tiếng Anh mà nghe
+  // giọng máy thì dễ nhại sai trọng âm — nên đề tiếng Anh mới gọi giọng đám mây.
+  const [cloudAvailable, setCloudAvailable] = useState(false);
+  const [prep, setPrep] = useState<{ done: number; total: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/tts")
+      .then((r) => r.json())
+      .then((d) => setCloudAvailable(!!d.available))
+      .catch(() => {});
+  }, []);
+
+  const cloudOn = useSyncExternalStore(subscribeQuizPrefs, getCloudVoiceOn, () => true);
+  const cloudVoice = useSyncExternalStore(
+    subscribeQuizPrefs,
+    getCloudVoice,
+    () => DEFAULT_VOICE
+  );
+
+  // Nhận diện theo NỘI DUNG chứ không chỉ theo tên môn: đề tiếng Anh có thể bị
+  // xếp nhầm môn, mà nội dung thì không nói dối được.
+  const isEnglishLesson =
+    questions.length > 0 &&
+    questions.filter((q) => detectLang(q.question) === "en-US").length * 2 >= questions.length;
+
+  const useCloud = cloudAvailable && cloudOn && isEnglishLesson;
+
   // ── Nghe cả bài ──────────────────────────────────────────────────────────
   const [readingAll, setReadingAll] = useState(false);
   const [readingIdx, setReadingIdx] = useState<number | null>(null);
@@ -81,28 +117,31 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   );
 
   // Rời trang giữa chừng thì tắt tiếng, không để đọc tiếp ở trang khác.
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => { stopSpeaking(); stopCloud(); }, []);
 
-  function readAll() {
-    if (readingAll) {
-      stopSpeaking();
-      setReadingAll(false);
-      setReadingIdx(null);
-      return;
-    }
-    setReadingAll(true);
+  // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
+  function onSegmentStart(mark: number | undefined) {
+    if (typeof mark !== "number") return;
+    setReadingIdx(mark);
+    setCurrent(mark);
+    document.getElementById(`question-${mark}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  function stopReading() {
+    stopSpeaking();
+    stopCloud();
+    setReadingAll(false);
+    setReadingIdx(null);
+    setPrep(null);
+  }
+
+  function readWithDeviceVoice() {
     speakSegments(allQuestionsSegments(questions), {
       rate,
-      // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
-      onSegmentStart: (mark) => {
-        if (typeof mark !== "number") return;
-        setReadingIdx(mark);
-        setCurrent(mark);
-        document.getElementById(`question-${mark}`)?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      },
+      onSegmentStart,
       onEnd: () => {
         setReadingAll(false);
         setReadingIdx(null);
@@ -110,14 +149,43 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     });
   }
 
+  // Giọng đám mây hỏng thì lượt bấm này coi như bỏ; lần bấm sau dùng giọng máy.
+  // Không tự đọc bằng giọng máy ngay tại đây: lúc đó đã ra khỏi luồng cú chạm,
+  // mà iOS chỉ cho phát tiếng trong luồng đó — sẽ câm mà không báo gì.
+  const [cloudFailed, setCloudFailed] = useState(false);
+
+  function readAll() {
+    if (readingAll) {
+      stopReading();
+      return;
+    }
+    setReadingAll(true);
+    if (useCloud && !cloudFailed) {
+      speakCloud(cloudSegments(questions), {
+        rate,
+        voice: cloudVoice,
+        onProgress: (done, total) => setPrep(done >= total ? null : { done, total }),
+        onSegmentStart,
+        onEnd: () => {
+          setReadingAll(false);
+          setReadingIdx(null);
+          setPrep(null);
+        },
+        onFail: () => {
+          setCloudFailed(true);
+          setReadingAll(false);
+          setPrep(null);
+        },
+      });
+      return;
+    }
+    readWithDeviceVoice();
+  }
+
   function changeRate(value: number) {
     setSpeechRate(value);
     // Tốc độ chỉ áp dụng cho lượt đọc mới, nên dừng lượt đang chạy cho khỏi rối.
-    if (readingAll) {
-      stopSpeaking();
-      setReadingAll(false);
-      setReadingIdx(null);
-    }
+    if (readingAll) stopReading();
   }
 
   // Server không có speechSynthesis nên phải trả false lúc SSR.
@@ -125,6 +193,37 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     () => () => {},
     () => isSpeechSupported(),
     () => false
+  );
+
+  // Giọng đám mây là file mp3 nên phát được cả trên máy không có speechSynthesis.
+  const canListen = speechOk || useCloud;
+
+  // Dùng chung cho màn hình đầu và thanh điều khiển lúc đang làm bài.
+  const cloudStatus = (
+    <div className="w-full text-[11px]">
+      {prep && (
+        <span className="text-blue-600">
+          Đang chuẩn bị giọng đọc… {prep.done}/{prep.total} câu
+          <span className="text-gray-400"> (lần đầu hơi lâu, lần sau nghe ngay)</span>
+        </span>
+      )}
+      {cloudFailed && (
+        <span className="text-orange-600">
+          Không tải được giọng chuẩn. Bấm lại để nghe bằng giọng máy của thiết bị.
+        </span>
+      )}
+      {!prep && !cloudFailed && cloudAvailable && isEnglishLesson && (
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-gray-500">
+          <input
+            type="checkbox"
+            checked={cloudOn}
+            onChange={(e) => setCloudVoiceOn(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
+          />
+          Giọng đọc chuẩn cho đề tiếng Anh
+        </label>
+      )}
+    </div>
   );
 
   const answersRef = useRef(answers);
@@ -268,7 +367,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             {questions.length > 0 && (
               <div className="mb-6 space-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
                 {/* Nghe cả bài ngay ở màn hình đầu — nghe trước khi đồng hồ chạy */}
-                {speechOk && (
+                {canListen && (
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={readAll}
@@ -298,8 +397,29 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                         </>
                       )}
                     </button>
-                    <VoicePicker lang="vi-VN" label="Giọng Việt" />
-                    <VoicePicker lang="en-US" label="Giọng Anh" />
+                    {useCloud ? (
+                      // Đang dùng giọng đám mây thì danh sách giọng máy của
+                      // thiết bị không còn liên quan — chọn trong giọng đám mây.
+                      <label className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                        Giọng Anh
+                        <select
+                          value={cloudVoice}
+                          onChange={(e) => {
+                            if (isTtsVoice(e.target.value)) setCloudVoice(e.target.value);
+                          }}
+                          className="max-w-[10.5rem] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                          {VOICE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <>
+                        <VoicePicker lang="vi-VN" label="Giọng Việt" />
+                        <VoicePicker lang="en-US" label="Giọng Anh" />
+                      </>
+                    )}
                     <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-0.5">
                       <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
                       {RATE_OPTIONS.map((o) => (
@@ -314,6 +434,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                         </button>
                       ))}
                     </div>
+                    {cloudStatus}
                   </div>
                 )}
 
@@ -453,7 +574,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
           </div>
 
           {/* Nghe cả bài + tốc độ đọc — ẩn khi trình duyệt không hỗ trợ */}
-          {speechOk && questions.length > 0 && (
+          {canListen && questions.length > 0 && (
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={readAll}
@@ -500,6 +621,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                   </button>
                 ))}
               </div>
+              {cloudStatus}
             </div>
           )}
         </div>
