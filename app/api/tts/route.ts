@@ -119,7 +119,13 @@ export async function POST(req: NextRequest) {
         { status: 429 }
       );
     }
-    return NextResponse.json({ error: "Không tạo được giọng đọc." }, { status: 502 });
+    // Kèm thông điệp thật của nhà cung cấp: "không tạo được" chung chung thì
+    // không ai lần ra là sai tên model, sai quyền key hay lỗi gì khác. Thân lỗi
+    // của Gemini/OpenAI không chứa API key nên hiện ra là an toàn.
+    return NextResponse.json(
+      { error: `Không tạo được giọng đọc — ${msg.slice(0, 200)}` },
+      { status: 502 }
+    );
   }
 
   const path = `tts/${key}.${result.ext}`;

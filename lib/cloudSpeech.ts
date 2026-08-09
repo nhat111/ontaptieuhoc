@@ -74,12 +74,19 @@ export function cloudSegmentFor(question: string, options: string[]): CloudSegme
   }));
 }
 
+type FetchResult = { url: string } | { error: string };
+
+/**
+ * Giữ lại THÔNG ĐIỆP lỗi chứ không chỉ trả null. Nuốt lỗi ở đây thì phía người
+ * dùng chỉ thấy "không tải được" mà không ai biết vì sao — hết hạn mức, sai
+ * model hay lỗi kho lưu trữ đều trông giống hệt nhau.
+ */
 async function fetchAudioUrl(
   text: string,
   voice: TtsVoice,
   rate: number,
   signal: AbortSignal
-): Promise<string | null> {
+): Promise<FetchResult> {
   try {
     const res = await fetch("/api/tts", {
       method: "POST",
@@ -87,11 +94,14 @@ async function fetchAudioUrl(
       body: JSON.stringify({ text, voice, rate }),
       signal,
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return typeof data?.url === "string" ? data.url : null;
-  } catch {
-    return null;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { error: typeof data?.error === "string" ? data.error : `Lỗi ${res.status}` };
+    }
+    return typeof data?.url === "string" ? { url: data.url } : { error: "Máy chủ không trả về file" };
+  } catch (e) {
+    // Huỷ giữa chừng cũng vào đây; bên gọi tự bỏ qua nhờ số thứ tự lượt đọc.
+    return { error: e instanceof Error ? e.message : "Không gọi được máy chủ" };
   }
 }
 
@@ -134,8 +144,8 @@ export type SpeakCloudOptions = {
   onProgress?: (done: number, total: number) => void;
   onSegmentStart?: (mark: number | undefined) => void;
   onEnd?: () => void;
-  /** Không tải được file nào; bên gọi nên quay về Web Speech. */
-  onFail?: () => void;
+  /** Không tải được file nào; kèm lý do để hiện cho người dùng. */
+  onFail?: (reason: string) => void;
 };
 
 /**
@@ -173,17 +183,19 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
     let done = 0;
     opts.onProgress?.(0, clean.length);
 
-    const urls = await mapLimit(clean, CONCURRENCY, async (seg) => {
-      const url = await fetchAudioUrl(seg.text, voice, rate, controller.signal);
+    const results = await mapLimit(clean, CONCURRENCY, async (seg) => {
+      const r = await fetchAudioUrl(seg.text, voice, rate, controller.signal);
       done++;
       if (gen === generation) opts.onProgress?.(done, clean.length);
-      return url;
+      return r;
     });
 
     if (gen !== generation) return; // đã bấm dừng trong lúc tải
 
+    const urls = results.map((r) => ("url" in r ? r.url : null));
     if (urls.every((u) => !u)) {
-      opts.onFail?.();
+      const first = results.find((r) => "error" in r) as { error: string } | undefined;
+      opts.onFail?.(first?.error ?? "Không rõ nguyên nhân");
       return;
     }
 

@@ -170,7 +170,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   // Giọng đám mây hỏng thì lượt bấm này coi như bỏ; lần bấm sau dùng giọng máy.
   // Không tự đọc bằng giọng máy ngay tại đây: lúc đó đã ra khỏi luồng cú chạm,
   // mà iOS chỉ cho phát tiếng trong luồng đó — sẽ câm mà không báo gì.
-  const [cloudFailed, setCloudFailed] = useState(false);
+  const [cloudFailed, setCloudFailed] = useState<string | null>(null);
 
   function readAll() {
     if (readingAll) {
@@ -189,8 +189,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
           setReadingIdx(null);
           setPrep(null);
         },
-        onFail: () => {
-          setCloudFailed(true);
+        onFail: (reason) => {
+          setCloudFailed(reason);
           setReadingAll(false);
           setPrep(null);
         },
@@ -228,6 +228,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       {cloudFailed && (
         <span className="text-orange-600">
           Không tải được giọng chuẩn. Bấm lại để nghe bằng giọng máy của thiết bị.
+          <br />
+          <span className="text-gray-500">Lý do: {cloudFailed}</span>
         </span>
       )}
       {/* Không kích hoạt được thì phải NÓI RA lý do. Im lặng thì người dùng chỉ
