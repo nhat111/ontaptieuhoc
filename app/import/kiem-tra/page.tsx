@@ -80,6 +80,17 @@ export default async function ConfigCheckPage() {
   const hasGemini = !!process.env.GEMINI_API_KEY;
   const hasOpenai = !!process.env.OPENAI_API_KEY;
   const ttsProvider = getProvider();
+
+  // Tên biến môi trường phân biệt hoa thường: đặt "GeminiAPIKey" trong khi code
+  // đọc "GEMINI_API_KEY" là hai biến khác nhau, mà nhìn qua tưởng đã cấu hình
+  // xong. Liệt kê các biến có tên na ná để lộ ra lỗi chính tả ngay.
+  // Chỉ lấy TÊN biến, không bao giờ đụng tới giá trị.
+  const lookalikeKeys = Object.keys(process.env).filter(
+    (k) =>
+      /gemini|openai/i.test(k) &&
+      k !== "GEMINI_API_KEY" &&
+      k !== "OPENAI_API_KEY"
+  );
   const [subjects, chapters, lessons, questions] = await Promise.all([
     readSubjects(),
     countTable("chapters"),
@@ -199,6 +210,17 @@ export default async function ConfigCheckPage() {
               <Pill ok={hasOpenai}>{hasOpenai ? "có" : "chưa đặt"}</Pill>
             </div>
           </div>
+          {lookalikeKeys.length > 0 && (
+            <p className="mt-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+              ⚠️ Có biến tên gần giống nhưng <b>không đúng</b>:{" "}
+              {lookalikeKeys.map((k) => (
+                <code key={k} className="mr-1 break-all">{k}</code>
+              ))}
+              <br />
+              Tên biến phân biệt hoa thường và dấu gạch dưới. Đổi lại thành{" "}
+              <code>GEMINI_API_KEY</code> (viết hoa hết, hai dấu gạch dưới) rồi Redeploy.
+            </p>
+          )}
           {ttsProvider ? (
             <p className="mt-2 text-xs text-gray-500">
               Đề tiếng Anh sẽ đọc bằng giọng đám mây. Đề tiếng Việt vẫn dùng giọng máy của
