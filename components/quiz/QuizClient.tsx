@@ -108,11 +108,19 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   const cloudVoice =
     cloud?.voices.some((v) => v.value === savedVoice) ? savedVoice : cloud?.defaultVoice ?? "";
 
-  // Nhận diện theo NỘI DUNG chứ không chỉ theo tên môn: đề tiếng Anh có thể bị
-  // xếp nhầm môn, mà nội dung thì không nói dối được.
-  const isEnglishLesson =
+  // Nhận diện tiếng Anh theo HAI dấu hiệu, chỉ cần một cái đúng:
+  //
+  // - Môn là "Tiếng Anh": người tạo đề đã nói thẳng ra rồi, tin.
+  // - Quá nửa câu hỏi không có dấu tiếng Việt: bắt được cả đề tiếng Anh bị xếp
+  //   nhầm môn.
+  //
+  // Chỉ dựa vào nội dung là hụt mất trường hợp rất hay gặp: đề tiếng Anh do
+  // người Việt soạn, lời dẫn ("Chọn đáp án đúng") bằng tiếng Việt còn nội dung
+  // mới là tiếng Anh — lúc đó quá nửa câu bị tính là tiếng Việt.
+  const englishByContent =
     questions.length > 0 &&
     questions.filter((q) => detectLang(q.question) === "en-US").length * 2 >= questions.length;
+  const isEnglishLesson = lesson.subjectName === "Tiếng Anh" || englishByContent;
 
   const useCloud = cloudAvailable && cloudOn && isEnglishLesson;
 
@@ -222,16 +230,33 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
           Không tải được giọng chuẩn. Bấm lại để nghe bằng giọng máy của thiết bị.
         </span>
       )}
-      {!prep && !cloudFailed && cloudAvailable && isEnglishLesson && (
-        <label className="inline-flex cursor-pointer items-center gap-1.5 text-gray-500">
-          <input
-            type="checkbox"
-            checked={cloudOn}
-            onChange={(e) => setCloudVoiceOn(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
-          />
-          Giọng đọc chuẩn cho đề tiếng Anh
-        </label>
+      {/* Không kích hoạt được thì phải NÓI RA lý do. Im lặng thì người dùng chỉ
+          thấy "giọng chẳng thay đổi gì" mà không biết vướng ở đâu. */}
+      {!prep && !cloudFailed && (
+        cloudAvailable && isEnglishLesson ? (
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-gray-500">
+            <input
+              type="checkbox"
+              checked={cloudOn}
+              onChange={(e) => setCloudVoiceOn(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
+            />
+            Giọng đọc chuẩn cho đề tiếng Anh
+          </label>
+        ) : cloudAvailable ? (
+          <span className="text-gray-400">
+            Đề này không phải tiếng Anh nên đọc bằng giọng máy. Giọng chuẩn chỉ dùng cho
+            môn Tiếng Anh hoặc đề có nội dung tiếng Anh.
+          </span>
+        ) : (
+          <span className="text-gray-400">
+            Đang đọc bằng giọng máy của thiết bị. Giọng chuẩn chưa bật trên máy chủ —{" "}
+            <a href="/import/kiem-tra" className="text-blue-500 underline">
+              xem trang kiểm tra
+            </a>
+            .
+          </span>
+        )
       )}
     </div>
   );

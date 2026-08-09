@@ -3,6 +3,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { GRADES, getSubjects } from "@/lib/subjects";
+import { getProvider } from "@/lib/tts";
 
 // Trang chẩn đoán mở được bằng điện thoại — thay cho
 // `node scripts/check-subjects.mjs` khi không ngồi máy tính.
@@ -74,6 +75,11 @@ function readTarget() {
 
 export default async function ConfigCheckPage() {
   const target = readTarget();
+
+  // Chỉ báo CÓ/KHÔNG, tuyệt đối không in giá trị key ra trang.
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+  const hasOpenai = !!process.env.OPENAI_API_KEY;
+  const ttsProvider = getProvider();
   const [subjects, chapters, lessons, questions] = await Promise.all([
     readSubjects(),
     countTable("chapters"),
@@ -171,6 +177,40 @@ export default async function ConfigCheckPage() {
                 <code>SUPABASE_SERVICE_ROLE_KEY</code> trong env của Vercel.
               </p>
             </>
+          )}
+        </section>
+
+        {/* Giọng đọc đám mây */}
+        <section className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+          <h2 className="text-sm font-bold text-gray-700 mb-2">Giọng đọc tiếng Anh</h2>
+          <div className="space-y-1 rounded-xl bg-gray-50 p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">Trạng thái:</span>
+              <Pill ok={!!ttsProvider}>
+                {ttsProvider ? `Đang bật — ${ttsProvider}` : "Chưa bật"}
+              </Pill>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">GEMINI_API_KEY:</span>
+              <Pill ok={hasGemini}>{hasGemini ? "có" : "chưa đặt"}</Pill>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="text-gray-400">OPENAI_API_KEY:</span>
+              <Pill ok={hasOpenai}>{hasOpenai ? "có" : "chưa đặt"}</Pill>
+            </div>
+          </div>
+          {ttsProvider ? (
+            <p className="mt-2 text-xs text-gray-500">
+              Đề tiếng Anh sẽ đọc bằng giọng đám mây. Đề tiếng Việt vẫn dùng giọng máy của
+              trình duyệt — đó là chủ ý, không phải lỗi.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-gray-500">
+              Chưa có key nào nên mọi đề đều đọc bằng giọng máy của trình duyệt. Thêm{" "}
+              <code>GEMINI_API_KEY</code> vào env của Vercel (nhớ tick cả{" "}
+              <b>Production</b> lẫn <b>Preview</b>), rồi <b>Redeploy</b> — đổi biến môi trường
+              xong bản đang chạy không tự nhận.
+            </p>
           )}
         </section>
 
