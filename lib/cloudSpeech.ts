@@ -1,4 +1,4 @@
-// Phát giọng đọc tiếng Anh lấy từ `/api/tts` (file mp3 đã sinh sẵn).
+// Phát giọng đọc tiếng Anh lấy từ `/api/tts` (file mp3 hoặc wav đã sinh sẵn).
 //
 // Khác Web Speech ở chỗ nội dung là file audio thật, nên giọng giống người và
 // giống nhau trên mọi máy — không phụ thuộc bé đang dùng iPhone hay máy tính.
@@ -15,7 +15,7 @@
 //    nên các promise đang bay của lượt cũ tự biết mình đã cũ và im lặng thoát.
 
 import { DEFAULT_RATE, stripForSpeech } from "./speech";
-import { DEFAULT_VOICE, type TtsVoice } from "./ttsVoices";
+import type { TtsVoice } from "./ttsVoices";
 
 /** WAV 8kHz mono, ~5ms im lặng — chỉ để mở khoá audio trên iOS. */
 const SILENT_WAV =
@@ -165,7 +165,8 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
     return;
   }
 
-  const voice = opts.voice ?? DEFAULT_VOICE;
+  // Bỏ trống thì máy chủ tự dùng giọng mặc định của nhà cung cấp đang bật.
+  const voice = opts.voice ?? "";
   const rate = opts.rate ?? DEFAULT_RATE;
 
   (async () => {

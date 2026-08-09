@@ -31,7 +31,6 @@ import {
   RATE_OPTIONS,
 } from "@/lib/speech";
 import { cloudSegments, speakCloud, stopCloud } from "@/lib/cloudSpeech";
-import { VOICE_OPTIONS, DEFAULT_VOICE, isTtsVoice } from "@/lib/ttsVoices";
 
 interface Props {
   initialQuestions: Question[];
@@ -81,22 +80,33 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   //
   // Giọng máy sẵn có đủ dùng cho đề tiếng Việt, nhưng bé học tiếng Anh mà nghe
   // giọng máy thì dễ nhại sai trọng âm — nên đề tiếng Anh mới gọi giọng đám mây.
-  const [cloudAvailable, setCloudAvailable] = useState(false);
+  // Danh mục giọng do máy chủ trả về: tên giọng khác nhau tuỳ nhà cung cấp
+  // (Gemini dùng "Kore", OpenAI dùng "nova") nên client không giữ danh sách cứng.
+  const [cloud, setCloud] = useState<{
+    voices: { value: string; label: string }[];
+    defaultVoice: string;
+  } | null>(null);
   const [prep, setPrep] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     fetch("/api/tts")
       .then((r) => r.json())
-      .then((d) => setCloudAvailable(!!d.available))
+      .then((d) => {
+        if (!d?.available) return;
+        setCloud({
+          voices: Array.isArray(d.voices) ? d.voices : [],
+          defaultVoice: typeof d.defaultVoice === "string" ? d.defaultVoice : "",
+        });
+      })
       .catch(() => {});
   }, []);
 
+  const cloudAvailable = cloud !== null;
   const cloudOn = useSyncExternalStore(subscribeQuizPrefs, getCloudVoiceOn, () => true);
-  const cloudVoice = useSyncExternalStore(
-    subscribeQuizPrefs,
-    getCloudVoice,
-    () => DEFAULT_VOICE
-  );
+  const savedVoice = useSyncExternalStore(subscribeQuizPrefs, getCloudVoice, () => "");
+  // Giọng đã lưu có thể là của nhà cung cấp cũ; chỉ dùng khi còn trong danh mục.
+  const cloudVoice =
+    cloud?.voices.some((v) => v.value === savedVoice) ? savedVoice : cloud?.defaultVoice ?? "";
 
   // Nhận diện theo NỘI DUNG chứ không chỉ theo tên môn: đề tiếng Anh có thể bị
   // xếp nhầm môn, mà nội dung thì không nói dối được.
@@ -404,12 +414,10 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                         Giọng Anh
                         <select
                           value={cloudVoice}
-                          onChange={(e) => {
-                            if (isTtsVoice(e.target.value)) setCloudVoice(e.target.value);
-                          }}
+                          onChange={(e) => setCloudVoice(e.target.value)}
                           className="max-w-[10.5rem] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                         >
-                          {VOICE_OPTIONS.map((o) => (
+                          {(cloud?.voices ?? []).map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>

@@ -3,8 +3,6 @@
 // Trả về boolean (không phải object) để dùng thẳng với useSyncExternalStore:
 // snapshot kiểu nguyên thuỷ so sánh theo giá trị, khỏi phải cache tham chiếu.
 
-import { DEFAULT_VOICE, isTtsVoice, type TtsVoice } from "./ttsVoices";
-
 const KEY_SHUFFLE_Q = "ontap_shuffle_questions";
 const KEY_SHUFFLE_O = "ontap_shuffle_options";
 const KEY_CLOUD_ON = "ontap_cloud_voice";
@@ -56,17 +54,21 @@ export function setCloudVoiceOn(v: boolean) {
   listeners.forEach((l) => l());
 }
 
-export function getCloudVoice(): TtsVoice {
-  if (typeof window === "undefined") return DEFAULT_VOICE;
+/**
+ * Tên giọng đã chọn, "" nghĩa là chưa chọn — lúc đó dùng giọng mặc định do
+ * `GET /api/tts` trả về. Không kiểm tra tên ở đây: danh mục giọng phụ thuộc
+ * nhà cung cấp nào đang bật, chỉ máy chủ mới biết.
+ */
+export function getCloudVoice(): string {
+  if (typeof window === "undefined") return "";
   try {
-    const v = window.localStorage.getItem(KEY_CLOUD_VOICE);
-    return isTtsVoice(v) ? v : DEFAULT_VOICE;
+    return window.localStorage.getItem(KEY_CLOUD_VOICE) ?? "";
   } catch {
-    return DEFAULT_VOICE;
+    return "";
   }
 }
 
-export function setCloudVoice(v: TtsVoice) {
+export function setCloudVoice(v: string) {
   try {
     window.localStorage.setItem(KEY_CLOUD_VOICE, v);
   } catch {/* ignore */}

@@ -1,26 +1,15 @@
-// Danh mục giọng đọc đám mây — phần dùng được ở CẢ hai phía.
+// Phần TTS dùng được ở CẢ hai phía.
 //
 // Tách khỏi `lib/tts.ts` vì file đó `import { createHash } from "crypto"`; chỉ
 // cần một component client lỡ import hằng số từ đó là kéo cả module node vào
 // bundle trình duyệt.
 
-export type TtsVoice = "alloy" | "nova" | "shimmer" | "fable" | "echo" | "onyx";
-
-/** Giọng mặc định — nữ, ấm, phát âm rõ, hợp đọc đề cho bé. */
-export const DEFAULT_VOICE: TtsVoice = "nova";
-
-export const VOICE_OPTIONS: { value: TtsVoice; label: string }[] = [
-  { value: "nova", label: "Nova (nữ, ấm)" },
-  { value: "shimmer", label: "Shimmer (nữ, nhẹ)" },
-  { value: "alloy", label: "Alloy (trung tính)" },
-  { value: "fable", label: "Fable (giọng Anh-Anh)" },
-  { value: "echo", label: "Echo (nam)" },
-  { value: "onyx", label: "Onyx (nam, trầm)" },
-];
-
-export function isTtsVoice(v: unknown): v is TtsVoice {
-  return typeof v === "string" && VOICE_OPTIONS.some((o) => o.value === v);
-}
+/**
+ * Tên giọng chỉ là chuỗi: mỗi nhà cung cấp có bộ tên riêng ("Kore" của Gemini,
+ * "nova" của OpenAI), nên client không giữ danh sách cứng mà hỏi
+ * `GET /api/tts`. Máy chủ mới là nơi kiểm tra tên giọng có hợp lệ không.
+ */
+export type TtsVoice = string;
 
 /**
  * Đổi tốc độ của Web Speech (0.55 / 0.7 / 0.9) sang thang tốc độ của provider,

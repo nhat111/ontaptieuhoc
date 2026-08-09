@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import {
-  DEFAULT_VOICE,
-  isTtsConfigured,
-  isTtsVoice,
-  mapRateToSpeed,
+  defaultVoiceFor,
+  getProvider,
+  resolveVoice,
   synthesizeSpeech,
   ttsCacheKey,
-  type TtsVoice,
+  voicesFor,
 } from "@/lib/tts";
+import { mapRateToSpeed } from "@/lib/ttsVoices";
 
-// Trả về URL file mp3 đọc sẵn cho một đoạn text tiếng Anh.
+// Trả về URL file audio đọc sẵn cho một đoạn text tiếng Anh.
 //
 // Cache theo nội dung: cùng một câu hỏi thì mọi lượt nghe sau đều dùng lại file
-// cũ, không gọi lại provider. Nghĩa là mỗi câu chỉ tốn tiền đúng một lần trong
-// đời, kể cả khi cả lớp cùng làm đề đó.
+// cũ, không gọi lại nhà cung cấp. Với gói miễn phí điều này còn quan trọng hơn
+// cả với gói trả phí — hạn mức tính theo số lần SINH, nên nghe lại không tốn gì.
 
 const BUCKET = "question-audio";
 // Một câu hỏi kèm 4 đáp án hiếm khi quá 800 ký tự. Chặn ở đây để một request
-// hỏng (hoặc cố tình) không biến thành hoá đơn lớn — /quiz là trang mở, không
-// cần đăng nhập.
+// hỏng (hoặc cố tình) không đốt hết hạn mức — /quiz là trang mở, không cần
+// đăng nhập.
 const MAX_CHARS = 1200;
 
 type Sb = ReturnType<typeof getSupabaseServer>;
@@ -27,14 +27,14 @@ type Sb = ReturnType<typeof getSupabaseServer>;
 async function ensureBucket(sb: Sb): Promise<{ error?: string }> {
   const { error } = await sb.storage.createBucket(BUCKET, {
     public: true,
-    allowedMimeTypes: ["audio/mpeg"],
+    allowedMimeTypes: ["audio/mpeg", "audio/wav"],
   });
   if (!error) return {};
   if (/already exists|duplicate/i.test(error.message)) return {};
   return { error: error.message };
 }
 
-/** Đã có file trong kho chưa — hỏi trước khi tiêu tiền gọi provider. */
+/** Đã có file trong kho chưa — hỏi trước khi tiêu hạn mức. */
 async function findCached(sb: Sb, name: string): Promise<boolean> {
   const { data, error } = await sb.storage.from(BUCKET).list("tts", {
     search: name,
@@ -45,17 +45,26 @@ async function findCached(sb: Sb, name: string): Promise<boolean> {
 }
 
 /**
- * Cho client biết có bật giọng đám mây không, để nút "Giọng chuẩn" chỉ hiện khi
- * dùng được — thay vì hiện rồi bấm vào báo lỗi. Chỉ trả boolean, không lộ key.
+ * Cho client biết có bật giọng đám mây không, và nhà cung cấp đang bật có
+ * những giọng nào — tên giọng của Gemini và OpenAI khác nhau hoàn toàn nên
+ * client không thể tự đoán. Không trả bất kỳ phần nào của key.
  */
 export async function GET() {
-  return NextResponse.json({ available: isTtsConfigured() });
+  const provider = getProvider();
+  if (!provider) return NextResponse.json({ available: false });
+  return NextResponse.json({
+    available: true,
+    provider,
+    voices: voicesFor(provider),
+    defaultVoice: defaultVoiceFor(provider),
+  });
 }
 
 export async function POST(req: NextRequest) {
-  if (!isTtsConfigured()) {
+  const provider = getProvider();
+  if (!provider) {
     return NextResponse.json(
-      { error: "Chưa cấu hình OPENAI_API_KEY trên máy chủ." },
+      { error: "Máy chủ chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY." },
       { status: 503 }
     );
   }
@@ -78,40 +87,44 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const voice: TtsVoice = isTtsVoice(body.voice) ? body.voice : DEFAULT_VOICE;
+  const voice = resolveVoice(provider, body.voice);
   const speed = mapRateToSpeed(Number(body.rate));
-  const key = ttsCacheKey(text, voice, speed);
-  const name = `${key}.mp3`;
-  const path = `tts/${name}`;
+  const key = ttsCacheKey(provider, text, voice, speed);
 
   const sb = getSupabaseServer();
-  const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
 
-  if (await findCached(sb, name)) {
-    return NextResponse.json({ url: pub.publicUrl, cached: true });
+  // Đuôi file phụ thuộc nhà cung cấp (Gemini trả wav, OpenAI trả mp3) mà lúc
+  // tra cache thì chưa gọi API nên chưa biết. Hỏi cả hai đuôi.
+  for (const ext of ["wav", "mp3"]) {
+    const name = `${key}.${ext}`;
+    if (await findCached(sb, name)) {
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(`tts/${name}`);
+      return NextResponse.json({ url: data.publicUrl, cached: true });
+    }
   }
 
-  let audio: Buffer;
+  let result;
   try {
-    audio = await synthesizeSpeech(text, voice, speed);
+    result = await synthesizeSpeech(provider, text, voice, speed);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const status = (err as { status?: number }).status;
-    console.error("[/api/tts]", msg);
-    if (status === 401) {
-      return NextResponse.json({ error: "OPENAI_API_KEY không hợp lệ." }, { status: 500 });
+    console.error("[/api/tts]", provider, msg);
+    if (status === 401 || status === 403) {
+      return NextResponse.json({ error: "API key không hợp lệ." }, { status: 500 });
     }
     if (status === 429) {
       return NextResponse.json(
-        { error: "Đang quá tải hoặc hết hạn mức, thử lại sau ít phút." },
+        { error: "Hết hạn mức miễn phí hoặc đang quá tải, thử lại sau ít phút." },
         { status: 429 }
       );
     }
     return NextResponse.json({ error: "Không tạo được giọng đọc." }, { status: 502 });
   }
 
-  const opts = { contentType: "audio/mpeg", upsert: true };
-  let { error } = await sb.storage.from(BUCKET).upload(path, audio, opts);
+  const path = `tts/${key}.${result.ext}`;
+  const opts = { contentType: result.contentType, upsert: true };
+  let { error } = await sb.storage.from(BUCKET).upload(path, result.audio, opts);
 
   // Tạo bucket ngay lần dùng đầu, giống /api/upload-image — người vận hành chỉ
   // có điện thoại thì không vào dashboard tạo tay được.
@@ -124,7 +137,7 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-    ({ error } = await sb.storage.from(BUCKET).upload(path, audio, opts));
+    ({ error } = await sb.storage.from(BUCKET).upload(path, result.audio, opts));
   }
 
   if (error) {
@@ -132,5 +145,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ url: pub.publicUrl, cached: false });
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+  return NextResponse.json({ url: data.publicUrl, cached: false });
 }
