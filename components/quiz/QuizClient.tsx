@@ -6,6 +6,7 @@ import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
+import VoicePicker from "./VoicePicker";
 import {
   getShuffleOptions,
   getShuffleQuestions,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/quizPrefs";
 import {
   allQuestionsSegments,
-  cancelSpeech,
+  stopSpeaking,
   getSpeechRate,
   isSpeechSupported,
   setSpeechRate,
@@ -80,11 +81,11 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   );
 
   // Rời trang giữa chừng thì tắt tiếng, không để đọc tiếp ở trang khác.
-  useEffect(() => () => cancelSpeech(), []);
+  useEffect(() => () => stopSpeaking(), []);
 
   function readAll() {
     if (readingAll) {
-      cancelSpeech();
+      stopSpeaking();
       setReadingAll(false);
       setReadingIdx(null);
       return;
@@ -113,7 +114,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     setSpeechRate(value);
     // Tốc độ chỉ áp dụng cho lượt đọc mới, nên dừng lượt đang chạy cho khỏi rối.
     if (readingAll) {
-      cancelSpeech();
+      stopSpeaking();
       setReadingAll(false);
       setReadingIdx(null);
     }
@@ -297,6 +298,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                         </>
                       )}
                     </button>
+                    <VoicePicker lang="vi-VN" label="Giọng Việt" />
+                    <VoicePicker lang="en-US" label="Giọng Anh" />
                     <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-0.5">
                       <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
                       {RATE_OPTIONS.map((o) => (

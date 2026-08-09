@@ -44,36 +44,109 @@ export function isSpeechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-/**
- * Danh sách giọng nạp bất đồng bộ trên Chrome — lần gọi đầu thường trả mảng
- * rỗng rồi mới bắn `voiceschanged`. Chờ tối đa `timeoutMs` rồi chạy tiếp với
- * những gì đang có.
- */
-function loadVoices(timeoutMs = 1000): Promise<SpeechSynthesisVoice[]> {
-  return new Promise((resolve) => {
-    const existing = window.speechSynthesis.getVoices();
-    if (existing.length) return resolve(existing);
+// ── Giọng đọc ────────────────────────────────────────────────────────────────
+//
+// Danh sách giọng nạp bất đồng bộ trên Chrome (lần gọi đầu trả mảng rỗng rồi
+// mới bắn `voiceschanged`). Ta cache lại và KHÔNG `await` lúc bấm nút: trên iOS
+// Safari, `speak()` phải chạy ngay trong luồng của cú chạm — chèn một `await`
+// vào giữa là mất quyền phát tiếng.
 
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      window.speechSynthesis.onvoiceschanged = null;
-      resolve(window.speechSynthesis.getVoices());
-    };
-    window.speechSynthesis.onvoiceschanged = finish;
-    setTimeout(finish, timeoutMs);
-  });
+let voiceCache: SpeechSynthesisVoice[] = [];
+
+function refreshVoices() {
+  if (!isSpeechSupported()) return;
+  const v = window.speechSynthesis.getVoices();
+  if (v.length) voiceCache = v;
 }
 
-function pickVoice(voices: SpeechSynthesisVoice[], lang: SpeechLang) {
-  const prefix = lang.slice(0, 2);
-  return (
-    voices.find((v) => v.lang === lang) ??
-    voices.find((v) => v.lang?.replace("_", "-") === lang) ??
-    voices.find((v) => v.lang?.toLowerCase().startsWith(prefix)) ??
-    null
-  );
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  refreshVoices();
+  window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoices);
+}
+
+/** Giọng nghe tự nhiên hơn thường mang những từ khoá này trong tên. */
+const NICE_VOICE = /google|enhanced|premium|neural|natural|siri|wavenet/i;
+
+function score(v: SpeechSynthesisVoice, lang: SpeechLang): number {
+  const vlang = (v.lang ?? "").replace("_", "-");
+  let n = 0;
+  if (vlang === lang) n += 100;
+  else if (vlang.toLowerCase().startsWith(lang.slice(0, 2))) n += 60;
+  else return -1; // sai ngôn ngữ thì loại hẳn
+  // Giọng "compact" của iOS nghe máy móc nhất, ưu tiên thấp nhất.
+  if (/compact/i.test(v.name)) n -= 20;
+  if (NICE_VOICE.test(v.name)) n += 30;
+  if (v.default) n += 5;
+  return n;
+}
+
+/** Các giọng dùng được cho một ngôn ngữ, xếp từ nghe hay nhất. */
+export function voicesFor(lang: SpeechLang): SpeechSynthesisVoice[] {
+  return voiceCache
+    .map((v) => ({ v, s: score(v, lang) }))
+    .filter((x) => x.s >= 0)
+    .sort((a, b) => b.s - a.s)
+    .map((x) => x.v);
+}
+
+function pickVoice(lang: SpeechLang): SpeechSynthesisVoice | null {
+  const preferred = getPreferredVoice(lang);
+  if (preferred) {
+    const hit = voiceCache.find((v) => v.voiceURI === preferred || v.name === preferred);
+    if (hit) return hit;
+  }
+  return voicesFor(lang)[0] ?? null;
+}
+
+// Giọng người dùng tự chọn, lưu theo từng ngôn ngữ.
+const VOICE_KEY = (lang: SpeechLang) => `ontap_voice_${lang}`;
+
+export function getPreferredVoice(lang: SpeechLang): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(VOICE_KEY(lang));
+  } catch {
+    return null;
+  }
+}
+
+export function setPreferredVoice(lang: SpeechLang, voiceURI: string | null) {
+  try {
+    if (voiceURI) window.localStorage.setItem(VOICE_KEY(lang), voiceURI);
+    else window.localStorage.removeItem(VOICE_KEY(lang));
+  } catch {/* ignore */}
+  listenersVoice.forEach((l) => l());
+}
+
+const listenersVoice = new Set<() => void>();
+export function subscribeVoice(cb: () => void) {
+  listenersVoice.add(cb);
+  return () => {
+    listenersVoice.delete(cb);
+  };
+}
+
+// ── Giữ cho tiếng không tự tắt giữa chừng ────────────────────────────────────
+//
+// Chrome và Safari tự dừng bộ đọc sau khoảng 15 giây. Đọc một câu thì không sao,
+// đọc cả bài (vài phút) là đứt giữa chừng — đúng triệu chứng "một câu chạy, cả
+// bài không". `resume()` định kỳ giữ cho nó chạy tiếp.
+
+let keepAlive: ReturnType<typeof setInterval> | null = null;
+
+function startKeepAlive() {
+  stopKeepAlive();
+  keepAlive = setInterval(() => {
+    if (!isSpeechSupported()) return;
+    if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
+  }, 5000);
+}
+
+function stopKeepAlive() {
+  if (keepAlive) {
+    clearInterval(keepAlive);
+    keepAlive = null;
+  }
 }
 
 export function cancelSpeech() {
@@ -135,7 +208,7 @@ export function setSpeechRate(rate: number) {
  * Trả về promise chạy xong hoặc bị huỷ. Luôn `cancel()` trước để không chồng
  * lên lượt đọc đang chạy.
  */
-export async function speakSegments(
+export function speakSegments(
   segments: SpeakSegment[],
   opts: {
     rate?: number;
@@ -143,10 +216,12 @@ export async function speakSegments(
     onSegmentStart?: (mark: number | undefined) => void;
     onEnd?: () => void;
   } = {}
-): Promise<void> {
+): void {
   if (!isSpeechSupported()) return;
 
-  window.speechSynthesis.cancel();
+  const ss = window.speechSynthesis;
+  ss.cancel();
+  stopKeepAlive();
 
   const clean = segments
     .map((s) => ({ ...s, text: stripForSpeech(s.text) }))
@@ -156,34 +231,64 @@ export async function speakSegments(
     return;
   }
 
-  const voices = await loadVoices();
   const rate = opts.rate ?? getSpeechRate();
+  // Giọng có thể chưa nạp xong ở lần bấm đầu; vẫn đọc được vì `lang` đủ để
+  // trình duyệt tự chọn. Lần sau cache đã sẵn nên chọn được giọng hay hơn.
+  refreshVoices();
+  startKeepAlive();
 
-  await new Promise<void>((resolve) => {
-    let i = 0;
-    const next = () => {
-      if (i >= clean.length) {
-        opts.onEnd?.();
-        return resolve();
-      }
-      const seg = clean[i++];
-      opts.onSegmentStart?.(seg.mark);
-      const lang = seg.lang ?? detectLang(seg.text);
-      const u = new SpeechSynthesisUtterance(seg.text);
-      u.lang = lang;
-      u.rate = rate;
-      const voice = pickVoice(voices, lang);
-      if (voice) u.voice = voice;
-      u.onend = next;
-      // Huỷ giữa chừng cũng bắn `error`; coi như kết thúc, không đọc tiếp.
-      u.onerror = () => {
-        opts.onEnd?.();
-        resolve();
-      };
-      window.speechSynthesis.speak(u);
+  let i = 0;
+  let stopped = false;
+
+  const finish = () => {
+    if (stopped) return;
+    stopped = true;
+    stopKeepAlive();
+    opts.onEnd?.();
+  };
+
+  const next = () => {
+    if (stopped) return;
+    if (i >= clean.length) return finish();
+
+    const seg = clean[i++];
+    opts.onSegmentStart?.(seg.mark);
+
+    const lang = seg.lang ?? detectLang(seg.text);
+    const u = new SpeechSynthesisUtterance(seg.text);
+    u.lang = lang;
+    u.rate = rate;
+    const voice = pickVoice(lang);
+    if (voice) u.voice = voice;
+
+    // Trên iOS/Safari `onend` thỉnh thoảng không bắn, làm đứng cả chuỗi đọc.
+    // Hẹn giờ dự phòng theo độ dài câu để vẫn đi tiếp được.
+    let advanced = false;
+    const advance = () => {
+      if (advanced) return;
+      advanced = true;
+      clearTimeout(guard);
+      next();
     };
-    next();
-  });
+    const estimateMs = (seg.text.length / Math.max(rate, 0.3)) * 110 + 2500;
+    const guard = setTimeout(advance, estimateMs);
+
+    u.onend = advance;
+    // Huỷ giữa chừng cũng bắn `error`; dừng hẳn thay vì đọc tiếp.
+    u.onerror = () => {
+      clearTimeout(guard);
+      finish();
+    };
+    ss.speak(u);
+  };
+
+  next();
+}
+
+/** Dừng đọc và dọn bộ giữ tiếng. */
+export function stopSpeaking() {
+  stopKeepAlive();
+  cancelSpeech();
 }
 
 /** Có chữ cái Latin không — đáp án kiểu "12" hay "3,5" thì không. */

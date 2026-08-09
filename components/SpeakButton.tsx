@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { cancelSpeech, isSpeechSupported, speakSegments, type SpeakSegment } from "@/lib/speech";
+import { stopSpeaking, isSpeechSupported, speakSegments, type SpeakSegment } from "@/lib/speech";
 
 interface Props {
   segments: SpeakSegment[];
@@ -26,13 +26,13 @@ export default function SpeakButton({ segments, label, className = "" }: Props) 
   );
 
   // Dừng đọc khi component biến mất (chuyển câu, rời trang).
-  useEffect(() => () => cancelSpeech(), []);
+  useEffect(() => () => stopSpeaking(), []);
 
   if (!supported) return null;
 
   function handleClick() {
     if (speaking) {
-      cancelSpeech();
+      stopSpeaking();
       setSpeaking(false);
       return;
     }

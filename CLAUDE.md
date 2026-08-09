@@ -134,6 +134,8 @@ All use the service-role client unless noted:
 - LaTeX and HTML are stripped before speaking (`stripForSpeech`).
 - Rate lives in `localStorage` (`ontap_speech_rate`, default **0.7** — deliberately slow for primary-school kids) and is exposed as Chậm/Vừa/Nhanh in the quiz header. Read through `useSyncExternalStore` + `subscribeSpeechRate`, so no setState-in-effect and no hydration mismatch.
 - Buttons hide entirely when the browser has no `speechSynthesis`.
+- **Three browser bugs are worked around in `speakSegments`** — all three only bite on long reads, which is why one question worked and the whole exam didn't: (1) Chrome/Safari stop the synthesiser after ~15 s, so a `resume()` keep-alive ticks every 5 s while speaking; (2) `onend` sometimes never fires on iOS and stalls the chain, so each utterance also carries a length-based timeout that advances it; (3) iOS only allows `speak()` inside the user-gesture task, so `speakSegments` is **synchronous** — never `await` before the first `speak()` or audio is silently blocked.
+- Voice quality is the device's, not ours. `voicesFor()` ranks candidates (prefers `Google`/`Enhanced`/`Premium`/`Neural`, penalises iOS `Compact`) and `VoicePicker` lets the user override per language (`ontap_voice_<lang>`), because only the listener can judge. Genuinely human-sounding Vietnamese needs a paid cloud TTS — not possible with the free Web Speech API.
 
 ### Math handling
 
