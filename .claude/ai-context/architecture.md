@@ -62,9 +62,9 @@
 ## State & data flow
 
 - Không Zustand / Redux — `useState`, `sessionStorage`, `localStorage` (draft import).
-- Grade page: server → `getSubjectsByGrade` + `getChaptersWithLessons` + `getLeaderboardByGrade`.
+- Grade page: môn từ `lib/subjects.ts` (static) → `getChaptersWithLessons(grade, subject, type)` + `getLeaderboardByGrade`.
 - Quiz: server prefetch → props `QuizClient`; submit → `POST /api/quiz-result` (best-effort) + `sessionStorage` → `/result`.
-- Import: client gọi `/api/subjects`, `/api/chapters`; lưu `/api/create-lesson` hoặc `/api/update-lesson`.
+- Import: môn từ `lib/subjects.ts` (không gọi API), chương qua `/api/chapters?grade=&subject=`; lưu `/api/create-lesson` hoặc `/api/update-lesson`.
 - `proxy.ts`: matcher `/import/:path*`, gọi `auth.getUser()` để rotate token — **không chặn guest**.
 
 ## Next.js 16

@@ -19,6 +19,11 @@ export type Question = {
   /** @deprecated legacy single-image field, mirrors images[0]?.url */
   imageUrl?: string;
   explanation?: string; // optional worked solution / "lời giải", shown on the result page
+  /**
+   * File giọng đọc gắn sẵn cho câu này (sinh ngoài bằng Piper rồi tải lên).
+   * Có nó thì phát thẳng, không gọi TTS đám mây — không hạn mức, không chờ.
+   */
+  audioUrl?: string;
 };
 
 export type LessonMeta = {
@@ -34,9 +39,41 @@ export type QuizResult = {
   answers: (string | null)[];
   lessonId: number;
   lessonTitle?: string;
+  // Carried over from LessonMeta so /result can build a correct breadcrumb —
+  // it has no server props of its own, only this sessionStorage payload.
+  grade?: number | null;
+  subjectName?: string | null;
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;
+
+/** Fisher-Yates, trả mảng mới — không đụng vào mảng gốc từ server props. */
+function shuffled<T>(arr: readonly T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * Trộn đề trước khi làm.
+ *
+ * Trộn đáp án an toàn vì `correctAnswer` lưu **nội dung** đáp án chứ không phải
+ * vị trí (xem scoreAnswer) — đổi chỗ options không làm sai điểm. Câu short/
+ * numeric không có options nên giữ nguyên.
+ */
+export function shuffleQuiz(
+  questions: Question[],
+  opts: { questions?: boolean; options?: boolean }
+): Question[] {
+  const list = opts.questions ? shuffled(questions) : questions;
+  if (!opts.options) return list;
+  return list.map((q) =>
+    q.options.length > 1 ? { ...q, options: shuffled(q.options) } : q
+  );
+}
 
 export function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { getAllExams, type ExamListItem } from "@/lib/db";
@@ -5,6 +6,19 @@ import { getAllExams, type ExamListItem } from "@/lib/db";
 // Live exam list — read from the DB on each request rather than freezing it
 // into a static page at build time (which also needs Supabase env at build).
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Đề kiểm tra tiểu học lớp 1-5",
+  description:
+    "Kho đề kiểm tra tiểu học lớp 1 đến lớp 5 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay và xem lời giải từng câu.",
+  alternates: { canonical: "/de-thi" },
+  openGraph: {
+    title: "Đề kiểm tra tiểu học lớp 1-5",
+    description:
+      "Kho đề kiểm tra tiểu học lớp 1 đến lớp 5 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay.",
+    url: "/de-thi",
+  },
+};
 
 function groupByGrade(exams: ExamListItem[]): Map<number, ExamListItem[]> {
   const m = new Map<number, ExamListItem[]>();

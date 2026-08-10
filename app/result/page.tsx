@@ -31,8 +31,20 @@ export default function ResultPage() {
     );
   }
 
-  const { questions, answers, lessonId, lessonTitle } = result;
+  const { questions, answers, lessonId, lessonTitle, grade, subjectName } = result;
   const title = lessonTitle ?? `Bài ${lessonId}`;
+
+  // Grade and subject come from the lesson, not from lessonId. Older payloads
+  // (a result stashed before this field existed) simply omit those crumbs.
+  const crumbs: { label: string; href: string }[] = [{ label: "Trang chủ", href: "/" }];
+  if (grade) crumbs.push({ label: `Lớp ${grade}`, href: `/lop/${grade}` });
+  if (subjectName) {
+    crumbs.push({
+      label: subjectName,
+      href: grade ? `/lop/${grade}?subject=${encodeURIComponent(subjectName)}` : "/de-thi",
+    });
+  }
+  crumbs.push({ label: title, href: `/quiz?lessonId=${lessonId}` });
 
   const { correct, wrong, unanswered } = questions.reduce(
     (acc, q, i) => {
@@ -52,14 +64,9 @@ export default function ResultPage() {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
           <nav className="flex flex-wrap items-center gap-1 text-xs mb-5">
-            {[
-              { label: "Trang chủ", href: "/" },
-              { label: `Lớp ${lessonId}`, href: `/lop/${lessonId}` },
-              { label: "Toán", href: "#" },
-              { label: title, href: `/quiz?lessonId=${lessonId}` },
-            ].map(({ label, href }) => (
-              <span key={label} className="flex items-center gap-1">
-                <a href={href} className="text-blue-500 hover:underline">{label}</a>
+            {crumbs.map(({ label, href }) => (
+              <span key={href} className="flex items-center gap-1">
+                <Link href={href} className="text-blue-500 hover:underline">{label}</Link>
                 <span className="text-gray-400">›</span>
               </span>
             ))}
@@ -111,7 +118,13 @@ export default function ResultPage() {
             Làm lại
           </button>
           <button
-            onClick={() => router.push("/")}
+            onClick={() =>
+              router.push(
+                grade
+                  ? `/lop/${grade}${subjectName ? `?subject=${encodeURIComponent(subjectName)}` : ""}`
+                  : "/"
+              )
+            }
             className="flex-1 bg-white text-gray-700 font-bold py-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
           >
             Quay lại danh sách

@@ -1,7 +1,14 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import { getUser } from '@/lib/supabase/server-client'
 import { getSupabaseServer } from '@/lib/supabase/server'
+
+// Per-account page — requires a login, nothing to index.
+export const metadata: Metadata = {
+  title: 'Tiến độ học tập',
+  robots: { index: false, follow: false },
+}
 
 type ResultRow = {
   id: number

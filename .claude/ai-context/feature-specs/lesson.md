@@ -10,9 +10,9 @@ Trang `/de-thi` liệt kê **tất** exam cross-subject; trang lớp lọc theo 
 
 ## Server flow (`app/lop/[grade]/page.tsx`)
 1. `await params`, `await searchParams` (Next 16)
-2. `getSubjectsByGrade(gradeNum)`
+2. `getSubjects(gradeNum)` từ `lib/subjects.ts` (static, không query DB)
 3. Active subject = `?subject=` hoặc môn đầu tiên
-4. Parallel: `getChaptersWithLessons(subjectId, typeFilter)` + `getLeaderboardByGrade(gradeNum)`
+4. Parallel: `getChaptersWithLessons(grade, subjectName, typeFilter)` + `getLeaderboardByGrade(gradeNum)`
 
 ## Components
 | Component | Vai trò |

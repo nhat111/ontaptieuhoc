@@ -27,7 +27,8 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — anon/publishable, used by browser + session clients.
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
-- `ANTHROPIC_API_KEY` — only needed if/when AI-powered exam import is added (mentioned in example but no `/import/ai` route currently exists).
+- `ANTHROPIC_API_KEY` — server-only. Used by `POST /api/ocr-exam` (quét ảnh đề bằng Claude vision). Without it that route returns 503; every other feature works.
+- `NEXT_PUBLIC_SITE_URL` — absolute origin (no trailing slash). Drives `app/sitemap.ts`, `app/robots.ts` and `metadataBase` (canonical + Open Graph URLs). Optional in dev; **set it in production** or canonical tags point at the Vercel preview domain. `lib/siteUrl.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
 
 DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
 
@@ -35,7 +36,7 @@ DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to pr
 - `quiz_results.user_id` (nullable FK → `auth.users`): add UUID column + FK when enabling progress tracking
 - NXBGD idempotency: `chapters.source_id`, `lessons.source_id` (+ unique partial indexes) — see `schema.sql` comments
 
-**Removed routes (do not recreate):** `/teacher`, `/import/ai` (no `/api/ai-import`; `ANTHROPIC_API_KEY` reserved for future use).
+**Removed routes (do not recreate):** `/teacher`, `/import/ai` / `/api/ai-import`. Image-to-exam scanning lives at **`POST /api/ocr-exam`** instead — a separate route, deliberately not a revival of the removed `/import/ai` surface.
 
 **Premium (phase 1, manual):** `profiles (user_id, is_premium, premium_until, note)` table gates exam download (Word/PDF) — browsing/quizzes stay free. `lib/premium.ts → isUserPremium(userId)` (service-role read); `GET /api/me/premium` returns `{ loggedIn, isPremium }` for client gating; `QuizClient` redirects non-premium users to `/nang-cap` (manual bank/MoMo transfer + activate by setting `is_premium` in the dashboard). The gate is client-side only for now — fine for printable exams; not real DRM.
 
@@ -54,6 +55,19 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 - **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It only refreshes Supabase auth cookies on `/import/*` navigations (`supabase.auth.getUser()` triggers token rotation); there is no auth gate — `/import` and `/import/exam` are intentionally open to guests so anyone can create lessons/exams.
 - `searchParams` and `params` in server components are `Promise<...>` — always `await` them (see `app/quiz/page.tsx`, `app/lop/[grade]/page.tsx`).
 
+### Subjects — static catalogue, not a queried table
+
+**`lib/subjects.ts` is the single source of truth for which subjects exist.** Subjects are fixed data, so they are declared in code; nothing reads the `subjects` table to build a list. Adding/renaming a subject means editing that file only.
+
+The `subjects` table still exists because `chapters.subject_id` is a FK to it, but it is addressed by the **(grade, name)** pair, never by a hard-coded id — ids are `SERIAL` and differ between databases (the seed comment says "subject id = 1" while the sample chapter insert uses `61`).
+
+- **Reads** filter through an embedded join: `.select('…, subjects!inner(grade, name)').eq('subjects.grade', g).eq('subjects.name', n)`. The `!inner` is required or the filter won't restrict rows.
+- **Writes** call `ensureSubjectId(grade, name)` in `lib/db.ts`, which selects-or-inserts, so a subject added to `lib/subjects.ts` works without a manual SQL insert.
+- A subject present in the DB but **missing from `lib/subjects.ts` is invisible** on the site — its chapters and lessons never render. `node --env-file=.env.local scripts/check-subjects.mjs` diffs code against DB and reports both directions.
+- Renaming a subject in code without renaming it in the DB empties that tab. Run `UPDATE subjects SET name = '<new>' WHERE grade = <g> AND name = '<old>';` alongside.
+
+`app/page.tsx` (grade cards) and `/lop/[grade]` (tabs) both render from this catalogue, so they can no longer drift apart.
+
 ### Data model
 
 `subjects (per grade) → chapters → lessons (type 'lesson' | 'exam') → questions`. `lessons.id` is the URL identifier everywhere (`/quiz?lessonId=X`, `/import/edit/[id]`). `questions.explanation` is reused as a JSON blob carrying `{ images: [{url, position}], imageUrl, solution }` — image attachments (no dedicated image column) plus an optional worked solution ("lời giải") shown on `/result`. Legacy rows may hold just `{ imageUrl }`.
@@ -71,12 +85,20 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 - `/` — landing, grade picker. "Xem đề mẫu" CTA links to `/de-thi`.
 - `/de-thi` — server-rendered list of all `type='exam'` lessons grouped by grade.
 - `/lop/[grade]?subject=...&view=lesson|exam` — server-rendered subject tabs + chapters + leaderboard sidebar.
-- `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration). Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
-- `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly.
+- `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration, **Nghe cả bài** + speech-rate picker, and **Trộn thứ tự câu hỏi / đáp án** toggles persisted in `localStorage` via `lib/quizPrefs.ts`). Shuffling happens **once**, on Start (`shuffleQuiz` in `lib/quizData.ts`) — never mid-quiz, or questions would move under the child's hand. Shuffling options is safe because `correct_answer` stores the option **text**, not its index. Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
+- `/result` — reads `sessionStorage.quizResult`. Pure client component; never refresh-friendly. The payload carries `grade` / `subjectName` (copied from `LessonMeta`) purely so the breadcrumb and the "Quay lại danh sách" button can point at the right `/lop/[grade]` — the page has no server props to look them up from. Payloads stashed before those fields existed just render fewer crumbs.
 - `/progress` — authenticated user's quiz history.
 - `/import`, `/import/exam`, `/import/edit/[id]` — all render `ImportClient` with different `examMode` / `initialData` props. **`proxy.ts` only refreshes auth cookies on `/import/*` — guests can create/edit; it is not an auth gate.**
 - `/import/chapter/[id]` — server dashboard: lesson fill progress in a chapter (`getChapterContext`, `getLessonsInChapter`); linked from `ImportClient`.
+- `/import/kiem-tra` — read-only diagnostics page (Supabase reachability, row counts, and the `lib/subjects.ts` ↔ `subjects` table diff). Browser equivalent of `scripts/check-subjects.mjs`, for when the operator only has a phone. Covered by the `/import` robots disallow + `robots: { index: false }`.
 - `/login`, `/reset-password`, `/auth/callback` — Supabase email-password auth + magic-link callback that exchanges `code` for a session.
+- `/sitemap.xml`, `/robots.txt` — `app/sitemap.ts` (dynamic, `force-dynamic`: home, `/de-thi`, `/lop/1..5` in both views, one URL per subject tab, and `/quiz?lessonId=` for every lesson that has ≥1 question) and `app/robots.ts` (disallows `/api/`, `/import`, `/result`, `/progress`, auth and `/nang-cap`).
+
+### SEO
+
+`app/layout.tsx` sets `metadataBase`, a `%s · Ôn Tập Tiểu Học` title template and the default Open Graph/Twitter block; every other page only overrides what differs. `generateMetadata` exists on `/lop/[grade]` (title/description vary by subject + `view=exam`; canonical drops the default subject so `/lop/3` and `/lop/3?subject=<first>` aren't indexed twice) and on `/quiz` (a lesson with 0 questions gets `robots: noindex`). Editor and per-account pages (`/import*`, `/progress`, `/nang-cap`) export `robots: { index: false }`; the client-component pages (`/result`, `/login`, `/reset-password`, `/import/edit/[id]`) can't export metadata, so `robots.txt` is what covers them.
+
+`getQuestionsFromDB` and `getLessonMetaFromDB` are wrapped in React `cache()` because `/quiz` calls each twice per request — once in `generateMetadata`, once in the page body.
 
 Browse and quiz work **without login**; auth is optional (progress + `quiz_results.user_id`).
 
@@ -84,24 +106,48 @@ Browse and quiz work **without login**; auth is optional (progress + `quiz_resul
 
 All use the service-role client unless noted:
 
-- `GET /api/subjects?grade=N`, `GET|POST /api/chapters` — used by the import form's cascading dropdowns.
+- `GET|POST /api/chapters?grade=N&subject=<tên môn>` — used by the import form's chapter dropdown. Chapters are addressed by (grade, subject name), never by a `subjects.id`; POST calls `ensureSubjectId` so a subject newly added to `lib/subjects.ts` gets its row created on first use. (There is no `/api/subjects` — the catalogue is static, see **Subjects** below.)
 - `GET /api/lesson/[id]` — returns lesson + questions as `QDraft` (`type`, variable `options`, `correctIdx` / `correctIdxs` / `answer`, optional `imageUrl` from `explanation` JSON).
-- `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts).
+- `POST /api/create-lesson`, `POST /api/update-lesson` — write lesson + replace all questions (update wipes and reinserts). **`chapterId` is optional**: omit it and send `grade` + `subject` instead, and the route resolves a default chapter via `ensureDefaultChapterId(grade, subject, type)` — titled `Đề kiểm tra` for exams, `Chưa phân chương` for lessons. `lessons.chapter_id` is `NOT NULL` and `/lop/[grade]` groups lessons by chapter, so a chapter-less lesson would never render — hence a default chapter rather than a nullable column. Required fields are only subject, title and questions.
 - `POST /api/quiz-result` — uses **both** clients: session client to look up `user.id` (nullable for guests), service-role client to insert.
 - `GET /api/fetch-exam?url=...` — scrapes a remote page's `<p>` tags into plain text for the paste-import flow.
 - `POST /api/upload-image` — accepts a multipart `file` field, uploads to the `question-images` bucket via service-role, returns `{ url }`. Used by `QuestionCard` (10 MB cap, jpg/png/webp/gif/svg only).
+- `POST /api/ocr-exam` — multipart `file` (ảnh, 10 MB cap, jpg/png/webp/gif). Sends the image to Claude vision (`claude-opus-5`) with a `json_schema` output constraint and returns `{ title, questions: [{content, options, correctIndex}], usage }`. `correctIndex` is `-1` when no hand-drawn mark is visible — the model is told never to guess. Reads hand-circled answers, which plain OCR can't. Requires `ANTHROPIC_API_KEY`; 503 without it. `GET /api/ocr-exam` returns `{ available: boolean }` (a capability probe, never the key) — `PasteImportModal` calls it on open and **hides the "Quét ảnh đề" button entirely when no key is configured**, so nobody clicks into a 503. `stop_reason: 'refusal'` is checked before reading content. The `fallbacks` beta is best-effort: a 400 naming it retries once without it.
 - `POST /api/auth/logout` — clears Supabase session.
 
 ### Import flow (`components/import/`)
 
 `ImportClient.tsx` is the central editor. Key behaviors:
 
-- **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The hydration race is handled via `pendingSubjectId`/`pendingChapterId` refs — preserve this when refactoring the cascading-fetch effects, or restored drafts will lose their subject/chapter selection.
+- **Autosaves to `localStorage`** under `ontap_import_draft_v1` (lessons) or `ontap_exam_draft_v1` (exams), debounced 500 ms. Skipped in edit mode. The chapter hydration race is handled via the `pendingChapterId` ref — preserve this when refactoring the chapter fetch effect, or restored drafts will lose their chapter selection. Subjects need no such ref: they come from `lib/subjects.ts` synchronously and the selection is derived, not stored. Drafts persist the subject **name**; drafts written before that (which stored a numeric `subjectId`) fall back to the grade's first subject.
 - Distinguishes lesson vs. exam through `examMode` prop AND `initialData.type`; both flow into the `type` column in the API payload.
 - Keyboard shortcuts (global `keydown` listener): `Ctrl/Cmd+S` saves, `Ctrl/Cmd+Enter` adds a blank question.
 - **Paste-import (`PasteImportModal`)** accepts plain text or HTML. Primary parser: `lib/examParser.ts` (question starts `Câu N.` / `Câu N:`, options `A.`…, answer markers `Đáp án:`, `Answer:`, `Chọn X.`). **URL import:** `GET /api/fetch-exam?url=` returns HTML/plain text; if it looks like a loigiaihay/vietjack solution page, `lib/loigiaihayParser.ts` (`parseLoigiaihay`) is used instead of `examParser`. Type is inferred at commit time: ≥2 options + one letter → `mcq`; ≥2 options + multiple letters → `multi`; no options + numeric → `numeric`; else → `short`. Letter answers (`Đáp án: B`) only apply when options exist — otherwise `Đáp án: Cần Thơ` stays `short`.
 - **Tiptap → focused editor singleton**: `lib/focusedEditor.ts` tracks whichever Tiptap instance currently has focus so the LaTeX cheat-sheet buttons in the sidebar can insert into the right field. `onMouseDown` with `preventDefault` is required on those buttons or focus shifts before insertion.
 - **Image uploads** go through `POST /api/upload-image` → public Supabase Storage bucket `question-images` (service-role, bypasses RLS). Bucket must exist and be public for the returned URLs to be readable.
+
+### Đọc thành tiếng (TTS)
+
+`lib/speech.ts` wraps the browser's Web Speech API — **no API key, no cost, no network**. `SpeakButton` reads one question + its options; `QuizClient` also has a **"Nghe cả bài"** button that reads every question in order, announcing "Câu N" in Vietnamese before each and scrolling to whichever question is being read (`speakSegments`'s `onSegmentStart` carries the segment's `mark`).
+
+- Language is auto-detected per segment: Vietnamese diacritics → `vi-VN`, otherwise `en-US`. Options with no letters (`"12"`, `"3,5"`) inherit the question's language, or a Vietnamese maths question would read "one, two" in an English voice.
+- LaTeX and HTML are stripped before speaking (`stripForSpeech`).
+- Rate lives in `localStorage` (`ontap_speech_rate`, default **0.7** — deliberately slow for primary-school kids) and is exposed as Chậm/Vừa/Nhanh in the quiz header. Read through `useSyncExternalStore` + `subscribeSpeechRate`, so no setState-in-effect and no hydration mismatch.
+- Buttons hide entirely when the browser has no `speechSynthesis`.
+- **Three browser bugs are worked around in `speakSegments`** — all three only bite on long reads, which is why one question worked and the whole exam didn't: (1) Chrome/Safari stop the synthesiser after ~15 s, so a `resume()` keep-alive ticks every 5 s while speaking; (2) `onend` sometimes never fires on iOS and stalls the chain, so each utterance also carries a length-based timeout that advances it; (3) iOS only allows `speak()` inside the user-gesture task, so `speakSegments` is **synchronous** — never `await` before the first `speak()` or audio is silently blocked.
+- Voice quality is the device's, not ours. `voicesFor()` ranks candidates (prefers `Google`/`Enhanced`/`Premium`/`Neural`, penalises iOS `Compact`, and **drops Apple's novelty/legacy voices entirely** — Boing, Bubbles, Zarvox, Fred… sit in `getVoices()` looking like ordinary en-US voices) and `VoicePicker` lets the user override per language (`ontap_voice_<lang>`), because only the listener can judge.
+- **iOS caveat that drives the whole cloud-TTS design below:** Safari does *not* expose the Enhanced/Premium voices a user downloads under Settings → Accessibility → Read & Speak (older iOS: Spoken Content) to web pages — those are reserved for Apple's own apps. Telling a user to download a better voice does nothing for this site. iOS also ships exactly one `vi-VN` voice, so `VoicePicker` hides itself for Vietnamese there.
+
+### Giọng đọc gắn sẵn — không gọi dịch vụ ngoài nào
+
+`questions.explanation` also carries `audioUrl`. Audio is produced **outside the app** (Piper on a laptop, or a real recording) and uploaded; there is no TTS provider, no API key, no quota. A cloud-TTS path (Gemini/OpenAI) existed briefly and was removed — free-tier quotas were far too small for whole exams. `git log -- lib/tts.ts` has it if it's ever wanted back.
+
+- `/import/giong-doc/[id]` (`components/import/AudioMapper.tsx`) maps uploaded files to questions **by the number in the filename** (`wav_3.wav` → question 3), never by pick order — browsers don't guarantee file order. `lib/audioFileName.ts` strips the extension before scanning (`.m4a`/`.mp3` contain digits) and takes the **last** number (real filenames carry date or lesson prefixes).
+- Mis-mapping is the silent failure that matters — a child hears the wrong question and nobody notices. So the page names every file it could not place, shows which filename landed on which question, marks each row **đã lưu / chưa lưu** against server data, and gives each row an inline player to check before saving.
+- `POST /api/upload-audio` stores the file (named by content hash, so re-uploading the same file overwrites itself). `POST /api/lesson-audio` merges `audioUrl` into the existing `explanation` blob — read-merge-write, so images and solutions survive. It deliberately does **not** go through `/api/update-lesson`; that route wipes and reinserts every question, and now re-attaches `audioUrl` by **question content** so editing a lesson no longer destroys its audio.
+- `lib/audioSpeech.ts` plays the files. Three invariants, commented at the top: (1) a ~5 ms silent WAV plays **synchronously** to unlock the audio element inside the tap — no `await` before it, or iOS blocks playback; (2) exactly one `HTMLAudioElement` for the page's lifetime, since the unlock binds to it; (3) a `generation` counter so a stopped read exits quietly. `playOne` also carries a duration-based timeout because iOS does not always fire `ended`, which would otherwise freeze the chain on question 1.
+- Speed is applied with `playbackRate` (`mapRateToSpeed`), never by re-rendering audio.
+- Questions without a file are skipped and the count is reported — a read that silently jumps over questions is worse than one that says so.
 
 ### Math handling
 

@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getSupabaseServer } from './supabase/server'
 import type { Question as QuizQuestion, LessonMeta, QType } from './quizData'
 
@@ -72,10 +73,10 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
   try {
     const sb = getSupabaseServer()
 
-    const { data: subjects } = await sb.from('subjects').select('id').eq('grade', grade)
-    if (!subjects?.length) return []
-
-    const { data: chapters } = await sb.from('chapters').select('id').in('subject_id', subjects.map((s: any) => s.id))
+    const { data: chapters } = await sb
+      .from('chapters')
+      .select('id, subjects!inner(grade)')
+      .eq('subjects.grade', grade)
     if (!chapters?.length) return []
 
     const { data: lessons } = await sb.from('lessons').select('id').in('chapter_id', chapters.map((c: any) => c.id))
@@ -125,33 +126,165 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
 }
 
 // ---- Subjects ----
+//
+// The subject catalogue lives in `lib/subjects.ts`, not in the DB — see that
+// file. The `subjects` table is still the FK target for `chapters.subject_id`,
+// so it is resolved by the (grade, name) pair rather than by a hard-coded id
+// (ids are SERIAL and differ between databases).
 
-export async function getSubjectsByGrade(grade: number): Promise<SubjectRow[]> {
+/**
+ * Id of the `subjects` row for a (grade, name) pair, creating it when missing
+ * so a subject added to `lib/subjects.ts` works without a manual SQL insert.
+ * Write paths only — reads filter through an embedded join instead.
+ */
+export async function ensureSubjectId(grade: number, name: string): Promise<number | null> {
+  return (await ensureSubjectIdResult(grade, name)).id
+}
+
+/**
+ * Bản có kèm lý do thất bại. Nuốt lỗi rồi trả null khiến người dùng chỉ thấy
+ * "không tạo được" mà không biết vì sao — write path cần nói rõ nguyên nhân.
+ */
+export async function ensureSubjectIdResult(
+  grade: number,
+  name: string
+): Promise<{ id: number | null; error?: string }> {
   try {
-    const { data } = await getSupabaseServer()
+    const sb = getSupabaseServer()
+
+    const { data: existing, error: selErr } = await sb
       .from('subjects')
-      .select('*')
+      .select('id')
       .eq('grade', grade)
-      .order('order_index')
-    return data ?? []
-  } catch {
-    return []
+      .eq('name', name)
+      .limit(1)
+      .maybeSingle()
+    if (selErr) {
+      console.error('[ensureSubjectId] select', selErr)
+      return { id: null, error: `Không đọc được bảng subjects: ${selErr.message}` }
+    }
+    if (existing) return { id: existing.id }
+
+    const { data: created, error } = await sb
+      .from('subjects')
+      .insert({ name, grade, order_index: 0 })
+      .select('id')
+      .single()
+    if (error) {
+      console.error('[ensureSubjectId] insert', error)
+      return { id: null, error: describeWriteError('subjects', error) }
+    }
+    if (!created?.id) {
+      return { id: null, error: 'Insert vào bảng "subjects" không trả về id nào.' }
+    }
+    return { id: created.id }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[ensureSubjectId]', msg)
+    return { id: null, error: msg }
+  }
+}
+
+/**
+ * Đổi lỗi Postgres thành câu tiếng Việt kèm cách sửa.
+ *
+ * `23505` trên khoá chính là bẫy hay gặp nhất ở DB này: `schema.sql` seed dữ
+ * liệu bằng id cố định nên SERIAL bị tụt lại, insert sau đó đụng id đã tồn tại.
+ */
+function describeWriteError(table: string, error: { code?: string; message: string }): string {
+  if (error.code === '23505' && /_pkey/.test(error.message)) {
+    return (
+      `Bảng "${table}" bị lệch bộ đếm id (SERIAL) nên insert trùng khoá chính. ` +
+      `Chạy trong Supabase SQL editor: ` +
+      `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1));`
+    )
+  }
+  if (error.code === '42P01') return `Chưa có bảng "${table}" trong DB — chạy schema.sql trước.`
+  if (error.code === '42703') return `Bảng "${table}" thiếu cột mà app cần: ${error.message}`
+  return `Ghi vào "${table}" thất bại: ${error.message}`
+}
+
+/**
+ * Chương mặc định của một môn, tạo nếu chưa có.
+ *
+ * `lessons.chapter_id` là NOT NULL, và `/lop/[grade]` nhóm bài theo chương nên
+ * bài không thuộc chương nào sẽ không bao giờ hiện lên web. Vì vậy khi người
+ * dùng không chọn chương, ta gom vào một chương mặc định thay vì nới ràng buộc
+ * — bài vẫn hiển thị bình thường và có thể đổi tên chương sau.
+ */
+export async function ensureDefaultChapterId(
+  grade: number,
+  subjectName: string,
+  lessonType: 'lesson' | 'exam' = 'lesson'
+): Promise<number | null> {
+  return (await ensureDefaultChapterIdResult(grade, subjectName, lessonType)).id
+}
+
+/** Bản có kèm lý do thất bại — xem ensureSubjectIdResult. */
+export async function ensureDefaultChapterIdResult(
+  grade: number,
+  subjectName: string,
+  lessonType: 'lesson' | 'exam' = 'lesson'
+): Promise<{ id: number | null; error?: string }> {
+  const title = lessonType === 'exam' ? 'Đề kiểm tra' : 'Chưa phân chương'
+
+  try {
+    const subject = await ensureSubjectIdResult(grade, subjectName)
+    if (!subject.id) {
+      return { id: null, error: subject.error ?? `Không tạo được môn "${subjectName}" lớp ${grade}.` }
+    }
+
+    const sb = getSupabaseServer()
+    const { data: existing, error: selErr } = await sb
+      .from('chapters')
+      .select('id')
+      .eq('subject_id', subject.id)
+      .eq('title', title)
+      .limit(1)
+      .maybeSingle()
+    if (selErr) {
+      console.error('[ensureDefaultChapterId] select', selErr)
+      return { id: null, error: `Không đọc được bảng chapters: ${selErr.message}` }
+    }
+    if (existing) return { id: existing.id }
+
+    const { data: created, error } = await sb
+      .from('chapters')
+      .insert({ title, subject_id: subject.id, order_index: 999 })
+      .select('id')
+      .single()
+    if (error) {
+      console.error('[ensureDefaultChapterId] insert', error)
+      return { id: null, error: describeWriteError('chapters', error) }
+    }
+    if (!created?.id) {
+      return { id: null, error: 'Insert vào bảng "chapters" không trả về id nào.' }
+    }
+    return { id: created.id }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[ensureDefaultChapterId]', msg)
+    return { id: null, error: msg }
   }
 }
 
 // ---- Chapters (server-side, returns rich component types for server pages) ----
 
 export async function getChaptersWithLessons(
-  subjectId: number,
+  grade: number,
+  subjectName: string,
   lessonType: 'lesson' | 'exam' = 'lesson'
 ): Promise<ComponentChapter[]> {
   try {
     const sb = getSupabaseServer()
 
+    // `subjects!inner` makes the embedded filters actually restrict the rows,
+    // so this is one round trip instead of a subject lookup then a chapter query.
     const { data: chapters } = await sb
       .from('chapters')
-      .select('id, title, order_index')
-      .eq('subject_id', subjectId)
+      .select('id, title, order_index, subjects!inner(grade, name)')
+      .eq('subjects.grade', grade)
+      .eq('subjects.name', subjectName)
       .order('order_index')
 
     if (!chapters?.length) return []
@@ -198,7 +331,11 @@ export async function getChaptersWithLessons(
 
 // ---- Server-side quiz functions (for server components) ----
 
-export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion[]> {
+// `cache` de-dupes these two per request: /quiz calls each of them twice, once
+// from generateMetadata and once from the page body.
+export const getQuestionsFromDB = cache(async function getQuestionsFromDB(
+  lessonId: number
+): Promise<QuizQuestion[]> {
   try {
     const { data } = await getSupabaseServer()
       .from('questions')
@@ -210,6 +347,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
       let images: { url: string; position: 'before' | 'after' }[] = []
       let imageUrl: string | undefined
       let explanation: string | undefined
+      let audioUrl: string | undefined
       try {
         const exp = typeof q.explanation === 'string' ? JSON.parse(q.explanation) : q.explanation
         if (Array.isArray(exp?.images)) {
@@ -225,6 +363,7 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
         if (exp?.imageUrl) imageUrl = exp.imageUrl
         else if (images[0]?.url) imageUrl = images[0].url
         if (typeof exp?.solution === 'string' && exp.solution.trim()) explanation = exp.solution
+        if (typeof exp?.audioUrl === 'string' && exp.audioUrl.trim()) audioUrl = exp.audioUrl
       } catch {}
       return {
         id: q.id,
@@ -235,14 +374,17 @@ export async function getQuestionsFromDB(lessonId: number): Promise<QuizQuestion
         images,
         imageUrl,
         explanation,
+        audioUrl,
       }
     })
   } catch {
     return []
   }
-}
+})
 
-export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta> {
+export const getLessonMetaFromDB = cache(async function getLessonMetaFromDB(
+  lessonId: number
+): Promise<LessonMeta> {
   try {
     const sb = getSupabaseServer()
     const { data: lesson } = await sb
@@ -278,7 +420,7 @@ export async function getLessonMetaFromDB(lessonId: number): Promise<LessonMeta>
     }
   } catch {}
   return { id: lessonId, title: `Bài ${lessonId}` }
-}
+})
 
 // ---- All exams (for /de-thi) ----
 
@@ -331,6 +473,26 @@ export async function getAllExams(): Promise<ExamListItem[]> {
         subjectName: (subject as any)?.name ?? '',
       }
     })
+  } catch {
+    return []
+  }
+}
+
+// ---- Sitemap ----
+
+/**
+ * Ids of every lesson that actually has questions — a `/quiz?lessonId=` page
+ * with no questions is a dead end, so it is kept out of the sitemap.
+ */
+export async function getIndexableLessonIds(): Promise<number[]> {
+  try {
+    const { data } = await getSupabaseServer()
+      .from('lessons')
+      .select('id, questions(count)')
+      .order('id')
+    return (data ?? [])
+      .filter((l: any) => (l.questions?.[0]?.count ?? 0) > 0)
+      .map((l: any) => l.id as number)
   } catch {
     return []
   }

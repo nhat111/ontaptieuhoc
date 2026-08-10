@@ -97,12 +97,14 @@ CREATE INDEX IF NOT EXISTS idx_questions_lesson   ON questions(lesson_id);
 -- ============================================================
 
 -- Môn học
+-- Phải khớp SUBJECTS_BY_GRADE trong lib/subjects.ts — môn có ở DB mà thiếu
+-- trong file đó sẽ không hiện trên web.
 INSERT INTO subjects (name, grade, order_index) VALUES
-  ('Toán',          1, 1), ('Tiếng Việt',  1, 2), ('Tự nhiên & Xã hội', 1, 3),
-  ('Toán',          2, 1), ('Tiếng Việt',  2, 2), ('Đạo đức',           2, 3),
-  ('Toán',          3, 1), ('Tiếng Việt',  3, 2), ('Khoa học',          3, 3),
-  ('Toán',          4, 1), ('Tiếng Việt',  4, 2), ('Khoa học',          4, 3),
-  ('Toán',          5, 1), ('Tiếng Việt',  5, 2), ('Khoa học',          5, 3);
+  ('Toán', 1, 1), ('Tiếng Việt', 1, 2), ('Tiếng Anh', 1, 3),
+  ('Toán', 2, 1), ('Tiếng Việt', 2, 2), ('Tiếng Anh', 2, 3),
+  ('Toán', 3, 1), ('Tiếng Việt', 3, 2), ('Tiếng Anh', 3, 3),
+  ('Toán', 4, 1), ('Tiếng Việt', 4, 2), ('Tiếng Anh', 4, 3),
+  ('Toán', 5, 1), ('Tiếng Việt', 5, 2), ('Tiếng Anh', 5, 3);
 
 -- Chương của Toán lớp 1 (subject id = 1)
 INSERT INTO chapters (title, subject_id, order_index) VALUES

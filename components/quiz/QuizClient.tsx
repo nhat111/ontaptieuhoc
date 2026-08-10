@@ -1,11 +1,31 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Question, LessonMeta, formatTime, scoreAnswer } from "@/lib/quizData";
+import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
+import VoicePicker from "./VoicePicker";
+import {
+  getShuffleOptions,
+  getShuffleQuestions,
+  setShuffleOptions,
+  setShuffleQuestions,
+  subscribeQuizPrefs,
+} from "@/lib/quizPrefs";
+import {
+  allQuestionsSegments,
+  stopSpeaking,
+  getSpeechRate,
+  isSpeechSupported,
+  setSpeechRate,
+  speakSegments,
+  subscribeSpeechRate,
+  DEFAULT_RATE,
+  RATE_OPTIONS,
+} from "@/lib/speech";
+import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 
 interface Props {
   initialQuestions: Question[];
@@ -18,7 +38,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   const lessonId = Number(searchParams.get("lessonId") ?? "1");
 
-  const questions = initialQuestions;
+  // Câu hỏi là state vì có thể bị trộn khi bắt đầu làm bài.
+  const [questions, setQuestions] = useState(initialQuestions);
   const lesson = initialLesson;
   const durationMinutes = lesson.durationMinutes ?? 15;
   const totalSeconds = durationMinutes * 60;
@@ -37,6 +58,128 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       .catch(() => {});
   }, []);
 
+  // ── Trộn thứ tự ──────────────────────────────────────────────────────────
+  const shuffleQ = useSyncExternalStore(subscribeQuizPrefs, getShuffleQuestions, () => false);
+  const shuffleO = useSyncExternalStore(subscribeQuizPrefs, getShuffleOptions, () => false);
+
+  // Trộn đúng một lần lúc bấm Bắt đầu, không trộn lại giữa chừng — nếu không
+  // câu hỏi sẽ nhảy lung tung dưới tay bé đang làm.
+  function start() {
+    if (shuffleQ || shuffleO) {
+      setQuestions(shuffleQuiz(initialQuestions, { questions: shuffleQ, options: shuffleO }));
+    }
+    setStarted(true);
+  }
+
+  // ── Giọng đọc gắn sẵn ────────────────────────────────────────────────────
+  //
+  // Câu nào có file (gắn ở /import/giong-doc) thì phát file; còn lại đọc bằng
+  // giọng máy của trình duyệt. Không gọi dịch vụ ngoài nào.
+  const hasAudioFiles = questions.some((q) => !!q.audioUrl);
+  const [audioNote, setAudioNote] = useState<string | null>(null);
+
+  // ── Nghe cả bài ──────────────────────────────────────────────────────────
+  const [readingAll, setReadingAll] = useState(false);
+  const [readingIdx, setReadingIdx] = useState<number | null>(null);
+  // Tốc độ lưu ở localStorage: server trả mặc định, client đọc giá trị đã lưu.
+  const rate = useSyncExternalStore(
+    subscribeSpeechRate,
+    getSpeechRate,
+    () => DEFAULT_RATE
+  );
+
+  // Rời trang giữa chừng thì tắt tiếng, không để đọc tiếp ở trang khác.
+  useEffect(() => () => { stopSpeaking(); stopAudioFiles(); }, []);
+
+  // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
+  function onSegmentStart(mark: number | undefined) {
+    if (typeof mark !== "number") return;
+    setReadingIdx(mark);
+    setCurrent(mark);
+    document.getElementById(`question-${mark}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  function stopReading() {
+    stopSpeaking();
+    stopAudioFiles();
+    setReadingAll(false);
+    setReadingIdx(null);
+  }
+
+  function readWithDeviceVoice() {
+    speakSegments(allQuestionsSegments(questions), {
+      rate,
+      onSegmentStart,
+      onEnd: () => {
+        setReadingAll(false);
+        setReadingIdx(null);
+      },
+    });
+  }
+
+  function readAll() {
+    if (readingAll) {
+      stopReading();
+      return;
+    }
+    setAudioNote(null);
+    setReadingAll(true);
+    if (hasAudioFiles) {
+      speakAudioFiles(audioSegments(questions), {
+        rate,
+        onSegmentStart,
+        onEnd: () => {
+          setReadingAll(false);
+          setReadingIdx(null);
+        },
+        // Đề gắn thiếu file thì phải nói ra, không thì bài đọc nhảy cóc mà
+        // không ai hiểu vì sao.
+        onIncomplete: (skipped, total) =>
+          setAudioNote(`Bỏ qua ${skipped}/${total} câu chưa gắn giọng đọc.`),
+      });
+      return;
+    }
+    readWithDeviceVoice();
+  }
+
+  function changeRate(value: number) {
+    setSpeechRate(value);
+    // Tốc độ chỉ áp dụng cho lượt đọc mới, nên dừng lượt đang chạy cho khỏi rối.
+    if (readingAll) stopReading();
+  }
+
+  // Server không có speechSynthesis nên phải trả false lúc SSR.
+  const speechOk = useSyncExternalStore(
+    () => () => {},
+    () => isSpeechSupported(),
+    () => false
+  );
+
+  // File audio phát được cả trên máy không có speechSynthesis.
+  const canListen = speechOk || hasAudioFiles;
+
+  // Dùng chung cho màn hình đầu và thanh điều khiển lúc đang làm bài.
+  const listenStatus = (
+    <div className="w-full text-[11px]">
+      {audioNote ? (
+        <span className="text-orange-600">{audioNote}</span>
+      ) : hasAudioFiles ? (
+        <span className="text-gray-400">Đọc bằng giọng đã gắn sẵn cho đề này.</span>
+      ) : (
+        <span className="text-gray-400">
+          Đọc bằng giọng máy của thiết bị.{" "}
+          <a href={`/import/giong-doc/${lessonId}`} className="text-blue-500 underline">
+            Gắn giọng đọc
+          </a>{" "}
+          để nghe hay hơn.
+        </span>
+      )}
+    </div>
+  );
+
   const answersRef = useRef(answers);
   answersRef.current = answers;
 
@@ -52,7 +195,14 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
     sessionStorage.setItem(
       "quizResult",
-      JSON.stringify({ questions, answers: finalAnswers, lessonId, lessonTitle: lesson.title })
+      JSON.stringify({
+        questions,
+        answers: finalAnswers,
+        lessonId,
+        lessonTitle: lesson.title,
+        grade: lesson.grade ?? null,
+        subjectName: lesson.subjectName ?? null,
+      })
     );
     router.push("/result");
   };
@@ -168,8 +318,65 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </div>
             ) : null}
 
+            {questions.length > 0 && (
+              <div className="mb-6 space-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
+                {/* Chỉ CÀI ĐẶT giọng đọc, không có nút nghe: màn hình này chưa
+                    hiện câu hỏi nào nên bấm nghe cả bài không để làm gì, mà
+                    phần tự cuộn tới câu đang đọc cũng không có gì để cuộn.
+                    Nút nghe nằm ở thanh trên, sau khi đã bắt đầu làm bài. */}
+                {canListen && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-500">Giọng đọc</span>
+                    <VoicePicker lang="vi-VN" label="Giọng Việt" />
+                    <VoicePicker lang="en-US" label="Giọng Anh" />
+                    <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-0.5">
+                      <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
+                      {RATE_OPTIONS.map((o) => (
+                        <button
+                          key={o.value}
+                          onClick={() => changeRate(o.value)}
+                          className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
+                            rate === o.value ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                    {listenStatus}
+                  </div>
+                )}
+
+                {/* Trộn thứ tự — áp dụng khi bấm Bắt đầu */}
+                <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={shuffleQ}
+                      onChange={(e) => setShuffleQuestions(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                    />
+                    Trộn thứ tự câu hỏi
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={shuffleO}
+                      onChange={(e) => setShuffleOptions(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                    />
+                    Trộn thứ tự đáp án
+                  </label>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  Trộn giúp bé không học vẹt theo vị trí. Áp dụng khi bấm Bắt đầu và giữ nguyên
+                  suốt bài; lựa chọn được nhớ cho lần sau.
+                </p>
+              </div>
+            )}
+
             <button
-              onClick={() => setStarted(true)}
+              onClick={start}
               disabled={questions.length === 0}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base px-10 py-3.5 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 mx-auto"
             >
@@ -209,15 +416,27 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </div>
             )}
 
-            <a
-              href={`/import/edit/${lessonId}`}
-              className="inline-flex items-center gap-1 mt-5 text-xs text-gray-400 hover:text-blue-600 transition-colors"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
-              </svg>
-              Sửa đề
-            </a>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
+              <a
+                href={`/import/edit/${lessonId}`}
+                className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+                </svg>
+                Sửa đề
+              </a>
+              <a
+                href={`/import/giong-doc/${lessonId}`}
+                className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
+                  <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7" />
+                </svg>
+                Gắn giọng đọc
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -274,6 +493,58 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             </svg>
             <span>{formatTime(timeLeft)}</span>
           </div>
+
+          {/* Nghe cả bài + tốc độ đọc — ẩn khi trình duyệt không hỗ trợ */}
+          {canListen && questions.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={readAll}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                  readingAll
+                    ? "bg-orange-500 text-white hover:bg-orange-600"
+                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                }`}
+              >
+                {readingAll ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <rect x="5" y="5" width="10" height="10" rx="1.5" />
+                    </svg>
+                    Dừng đọc
+                    {readingIdx !== null && (
+                      <span className="font-normal opacity-90">· câu {readingIdx + 1}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
+                      <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
+                    </svg>
+                    Nghe cả bài ({questions.length} câu)
+                  </>
+                )}
+              </button>
+
+              <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 p-0.5">
+                <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
+                {RATE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => changeRate(o.value)}
+                    className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
+                      rate === o.value
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              {listenStatus}
+            </div>
+          )}
         </div>
       </div>
 

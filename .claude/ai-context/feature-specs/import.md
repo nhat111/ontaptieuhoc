@@ -33,7 +33,7 @@ type QDraft = {
 ```
 
 ## Create flow
-1. Chọn lớp → môn (`GET /api/subjects?grade=`) → chương (`GET /api/chapters?subjectId=`)
+1. Chọn lớp → môn (static, `lib/subjects.ts`) → chương (`GET /api/chapters?grade=&subject=`)
    - Nút **+** tạo chương mới → `POST /api/chapters`
 2. `index_label`, title, `duration_minutes` (đề/bài)
 3. Thêm/sửa câu thủ công hoặc paste modal
@@ -75,7 +75,6 @@ type QDraft = {
 
 | Method | Path | Ghi chú |
 |--------|------|---------|
-| GET | `/api/subjects?grade=N` | |
 | GET/POST | `/api/chapters` | POST tạo chương |
 | GET | `/api/lesson/[id]` | Edit hydrate |
 | POST | `/api/create-lesson` | Insert lesson + questions |

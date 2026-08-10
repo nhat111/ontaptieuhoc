@@ -1,6 +1,8 @@
 import { Question } from "@/lib/quizData";
 import AnswerOption from "./AnswerOption";
 import MathText from "@/components/MathText";
+import SpeakButton from "@/components/SpeakButton";
+import { questionSegments } from "@/lib/speech";
 
 interface QuestionCardProps {
   question: Question;
@@ -68,6 +70,12 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Đọc câu hỏi + đáp án cho bé nghe (đề tiếng Anh, hoặc bé lớp 1-2 chưa đọc thạo). */}
+          <SpeakButton
+            segments={questionSegments(question.question, question.options)}
+            audioUrl={question.audioUrl}
+            label="Nghe"
+          />
           <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
             {TYPE_BADGE[question.type]}
           </span>

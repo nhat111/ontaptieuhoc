@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { nanoid } from "@/lib/nanoid";
+import { GRADES, getSubjects } from "@/lib/subjects";
 import Header from "@/components/Header";
 import QuestionCard, { type QDraft } from "./QuestionCard";
 import PasteImportModal from "./PasteImportModal";
@@ -10,7 +11,6 @@ import { insertIntoFocused } from "@/lib/focusedEditor";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Subject = { id: number; name: string };
 type Chapter = { id: number; title: string };
 
 export type InitialData = {
@@ -18,7 +18,7 @@ export type InitialData = {
   title: string;
   indexLabel: string;
   chapterId: number;
-  subjectId: number;
+  subject: string;
   grade: number;
   durationMinutes?: number;
   questions: QDraft[];
@@ -30,7 +30,9 @@ const EXAM_DRAFT_KEY = "ontap_exam_draft_v1";
 
 type Draft = {
   grade: number;
-  subjectId: number | null;
+  // Môn lưu theo TÊN (khoá trong lib/subjects.ts). Draft cũ lưu `subjectId`
+  // dạng số thì bỏ qua, form rơi về môn đầu tiên của lớp.
+  subject: string | null;
   chapterId: number | null;
   lessonTitle: string;
   indexLabel: string;
@@ -150,15 +152,30 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // Lesson form — dùng state riêng để useEffect dependency chính xác
   const [grade, setGrade] = useState(initialData?.grade ?? 1);
-  const [subjectId, setSubjectId] = useState<number | null>(null);
+  const [subjectChoice, setSubjectChoice] = useState<string | null>(initialData?.subject ?? null);
   const [chapterId, setChapterId] = useState<number | null>(null);
   const [lessonTitle, setLessonTitle] = useState(initialData?.title ?? "");
   const [indexLabel, setIndexLabel] = useState(initialData?.indexLabel ?? "01");
   const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 15);
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  // Môn học lấy thẳng từ lib/subjects.ts — không fetch API nữa, nên không cần
+  // state/loading và cũng không còn race khi khôi phục draft.
+  const subjects = useMemo(() => {
+    const catalog = getSubjects(grade);
+    // Bài đang sửa có thể thuộc môn không còn trong danh mục; vẫn giữ trong
+    // dropdown để lưu lại không âm thầm đổi môn của bài.
+    const current = initialData?.subject;
+    return current && initialData?.grade === grade && !catalog.includes(current)
+      ? [...catalog, current]
+      : [...catalog];
+  }, [grade, initialData?.subject, initialData?.grade]);
+
+  // Môn đang chọn suy ra từ state + danh mục: đổi lớp mà môn cũ không còn thì
+  // tự rơi về môn đầu tiên, khỏi cần effect setState.
+  const subject =
+    subjectChoice && subjects.includes(subjectChoice) ? subjectChoice : subjects[0] ?? null;
+
   const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingChapters, setLoadingChapters] = useState(false);
 
   // Questions + collapse state
@@ -181,10 +198,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // Autosave hydration flag
   const hydrated = useRef(false);
-  const skipNextSubjectAutoset = useRef(editMode);
   const skipNextChapterAutoset = useRef(editMode);
-  // Pending IDs to restore after async subject/chapter fetch (edit mode or draft restore)
-  const pendingSubjectId = useRef<number | null>(initialData?.subjectId ?? null);
+  // Chương vẫn fetch async nên vẫn cần ref này để khôi phục đúng lựa chọn sau
+  // khi danh sách về (edit mode hoặc khôi phục draft).
   const pendingChapterId = useRef<number | null>(initialData?.chapterId ?? null);
 
   // ── Restore draft from localStorage on mount (skipped in edit mode) ───────
@@ -203,10 +219,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
           }
           setQuestions(d.questions.map(migrateDraftQuestion));
           setCollapsedIds(new Set(d.collapsedIds ?? []));
-          if (d.subjectId != null) {
-            skipNextSubjectAutoset.current = true;
-            pendingSubjectId.current = d.subjectId;
-          }
+          if (typeof d.subject === "string") setSubjectChoice(d.subject);
           if (d.chapterId != null) {
             skipNextChapterAutoset.current = true;
             pendingChapterId.current = d.chapterId;
@@ -217,35 +230,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     hydrated.current = true;
   }, [editMode]);
 
-  // ── Fetch subjects khi grade thay đổi ──────────────────────────────────────
+  // ── Fetch chapters khi lớp/môn thay đổi ───────────────────────────────────
   useEffect(() => {
-    setSubjects([]);
-    setLoadingSubjects(true);
-
-    fetch(`/api/subjects?grade=${grade}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.error) { console.error("subjects API error:", data.error); return; }
-        const list = data as Subject[];
-        setSubjects(list);
-        const targetId = pendingSubjectId.current;
-        pendingSubjectId.current = null;
-        if (skipNextSubjectAutoset.current && targetId != null && list.some((s) => s.id === targetId)) {
-          setSubjectId(targetId);
-        } else if (list.length) {
-          setSubjectId(list[0].id);
-        } else {
-          setSubjectId(null);
-        }
-        skipNextSubjectAutoset.current = false;
-      })
-      .catch((e) => console.error("subjects fetch error:", e))
-      .finally(() => setLoadingSubjects(false));
-  }, [grade]);
-
-  // ── Fetch chapters khi subjectId thay đổi ─────────────────────────────────
-  useEffect(() => {
-    if (subjectId === null) {
+    if (subject === null) {
       setChapters([]);
       setChapterId(null);
       return;
@@ -256,7 +243,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     setNewChapterTitle("");
     setChapterCreateError(null);
 
-    fetch(`/api/chapters?subjectId=${subjectId}`)
+    fetch(`/api/chapters?grade=${grade}&subject=${encodeURIComponent(subject)}`)
       .then((r) => r.json())
       .then((data) => {
         if (data?.error) { console.error("chapters API error:", data.error); return; }
@@ -275,7 +262,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       })
       .catch((e) => console.error("chapters fetch error:", e))
       .finally(() => setLoadingChapters(false));
-  }, [subjectId]);
+  }, [grade, subject]);
 
   // ── Autosave draft (debounced, skipped in edit mode) ──────────────────────
   useEffect(() => {
@@ -283,14 +270,14 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     const t = setTimeout(() => {
       try {
         const d: Draft = {
-          grade, subjectId, chapterId, lessonTitle, indexLabel, durationMinutes,
+          grade, subject, chapterId, lessonTitle, indexLabel, durationMinutes,
           questions, collapsedIds: Array.from(collapsedIds),
         };
         localStorage.setItem(draftKey, JSON.stringify(d));
       } catch {/* ignore */}
     }, 500);
     return () => clearTimeout(t);
-  }, [grade, subjectId, chapterId, lessonTitle, indexLabel, durationMinutes, questions, collapsedIds, editMode]);
+  }, [grade, subject, chapterId, lessonTitle, indexLabel, durationMinutes, questions, collapsedIds, editMode, draftKey]);
 
   // ── Question operations ──────────────────────────────────────────────────
 
@@ -367,14 +354,14 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
   // ── Create chapter inline ────────────────────────────────────────────────
 
   const handleCreateChapter = useCallback(async () => {
-    if (!subjectId || !newChapterTitle.trim()) return;
+    if (!subject || !newChapterTitle.trim()) return;
     setChapterCreateError(null);
     setCreatingChapter(true);
     try {
       const res = await fetch("/api/chapters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectId, title: newChapterTitle.trim() }),
+        body: JSON.stringify({ grade, subject, title: newChapterTitle.trim() }),
       });
       const data = await res.json();
       if (!res.ok) { setChapterCreateError(data.error ?? "Không thể tạo chương."); return; }
@@ -387,7 +374,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     } finally {
       setCreatingChapter(false);
     }
-  }, [subjectId, newChapterTitle]);
+  }, [grade, subject, newChapterTitle]);
 
   // ── Save to Supabase ─────────────────────────────────────────────────────
 
@@ -395,14 +382,20 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     setError(null);
     setSaveResult(null);
 
-    if (!chapterId) { setError("Chưa chọn chương."); return; }
+    // Chương là tuỳ chọn — không chọn thì máy chủ gom vào chương mặc định
+    // của môn (xem ensureDefaultChapterId). Bắt buộc chỉ còn môn + tên + nội dung.
+    if (!subject) { setError("Chưa chọn môn học."); return; }
     if (!lessonTitle.trim()) { setError("Chưa nhập tên bài học."); return; }
     const qErr = validateQuestions(questions);
     if (qErr) { setError(qErr); return; }
 
     setSaving(true);
     const payload = {
+      // chapterId có thể null; khi đó máy chủ dùng grade+subject để tìm/tạo
+      // chương mặc định.
       chapterId,
+      grade,
+      subject,
       title: lessonTitle,
       indexLabel,
       durationMinutes,
@@ -444,7 +437,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     } finally {
       setSaving(false);
     }
-  }, [chapterId, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
+  }, [chapterId, grade, subject, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
 
   // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
   useEffect(() => {
@@ -571,7 +564,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                   onChange={(e) => setGrade(Number(e.target.value))}
                   className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 >
-                  {[1, 2, 3, 4, 5].map((g) => (
+                  {GRADES.map((g) => (
                     <option key={g} value={g}>Lớp {g}</option>
                   ))}
                 </select>
@@ -579,20 +572,16 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
               {/* Subject */}
               <div>
-                <label className="text-xs text-gray-500 block mb-1">
-                  Môn học {loadingSubjects && <span className="text-blue-400">⟳</span>}
-                </label>
+                <label className="text-xs text-gray-500 block mb-1">Môn học</label>
                 <select
-                  value={subjectId ?? ""}
-                  onChange={(e) => setSubjectId(Number(e.target.value))}
-                  disabled={loadingSubjects || subjects.length === 0}
+                  value={subject ?? ""}
+                  onChange={(e) => setSubjectChoice(e.target.value)}
+                  disabled={subjects.length === 0}
                   className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {subjects.length === 0 && !loadingSubjects && (
-                    <option value="">— Chưa có môn —</option>
-                  )}
+                  {subjects.length === 0 && <option value="">— Chưa có môn —</option>}
                   {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
@@ -600,25 +589,22 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
               {/* Chapter */}
               <div className="col-span-2">
                 <label className="text-xs text-gray-500 block mb-1">
-                  Chương {loadingChapters && <span className="text-blue-400">⟳</span>}
+                  Chương <span className="text-gray-400">(tuỳ chọn)</span>{" "}
+                  {loadingChapters && <span className="text-blue-400">⟳</span>}
                 </label>
                 <div className="flex gap-1.5">
                   <select
                     value={chapterId ?? ""}
-                    onChange={(e) => setChapterId(Number(e.target.value))}
-                    disabled={loadingChapters || chapters.length === 0}
+                    onChange={(e) => setChapterId(e.target.value ? Number(e.target.value) : null)}
                     className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {chapters.length === 0 && !loadingChapters && (
-                      <option value="">
-                        {subjectId ? "— Chưa có chương —" : "— Chọn môn học trước —"}
-                      </option>
-                    )}
+                    {/* Bỏ trống được — máy chủ sẽ gom vào chương mặc định của môn. */}
+                    <option value="">— Không phân chương —</option>
                     {chapters.map((c) => (
                       <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
                   </select>
-                  {subjectId && !loadingChapters && (
+                  {subject && !loadingChapters && (
                     <button
                       type="button"
                       onClick={() => { setShowNewChapter((v) => !v); setChapterCreateError(null); setNewChapterTitle(""); }}
@@ -635,7 +621,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </div>
 
                 {/* Inline create chapter form */}
-                {showNewChapter && subjectId && (
+                {showNewChapter && subject && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
                     <p className="text-xs font-semibold text-blue-700">Tạo chương mới</p>
                     <div className="flex gap-2">
@@ -761,7 +747,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             </h3>
             <div className="space-y-1.5 text-xs text-gray-600">
               <Row label="Lớp" value={`Lớp ${grade}`} />
-              <Row label="Môn" value={subjects.find((s) => s.id === subjectId)?.name ?? "—"} />
+              <Row label="Môn" value={subject ?? "—"} />
               <Row
                 label="Chương"
                 value={chapters.find((c) => c.id === chapterId)?.title?.slice(0, 28) ?? "—"}
@@ -801,7 +787,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
             <button
               onClick={() => handleSave(false)}
-              disabled={saving || !chapterId || !lessonTitle.trim()}
+              disabled={saving || !subject || !lessonTitle.trim()}
               title="Ctrl+S"
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
@@ -828,7 +814,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             {editMode && (
               <button
                 onClick={() => handleSave(true)}
-                disabled={saving || !chapterId || !lessonTitle.trim()}
+                disabled={saving || !subject || !lessonTitle.trim()}
                 title="Lưu rồi chuyển sang bài kế tiếp trong cùng chương"
                 className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
               >

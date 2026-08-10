@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 
-export const metadata = { title: "Nâng cấp Premium · Ôn Tập Tiểu Học" };
+export const metadata = {
+  title: "Nâng cấp Premium",
+  robots: { index: false, follow: true },
+};
 
 // Phase-1 manual upsell page. Edit the constants below with your real
 // payment details. After a transfer, activate the account by setting
