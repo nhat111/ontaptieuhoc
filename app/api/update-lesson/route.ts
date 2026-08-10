@@ -2,6 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensureDefaultChapterIdResult } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
+import { blockIfNoImportAccess } from "@/lib/importAuth";
 
 type QImagePayload = { url: string; position: "before" | "after" };
 
@@ -66,6 +67,9 @@ function buildExplanation(q: QPayload, audioUrl?: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
   const { lessonId, chapterId, grade, subject, title, indexLabel, questions, type, durationMinutes } =
     await req.json();
 

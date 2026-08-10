@@ -28,6 +28,7 @@ Copy `.env.local.example` → `.env.local`. Three of the four vars are required 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — anon/publishable, used by browser + session clients.
 - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, bypasses RLS**. Used by every API route and SSR data fetch.
 - `ANTHROPIC_API_KEY` — server-only. Used by `POST /api/ocr-exam` (quét ảnh đề bằng Claude vision). Without it that route returns 503; every other feature works.
+- `IMPORT_PASSWORD` — server-only, shared passphrase for `/import*` and every write API. **Leave it empty and everything stays open** (dev default, and how the site behaved before). Set it in production: `/api/update-lesson` deletes a lesson's questions and reinserts them, so anyone who guesses a lesson id can wipe content, and there are no backups.
 - `NEXT_PUBLIC_SITE_URL` — absolute origin (no trailing slash). Drives `app/sitemap.ts`, `app/robots.ts` and `metadataBase` (canonical + Open Graph URLs). Optional in dev; **set it in production** or canonical tags point at the Vercel preview domain. `lib/siteUrl.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
 
 DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to provision tables and seed sample data. Note: the seeded `subjects` block resets the SERIAL, so sample chapter inserts use hard-coded subject id `61` (last seeded row). `questions.type` is in `schema.sql`; these columns are **used in app code but may be missing on a fresh DB** — add if needed:
@@ -52,7 +53,8 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 ### Next.js 16 quirks
 
-- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It only refreshes Supabase auth cookies on `/import/*` navigations (`supabase.auth.getUser()` triggers token rotation); there is no auth gate — `/import` and `/import/exam` are intentionally open to guests so anyone can create lessons/exams.
+- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It refreshes Supabase auth cookies on `/import/*` navigations (`supabase.auth.getUser()` triggers token rotation) and, when `IMPORT_PASSWORD` is set, redirects unauthenticated `/import/*` visits to `/import/khoa`.
+- **The proxy does not run for `/api/*`** — which is exactly where content can be destroyed. Every write route therefore calls `blockIfNoImportAccess(req)` itself (`lib/importAuth.ts`); gating only the UI would leave the dangerous half open. The cookie holds a SHA-256 of the passphrase, not the passphrase, and is compared in constant time. No password configured → both gates are no-ops.
 - `searchParams` and `params` in server components are `Promise<...>` — always `await` them (see `app/quiz/page.tsx`, `app/lop/[grade]/page.tsx`).
 
 ### Subjects — static catalogue, not a queried table

@@ -2,6 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensureSubjectId } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
+import { blockIfNoImportAccess } from "@/lib/importAuth";
 
 // Chapters are addressed by (grade, subject name) — the subject catalogue lives
 // in lib/subjects.ts, so the client never has to know a `subjects.id`.
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
   const { grade, subject: rawSubject, title } = await req.json();
   const subject = readSubject(Number(grade), rawSubject ?? null);
   if (!subject || !title?.trim()) {

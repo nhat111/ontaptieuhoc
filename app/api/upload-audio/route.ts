@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { createHash } from "crypto";
+import { blockIfNoImportAccess } from "@/lib/importAuth";
 
 // Nhận file giọng đọc sinh sẵn ngoài web (Piper, Audacity, thu âm thật…) và cất
 // vào kho, trả về URL để gắn cho câu hỏi.
@@ -36,6 +37,9 @@ async function ensureBucket(sb: Sb): Promise<{ error?: string }> {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
   let form: FormData;
   try {
     form = await req.formData();

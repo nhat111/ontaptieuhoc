@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { blockIfNoImportAccess } from "@/lib/importAuth";
 
 // Gắn / gỡ file giọng đọc cho từng câu hỏi.
 //
@@ -13,6 +14,9 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 type Item = { questionId: number; url: string | null };
 
 export async function POST(req: NextRequest) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
   let body: { lessonId?: unknown; items?: unknown };
   try {
     body = await req.json();
