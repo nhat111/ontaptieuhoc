@@ -1,8 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Cookie refresh proxy for SSR Supabase sessions. No auth gating —
-// /import is intentionally open to guests.
+// Làm mới cookie phiên Supabase trên các trang /import.
+//
+// KHÔNG gác quyền truy cập ở đây: bản build production không đăng ký được proxy
+// thành Edge Function trên Vercel, nên gác ở đây chạy đúng lúc `next start` ở
+// máy nhưng im lặng vô hiệu khi deploy. Việc chặn nằm ở `app/import/layout.tsx`
+// và ở từng route API.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 

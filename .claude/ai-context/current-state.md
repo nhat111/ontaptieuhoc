@@ -23,6 +23,7 @@ _Last synced with codebase: May 2026_
 ### Import / content
 - `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
 - `/import/chapter/[id]` — dashboard tiến độ bài trong chương
+- **Khoá khu soạn nội dung**: đặt `IMPORT_PASSWORD` thì `/import/*` chuyển hướng sang `/import-khoa` để nhập mật khẩu (chặn trong `app/import/layout.tsx`, KHÔNG dùng proxy — proxy không được đăng ký khi deploy), và mọi API ghi (`create-lesson`, `update-lesson`, `chapters` POST, `upload-image`, `upload-audio`, `lesson-audio`, `ocr-exam`) tự kiểm tra — proxy không chạy cho `/api/*`. Bỏ trống biến thì mở như cũ
 - `/import/kiem-tra` — trang chẩn đoán (kết nối Supabase, số dòng mỗi bảng, đối chiếu môn code↔DB). Bản web của `scripts/check-subjects.mjs`, dùng khi chỉ có điện thoại
 - API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, upload-audio, lesson-audio, auth/logout — **không còn `/api/subjects`**
 - Tạo bài/đề: **chương là tuỳ chọn** — bắt buộc chỉ còn môn + tên + câu hỏi. Không chọn chương thì máy chủ gom vào chương mặc định của môn (`ensureDefaultChapterId`), vì `lessons.chapter_id` NOT NULL và trang lớp nhóm bài theo chương
