@@ -101,7 +101,7 @@ async function fetchAudioUrl(
   text: string,
   voice: TtsVoice,
   signal: AbortSignal,
-  onRetry: (seconds: number) => void
+  onRetry: (seconds: number, reason: string) => void
 ): Promise<FetchResult> {
   let last = "Không gọi được máy chủ";
 
@@ -125,7 +125,9 @@ async function fetchAudioUrl(
       last = typeof data?.error === "string" ? data.error : `Lỗi ${res.status}`;
       if (res.status !== 429 || attempt >= RETRY_DELAYS_MS.length) return { error: last };
       const wait = RETRY_DELAYS_MS[attempt];
-      onRetry(Math.round(wait / 1000));
+      // Kèm lý do NGAY từ lần chặn đầu. Chỉ báo "đang chờ" thì người dùng phải
+      // đợi hết vòng thử lại (gần hai phút) mới biết vì sao — quá muộn.
+      onRetry(Math.round(wait / 1000), last);
       await sleep(wait, signal);
     } catch (e) {
       // Huỷ giữa chừng cũng vào đây; bên gọi tự bỏ qua nhờ số thứ tự lượt đọc.
@@ -253,9 +255,9 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
       // Báo TRƯỚC khi gọi: sinh một câu mất cả chục giây, đứng im ở "0/8" suốt
       // thời gian đó thì người dùng tưởng hỏng.
       opts.onProgress?.(i, clean.length, `đang tạo câu ${i + 1}`);
-      const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs) => {
+      const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs, why) => {
         if (gen === generation) {
-          opts.onProgress?.(i, clean.length, `chờ hạn mức, thử lại sau ${secs} giây`);
+          opts.onProgress?.(i, clean.length, `thử lại sau ${secs}s · ${why}`);
         }
       });
       slots[i].fill(r);
