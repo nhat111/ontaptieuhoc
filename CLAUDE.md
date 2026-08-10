@@ -159,7 +159,8 @@ Because of that iOS caveat, **English** exams can be read by a paid cloud TTS in
 
 `questions.explanation` also carries `audioUrl`. When a question has one, playback uses it directly and never calls `/api/tts` — so audio works with **no** TTS provider configured at all.
 
-- `/import/giong-doc/[id]` (`components/import/AudioMapper.tsx`) exports a **Piper JSONL** batch file (`{text, output_file}` per line, so one command renders the whole exam), takes the resulting files, and maps them to questions **by the number in the filename** (`cau-03.wav` → question 3), not by pick order.
+- `/import/giong-doc/[id]` (`components/import/AudioMapper.tsx`) takes uploaded audio files and maps them to questions **by the number in the filename** (`wav_3.wav` → question 3), never by pick order — browsers don't guarantee file order. `lib/audioFileName.ts` strips the extension before scanning (`.m4a`/`.mp3` contain digits) and takes the **last** number (real filenames carry date or lesson prefixes).
+- Mis-mapping is the silent failure that matters here — a child hears the wrong question and nobody notices. So the page names every file it could not place instead of skipping quietly, shows which filename landed on which question, and gives each row an inline player to check before saving.
 - `POST /api/upload-audio` stores the file (named by content hash, so re-uploading the same file overwrites itself). `POST /api/lesson-audio` merges `audioUrl` into the existing `explanation` blob — read-merge-write, so images and solutions survive, and it deliberately does **not** go through `/api/update-lesson`, which wipes and reinserts every question.
 
 ### Math handling
