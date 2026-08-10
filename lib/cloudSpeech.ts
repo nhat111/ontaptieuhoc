@@ -134,19 +134,58 @@ async function fetchAudioUrl(
   }
 }
 
+/**
+ * Phát một file, trả về khi phát xong.
+ *
+ * Trên iOS sự kiện `ended` KHÔNG phải lúc nào cũng bắn — đúng cái bẫy đã gặp
+ * với Web Speech (xem ghi chú `onend` trong lib/speech.ts). Chuỗi đọc chờ
+ * `ended` để sang câu sau, nên thiếu nó là đứng luôn ở câu 1. Vì vậy có thêm
+ * hẹn giờ dự phòng tính theo độ dài thật của file.
+ */
 function playOne(el: HTMLAudioElement, url: string, speed: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    const done = (fn: () => void) => {
+    let settled = false;
+    let guard: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
       el.onended = null;
       el.onerror = null;
-      fn();
+      el.onloadedmetadata = null;
+      if (guard) clearTimeout(guard);
     };
-    el.onended = () => done(resolve);
-    el.onerror = () => done(() => reject(new Error("audio-error")));
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const fail = (e: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(e);
+    };
+
+    el.onended = finish;
+    el.onerror = () => fail(new Error("audio-error"));
+
+    el.onloadedmetadata = () => {
+      // Biết độ dài thật rồi thì hẹn giờ sát hơn. Cộng dư 3 giây phòng khi máy
+      // phát chậm hơn dự kiến, để không cắt ngang câu đang đọc.
+      const d = el.duration;
+      if (Number.isFinite(d) && d > 0) {
+        if (guard) clearTimeout(guard);
+        guard = setTimeout(finish, (d / speed) * 1000 + 3000);
+      }
+      // iOS đặt lại playbackRate khi nạp nguồn mới, nên đặt lại ở đây.
+      el.playbackRate = speed;
+    };
+
     el.src = url;
-    // Tốc độ chỉnh ngay lúc phát thay vì sinh nhiều bản audio khác nhau.
     el.playbackRate = speed;
-    el.play().catch((e) => done(() => reject(e)));
+    // Phòng cả trường hợp metadata cũng không bao giờ tới.
+    guard = setTimeout(finish, 60000);
+    el.play().catch((e) => fail(e));
   });
 }
 
