@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { text?: unknown; voice?: unknown };
+  let body: { text?: unknown; voice?: unknown; probe?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -99,8 +99,14 @@ export async function POST(req: NextRequest) {
     const name = `${key}.${ext}`;
     if (await findCached(sb, name)) {
       const { data } = sb.storage.from(BUCKET).getPublicUrl(`tts/${name}`);
-      return NextResponse.json({ url: data.publicUrl, cached: true });
+      return NextResponse.json({ url: data.publicUrl, cached: true, ready: true });
     }
+  }
+
+  // Chế độ chỉ hỏi "đã có file chưa": dùng để đếm tiến độ chuẩn bị của cả đề mà
+  // không tiêu một chút hạn mức nào. Không có file thì trả về luôn, không sinh.
+  if (body.probe === true) {
+    return NextResponse.json({ ready: false });
   }
 
   let result;

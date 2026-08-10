@@ -30,7 +30,7 @@ import {
   DEFAULT_RATE,
   RATE_OPTIONS,
 } from "@/lib/speech";
-import { cloudSegments, speakCloud, stopCloud } from "@/lib/cloudSpeech";
+import { cloudSegments, countPrepared, prepareAll, speakCloud, stopCloud } from "@/lib/cloudSpeech";
 
 interface Props {
   initialQuestions: Question[];
@@ -123,6 +123,42 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   const isEnglishLesson = lesson.subjectName === "Tiếng Anh" || englishByContent;
 
   const useCloud = cloudAvailable && cloudOn && isEnglishLesson;
+
+  // ── Chuẩn bị giọng trước ─────────────────────────────────────────────────
+  //
+  // Tách việc sinh giọng khỏi lúc bé ngồi học: hạn mức nhỏ chỉ phiền khi nó cạn
+  // giữa buổi học. Chuẩn bị trước lúc rảnh thì đến lúc học là có sẵn.
+  const [prepared, setPrepared] = useState<number | null>(null);
+  const [preparing, setPreparing] = useState<{ done: number; total: number; note?: string } | null>(null);
+  const [prepDone, setPrepDone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!useCloud || started) return;
+    let alive = true;
+    countPrepared(cloudSegments(questions), cloudVoice)
+      .then((n) => { if (alive) setPrepared(n); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [useCloud, started, questions, cloudVoice]);
+
+  function startPrepare() {
+    setPrepDone(null);
+    setPreparing({ done: prepared ?? 0, total: questions.length });
+    prepareAll(cloudSegments(questions), {
+      voice: cloudVoice,
+      onProgress: (done, total, note) => setPreparing({ done, total, note }),
+      onDone: (ready, total, lastError) => {
+        setPreparing(null);
+        setPrepared(ready);
+        setPrepDone(
+          ready >= total
+            ? `Đã sẵn sàng cả ${total} câu. Bấm Nghe là chạy ngay.`
+            : `Mới xong ${ready}/${total} câu — ${lastError ?? "chưa rõ lý do"}. ` +
+              `Phần đã xong được lưu lại, lát nữa bấm tiếp là làm nốt phần còn thiếu.`
+        );
+      },
+    });
+  }
 
   // ── Nghe cả bài ──────────────────────────────────────────────────────────
   const [readingAll, setReadingAll] = useState(false);
@@ -466,6 +502,33 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                       ))}
                     </div>
                     {cloudStatus}
+                  </div>
+                )}
+
+                {/* Chuẩn bị giọng trước, để lúc bé học không phải chờ sinh audio */}
+                {useCloud && (
+                  <div className="space-y-1.5 border-t border-gray-200 pt-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={startPrepare}
+                        disabled={!!preparing || prepared === questions.length}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {preparing ? "Đang chuẩn bị…" : "Chuẩn bị giọng đọc"}
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        {preparing
+                          ? `${preparing.done}/${preparing.total} câu${preparing.note ? ` · ${preparing.note}` : ""}`
+                          : prepared === null
+                            ? "đang kiểm tra…"
+                            : `${prepared}/${questions.length} câu đã có giọng`}
+                      </span>
+                    </div>
+                    {prepDone && <p className="text-[11px] text-gray-500">{prepDone}</p>}
+                    <p className="text-[11px] text-gray-400">
+                      Chuẩn bị trước thì lúc bé làm bài bấm Nghe là chạy ngay. Câu nào đã tạo
+                      được sẽ lưu lại vĩnh viễn, không tạo lại lần sau.
+                    </p>
                   </div>
                 )}
 

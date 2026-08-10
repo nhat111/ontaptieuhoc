@@ -315,3 +315,71 @@ export function stopCloud() {
     audioEl.onerror = null;
   }
 }
+
+// ── Chuẩn bị trước ───────────────────────────────────────────────────────────
+//
+// Tách việc SINH giọng khỏi việc NGHE. Hạn mức nhỏ không phiền nếu người lớn
+// chuẩn bị sẵn lúc rảnh; chỉ phiền khi nó cạn đúng lúc đứa trẻ đang ngồi học.
+// Câu nào sinh được là lưu vĩnh viễn, nên chuẩn bị dở dang hôm nay thì mai bấm
+// tiếp là đầy dần.
+
+/** Đếm xem đề đã có sẵn giọng cho bao nhiêu câu — không tiêu hạn mức. */
+export async function countPrepared(
+  segments: CloudSegment[],
+  voice: TtsVoice
+): Promise<number> {
+  const results = await Promise.all(
+    segments.map(async (seg) => {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: seg.text, voice, probe: true }),
+        });
+        const data = await res.json().catch(() => null);
+        return res.ok && data?.ready === true;
+      } catch {
+        return false;
+      }
+    })
+  );
+  return results.filter(Boolean).length;
+}
+
+export type PrepareOptions = {
+  voice?: TtsVoice;
+  onProgress?: (done: number, total: number, note?: string) => void;
+  onDone?: (ready: number, total: number, lastError: string | null) => void;
+};
+
+/**
+ * Sinh sẵn giọng cho cả đề, không phát tiếng.
+ *
+ * Đi lần lượt và KHÔNG dừng khi gặp lỗi: hết hạn mức ở câu 4 thì các câu trước
+ * vẫn đã lưu, lần sau bấm lại chỉ phải làm phần còn thiếu.
+ */
+export function prepareAll(segments: CloudSegment[], opts: PrepareOptions = {}): () => void {
+  const controller = new AbortController();
+  const clean = segments.filter((s) => s.text.trim().length > 0);
+  const voice = opts.voice ?? "";
+
+  (async () => {
+    let ready = 0;
+    let lastError: string | null = null;
+
+    for (let i = 0; i < clean.length; i++) {
+      if (controller.signal.aborted) return;
+      opts.onProgress?.(ready, clean.length, `đang tạo câu ${i + 1}`);
+      const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs, why) => {
+        opts.onProgress?.(ready, clean.length, `thử lại sau ${secs}s · ${why}`);
+      });
+      if ("url" in r) ready++;
+      else lastError = r.error;
+      opts.onProgress?.(ready, clean.length);
+    }
+
+    if (!controller.signal.aborted) opts.onDone?.(ready, clean.length, lastError);
+  })();
+
+  return () => controller.abort();
+}
