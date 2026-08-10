@@ -31,6 +31,13 @@ export default function AudioMapper({ lessonId, lessonTitle, questions }: Props)
 
   const done = urls.filter(Boolean).length;
 
+  // `questions[i].audioUrl` đến từ máy chủ, nên nó là sự thật ĐANG NẰM TRONG DB.
+  // So với state tại chỗ để biết câu nào mới gắn mà chưa lưu — trước đây tải lên
+  // xong trông y như đã lưu, nên rất dễ tưởng xong rồi bỏ đi.
+  const saved = questions.map((q) => q.audioUrl ?? null);
+  const dirty = urls.some((u, i) => u !== saved[i]);
+  const unsavedCount = urls.filter((u, i) => u !== saved[i]).length;
+
   async function uploadOne(index: number, file: File): Promise<boolean> {
     const fd = new FormData();
     fd.append("file", file);
@@ -106,8 +113,17 @@ export default function AudioMapper({ lessonId, lessonTitle, questions }: Props)
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `Lỗi ${res.status}`);
-      setMsg(`Đã lưu ${data?.updated ?? 0} câu. Vào trang làm bài bấm Nghe là chạy ngay.`);
+      if (!data?.updated) {
+        throw new Error(
+          "Máy chủ báo không cập nhật câu nào. Thử tải lại trang rồi gắn lại."
+        );
+      }
+      setMsg(`Đã lưu ${data.updated} câu. Đang tải lại để xác nhận…`);
       setProblems([]);
+      // Nạp lại từ máy chủ thay vì tự tin là đã lưu: nhãn "đã lưu" chỉ đáng tin
+      // khi nó đến từ DB.
+      setTimeout(() => window.location.reload(), 600);
+      return;
     } catch (e) {
       setProblems([e instanceof Error ? e.message : "Lưu thất bại."]);
     } finally {
@@ -163,6 +179,13 @@ export default function AudioMapper({ lessonId, lessonTitle, questions }: Props)
       )}
       {msg && <p className="rounded-xl bg-green-50 p-3 text-xs text-green-700">{msg}</p>}
 
+      {dirty && (
+        <p className="rounded-xl bg-orange-50 p-3 text-xs font-semibold text-orange-700">
+          Có {unsavedCount} câu thay đổi <b>chưa được lưu</b>. Bấm “Lưu giọng đọc” ở cuối
+          trang thì trang làm bài mới dùng được.
+        </p>
+      )}
+
       <div className="rounded-2xl border border-gray-100 bg-white">
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <h2 className="truncate text-sm font-bold text-gray-700">{lessonTitle}</h2>
@@ -180,11 +203,20 @@ export default function AudioMapper({ lessonId, lessonTitle, questions }: Props)
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm text-gray-700">{q.question}</p>
 
-                  {sources[i] && (
-                    <p className="mt-0.5 font-mono text-[11px] text-green-700">
-                      ← {sources[i]}
-                    </p>
-                  )}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    {sources[i] && (
+                      <span className="font-mono text-gray-500">← {sources[i]}</span>
+                    )}
+                    {urls[i] === saved[i] && urls[i] ? (
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-700">
+                        đã lưu
+                      </span>
+                    ) : urls[i] !== saved[i] ? (
+                      <span className="rounded bg-orange-100 px-1.5 py-0.5 font-semibold text-orange-700">
+                        chưa lưu
+                      </span>
+                    ) : null}
+                  </p>
 
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     {urls[i] ? (
