@@ -42,7 +42,7 @@ export default function ImportLoginForm({ next }: { next: string }) {
         disabled={busy || !password}
         className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
       >
-        {busy ? "Đang kiểm tra…" : "Vào"}
+        {busy ? "Đang mở khoá…" : "Truy cập"}
       </button>
     </form>
   );
