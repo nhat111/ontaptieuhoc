@@ -3,6 +3,17 @@ import { IMPORT_COOKIE, checkPassword, expectedToken, isImportProtected } from "
 
 // Nhận mật khẩu chung, đặt cookie cho phép vào khu soạn nội dung.
 
+/**
+ * Khoá có đang bật không. Chỉ trả boolean, không lộ mật khẩu.
+ *
+ * Mở được bằng trình duyệt nên người vận hành tự kiểm được biến môi trường đã
+ * tới đúng bản deploy chưa — thay vì đoán qua việc trang có chuyển hướng hay
+ * không, vốn còn phụ thuộc cookie sẵn có trong máy.
+ */
+export async function GET() {
+  return NextResponse.json({ locked: isImportProtected() });
+}
+
 export async function POST(req: NextRequest) {
   if (!isImportProtected()) {
     return NextResponse.json({ ok: true, open: true });
