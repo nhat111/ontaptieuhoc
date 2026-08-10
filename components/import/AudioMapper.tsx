@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Question } from "@/lib/quizData";
-import { cloudSegments } from "@/lib/cloudSpeech";
+import { readingTextFor } from "@/lib/audioSpeech";
 import { questionIndexFromFileName } from "@/lib/audioFileName";
 
 // Gắn file giọng đọc sinh sẵn (Piper, thu âm thật…) cho từng câu hỏi.
@@ -133,11 +133,8 @@ export default function AudioMapper({ lessonId, lessonTitle, questions }: Props)
 
   /** Văn bản nên đọc cho từng câu — chỉ cần khi người dùng muốn sinh cho khớp. */
   function downloadText() {
-    const segments = cloudSegments(
-      questions.map((q) => ({ question: q.question, options: q.options }))
-    );
-    const body = segments
-      .map((seg, i) => `--- wav_${i + 1} ---\n${seg.text}\n`)
+    const body = questions
+      .map((q, i) => `--- wav_${i + 1} ---\n${readingTextFor(q.question, q.options)}\n`)
       .join("\n");
     const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");

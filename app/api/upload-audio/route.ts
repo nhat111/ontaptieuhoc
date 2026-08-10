@@ -5,8 +5,8 @@ import { createHash } from "crypto";
 // Nhận file giọng đọc sinh sẵn ngoài web (Piper, Audacity, thu âm thật…) và cất
 // vào kho, trả về URL để gắn cho câu hỏi.
 //
-// Khác `/api/tts` ở chỗ đây KHÔNG sinh gì cả — chỉ nhận file có sẵn. Nhờ vậy
-// không dính hạn mức của bất kỳ nhà cung cấp nào.
+// Ở đây KHÔNG sinh gì cả — chỉ nhận file có sẵn. Nhờ vậy không dính hạn mức của
+// bất kỳ dịch vụ nào.
 
 const BUCKET = "question-audio";
 // File WAV không nén khá nặng: một câu đọc 20 giây ở 22kHz đã cỡ 1MB. 25MB dư

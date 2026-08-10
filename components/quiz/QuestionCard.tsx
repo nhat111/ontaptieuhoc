@@ -3,16 +3,12 @@ import AnswerOption from "./AnswerOption";
 import MathText from "@/components/MathText";
 import SpeakButton from "@/components/SpeakButton";
 import { questionSegments } from "@/lib/speech";
-import { cloudSegmentFor } from "@/lib/cloudSpeech";
-import type { TtsVoice } from "@/lib/ttsVoices";
 
 interface QuestionCardProps {
   question: Question;
   index: number;
   selectedAnswer: string | null;
   onSelect: (answer: string) => void;
-  /** Đặt khi đề là tiếng Anh và máy chủ có bật giọng đám mây; null thì đọc bằng giọng máy. */
-  cloudVoice?: TtsVoice | null;
 }
 
 const TYPE_BADGE: Record<Question["type"], string> = {
@@ -22,7 +18,7 @@ const TYPE_BADGE: Record<Question["type"], string> = {
   numeric: "Trả lời số",
 };
 
-export default function QuestionCard({ question, index, selectedAnswer, onSelect, cloudVoice }: QuestionCardProps) {
+export default function QuestionCard({ question, index, selectedAnswer, onSelect }: QuestionCardProps) {
   // For "multi", selectedAnswer is JSON-stringified string[] of chosen option texts.
   let multiSelected: Set<string> = new Set();
   if (question.type === "multi" && selectedAnswer) {
@@ -77,20 +73,7 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           {/* Đọc câu hỏi + đáp án cho bé nghe (đề tiếng Anh, hoặc bé lớp 1-2 chưa đọc thạo). */}
           <SpeakButton
             segments={questionSegments(question.question, question.options)}
-            cloud={
-              // Câu có file gắn sẵn thì bật đường phát file kể cả khi máy chủ
-              // không cấu hình nhà cung cấp nào — lúc đó `cloudVoice` rỗng.
-              cloudVoice || question.audioUrl
-                ? {
-                    segments: cloudSegmentFor(
-                      question.question,
-                      question.options,
-                      question.audioUrl
-                    ),
-                    voice: cloudVoice ?? "",
-                  }
-                : null
-            }
+            audioUrl={question.audioUrl}
             label="Nghe"
           />
           <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">

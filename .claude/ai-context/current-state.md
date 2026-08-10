@@ -11,8 +11,7 @@ _Last synced with codebase: May 2026_
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
 - **Trộn thứ tự**: 2 tuỳ chọn ở màn hình đầu (trộn câu hỏi / trộn đáp án), lưu localStorage (`lib/quizPrefs.ts`), trộn 1 lần lúc bấm Bắt đầu
 - **Nghe**: nút 🔊 từng câu, và **"Nghe cả bài"** (có ở cả màn hình đầu lẫn lúc đang làm) đọc liền mạch cả đề (xướng "Câu N", tự cuộn tới câu đang đọc). Tốc độ Chậm/Vừa/Nhanh lưu ở localStorage, mặc định 0.7. Web Speech API của trình duyệt — miễn phí, không cần key
-- **Giọng đọc gắn sẵn**: `/import/giong-doc/[id]` — tải file JSONL cho Piper, sinh ngoài rồi upload, ghép theo số trong tên file. Lưu `audioUrl` trong blob `questions.explanation`; có file gắn sẵn thì phát thẳng, **không cần key nhà cung cấp nào**
-- **Giọng Anh chuẩn**: đề tiếng Anh (≥ nửa số câu nhận diện là en-US) đọc bằng TTS đám mây qua `POST /api/tts` thay vì giọng máy, vì Safari iOS không cho web dùng giọng Enhanced/Premium người dùng tải. File mp3 cache theo nội dung trong Storage `question-audio` → mỗi câu chỉ tốn tiền một lần. Cần `OPENAI_API_KEY`; thiếu key thì tự quay về giọng máy, không hỏng gì. Chọn giọng + bật/tắt ở màn hình đầu. Tiếng Việt vẫn dùng Web Speech miễn phí
+- **Giọng đọc gắn sẵn**: `/import/giong-doc/[id]` — sinh file ngoài (Piper…) rồi upload, ghép theo số trong tên file (`wav_1.wav` → câu 1), mỗi câu có nhãn đã lưu/chưa lưu và trình phát để nghe thử. Lưu `audioUrl` trong blob `questions.explanation`. **Không gọi dịch vụ ngoài nào, không cần key.**
 - `/result`: breakdown điểm, làm lại, quay lại `/lop/[grade]` (breadcrumb lấy `grade`/`subjectName` từ payload `sessionStorage`)
 - `POST /api/quiz-result`: ghi `quiz_results` (+ `user_id` nếu đăng nhập)
 
@@ -25,7 +24,7 @@ _Last synced with codebase: May 2026_
 - `/import`, `/import/exam`, `/import/edit/[id]` — `ImportClient` + Tiptap + paste modal + upload ảnh
 - `/import/chapter/[id]` — dashboard tiến độ bài trong chương
 - `/import/kiem-tra` — trang chẩn đoán (kết nối Supabase, số dòng mỗi bảng, đối chiếu môn code↔DB). Bản web của `scripts/check-subjects.mjs`, dùng khi chỉ có điện thoại
-- API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, auth/logout — **không còn `/api/subjects`**
+- API: chapters (GET/POST, theo `grade`+`subject`), lesson/[id], create-lesson, update-lesson, fetch-exam, upload-image, ocr-exam, upload-audio, lesson-audio, auth/logout — **không còn `/api/subjects`**
 - Tạo bài/đề: **chương là tuỳ chọn** — bắt buộc chỉ còn môn + tên + câu hỏi. Không chọn chương thì máy chủ gom vào chương mặc định của môn (`ensureDefaultChapterId`), vì `lessons.chapter_id` NOT NULL và trang lớp nhóm bài theo chương
 - `localStorage` draft: `ontap_import_draft_v1` / `ontap_exam_draft_v1` (debounce 500ms, tắt khi edit)
 - KaTeX qua `MathText`; cheat-sheet LaTeX + `focusedEditor`

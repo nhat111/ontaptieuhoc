@@ -8,19 +8,14 @@ import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
 import {
-  getCloudVoice,
-  getCloudVoiceOn,
   getShuffleOptions,
   getShuffleQuestions,
-  setCloudVoice,
-  setCloudVoiceOn,
   setShuffleOptions,
   setShuffleQuestions,
   subscribeQuizPrefs,
 } from "@/lib/quizPrefs";
 import {
   allQuestionsSegments,
-  detectLang,
   stopSpeaking,
   getSpeechRate,
   isSpeechSupported,
@@ -30,7 +25,7 @@ import {
   DEFAULT_RATE,
   RATE_OPTIONS,
 } from "@/lib/speech";
-import { cloudSegments, countPrepared, prepareAll, speakCloud, stopCloud } from "@/lib/cloudSpeech";
+import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 
 interface Props {
   initialQuestions: Question[];
@@ -76,92 +71,12 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     setStarted(true);
   }
 
-  // ── Giọng đám mây (chỉ cho đề tiếng Anh) ─────────────────────────────────
+  // ── Giọng đọc gắn sẵn ────────────────────────────────────────────────────
   //
-  // Giọng máy sẵn có đủ dùng cho đề tiếng Việt, nhưng bé học tiếng Anh mà nghe
-  // giọng máy thì dễ nhại sai trọng âm — nên đề tiếng Anh mới gọi giọng đám mây.
-  // Danh mục giọng do máy chủ trả về: tên giọng khác nhau tuỳ nhà cung cấp
-  // (Gemini dùng "Kore", OpenAI dùng "nova") nên client không giữ danh sách cứng.
-  const [cloud, setCloud] = useState<{
-    voices: { value: string; label: string }[];
-    defaultVoice: string;
-  } | null>(null);
-  const [prep, setPrep] = useState<{ done: number; total: number; note?: string } | null>(null);
-
-  useEffect(() => {
-    fetch("/api/tts")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d?.available) return;
-        setCloud({
-          voices: Array.isArray(d.voices) ? d.voices : [],
-          defaultVoice: typeof d.defaultVoice === "string" ? d.defaultVoice : "",
-        });
-      })
-      .catch(() => {});
-  }, []);
-
-  const cloudAvailable = cloud !== null;
-  const cloudOn = useSyncExternalStore(subscribeQuizPrefs, getCloudVoiceOn, () => true);
-  const savedVoice = useSyncExternalStore(subscribeQuizPrefs, getCloudVoice, () => "");
-  // Giọng đã lưu có thể là của nhà cung cấp cũ; chỉ dùng khi còn trong danh mục.
-  const cloudVoice =
-    cloud?.voices.some((v) => v.value === savedVoice) ? savedVoice : cloud?.defaultVoice ?? "";
-
-  // Nhận diện tiếng Anh theo HAI dấu hiệu, chỉ cần một cái đúng:
-  //
-  // - Môn là "Tiếng Anh": người tạo đề đã nói thẳng ra rồi, tin.
-  // - Quá nửa câu hỏi không có dấu tiếng Việt: bắt được cả đề tiếng Anh bị xếp
-  //   nhầm môn.
-  //
-  // Chỉ dựa vào nội dung là hụt mất trường hợp rất hay gặp: đề tiếng Anh do
-  // người Việt soạn, lời dẫn ("Chọn đáp án đúng") bằng tiếng Việt còn nội dung
-  // mới là tiếng Anh — lúc đó quá nửa câu bị tính là tiếng Việt.
-  const englishByContent =
-    questions.length > 0 &&
-    questions.filter((q) => detectLang(q.question) === "en-US").length * 2 >= questions.length;
-  const isEnglishLesson = lesson.subjectName === "Tiếng Anh" || englishByContent;
-
-  // Câu đã gắn file sẵn (sinh bằng Piper) thì phát được kể cả khi máy chủ không
-  // cấu hình nhà cung cấp TTS nào — đó chính là điểm của luồng tự sinh.
-  const hasManualAudio = questions.some((q) => !!q.audioUrl);
-  const useCloud = (cloudAvailable || hasManualAudio) && cloudOn && isEnglishLesson;
-
-  // ── Chuẩn bị giọng trước ─────────────────────────────────────────────────
-  //
-  // Tách việc sinh giọng khỏi lúc bé ngồi học: hạn mức nhỏ chỉ phiền khi nó cạn
-  // giữa buổi học. Chuẩn bị trước lúc rảnh thì đến lúc học là có sẵn.
-  const [prepared, setPrepared] = useState<number | null>(null);
-  const [preparing, setPreparing] = useState<{ done: number; total: number; note?: string } | null>(null);
-  const [prepDone, setPrepDone] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!useCloud || started) return;
-    let alive = true;
-    countPrepared(cloudSegments(questions), cloudVoice)
-      .then((n) => { if (alive) setPrepared(n); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [useCloud, started, questions, cloudVoice]);
-
-  function startPrepare() {
-    setPrepDone(null);
-    setPreparing({ done: prepared ?? 0, total: questions.length });
-    prepareAll(cloudSegments(questions), {
-      voice: cloudVoice,
-      onProgress: (done, total, note) => setPreparing({ done, total, note }),
-      onDone: (ready, total, lastError) => {
-        setPreparing(null);
-        setPrepared(ready);
-        setPrepDone(
-          ready >= total
-            ? `Đã sẵn sàng cả ${total} câu. Bấm Nghe là chạy ngay.`
-            : `Mới xong ${ready}/${total} câu — ${lastError ?? "chưa rõ lý do"}. ` +
-              `Phần đã xong được lưu lại, lát nữa bấm tiếp là làm nốt phần còn thiếu.`
-        );
-      },
-    });
-  }
+  // Câu nào có file (gắn ở /import/giong-doc) thì phát file; còn lại đọc bằng
+  // giọng máy của trình duyệt. Không gọi dịch vụ ngoài nào.
+  const hasAudioFiles = questions.some((q) => !!q.audioUrl);
+  const [audioNote, setAudioNote] = useState<string | null>(null);
 
   // ── Nghe cả bài ──────────────────────────────────────────────────────────
   const [readingAll, setReadingAll] = useState(false);
@@ -174,13 +89,10 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   );
 
   // Rời trang giữa chừng thì tắt tiếng, không để đọc tiếp ở trang khác.
-  useEffect(() => () => { stopSpeaking(); stopCloud(); }, []);
+  useEffect(() => () => { stopSpeaking(); stopAudioFiles(); }, []);
 
   // Cuộn tới câu đang đọc để bé nhìn theo được, không chỉ nghe suông.
   function onSegmentStart(mark: number | undefined) {
-    // Đã phát được rồi thì không còn "đang chuẩn bị" nữa, dù các câu sau vẫn
-    // đang sinh ở nền.
-    setPrep(null);
     if (typeof mark !== "number") return;
     setReadingIdx(mark);
     setCurrent(mark);
@@ -192,10 +104,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   function stopReading() {
     stopSpeaking();
-    stopCloud();
+    stopAudioFiles();
     setReadingAll(false);
     setReadingIdx(null);
-    setPrep(null);
   }
 
   function readWithDeviceVoice() {
@@ -209,40 +120,25 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     });
   }
 
-  // Giọng đám mây hỏng thì lượt bấm này coi như bỏ; lần bấm sau dùng giọng máy.
-  // Không tự đọc bằng giọng máy ngay tại đây: lúc đó đã ra khỏi luồng cú chạm,
-  // mà iOS chỉ cho phát tiếng trong luồng đó — sẽ câm mà không báo gì.
-  const [cloudFailed, setCloudFailed] = useState<string | null>(null);
-  // Đọc được một phần: không tắt giọng chuẩn (các câu đã có file vẫn dùng tốt),
-  // chỉ báo cho biết vì sao bài đọc dừng ngang.
-  const [cloudPartial, setCloudPartial] = useState<string | null>(null);
-
   function readAll() {
     if (readingAll) {
       stopReading();
       return;
     }
+    setAudioNote(null);
     setReadingAll(true);
-    setCloudPartial(null);
-    if (useCloud && !cloudFailed) {
-      speakCloud(cloudSegments(questions), {
+    if (hasAudioFiles) {
+      speakAudioFiles(audioSegments(questions), {
         rate,
-        voice: cloudVoice,
-        onProgress: (done, total, note) => setPrep(done >= total ? null : { done, total, note }),
         onSegmentStart,
         onEnd: () => {
           setReadingAll(false);
           setReadingIdx(null);
-          setPrep(null);
         },
-        onFail: (reason) => {
-          setCloudFailed(reason);
-          setReadingAll(false);
-          setPrep(null);
-        },
-        onIncomplete: (skipped, total, reason) => {
-          setCloudPartial(`Bỏ qua ${skipped}/${total} câu — ${reason}`);
-        },
+        // Đề gắn thiếu file thì phải nói ra, không thì bài đọc nhảy cóc mà
+        // không ai hiểu vì sao.
+        onIncomplete: (skipped, total) =>
+          setAudioNote(`Bỏ qua ${skipped}/${total} câu chưa gắn giọng đọc.`),
       });
       return;
     }
@@ -262,62 +158,24 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     () => false
   );
 
-  // Giọng đám mây là file mp3 nên phát được cả trên máy không có speechSynthesis.
-  const canListen = speechOk || useCloud;
+  // File audio phát được cả trên máy không có speechSynthesis.
+  const canListen = speechOk || hasAudioFiles;
 
   // Dùng chung cho màn hình đầu và thanh điều khiển lúc đang làm bài.
-  const cloudStatus = (
+  const listenStatus = (
     <div className="w-full text-[11px]">
-      {prep && (
-        <span className="text-blue-600">
-          Đang chuẩn bị giọng đọc… {prep.done}/{prep.total} câu
-          {prep.note && <span className="text-gray-500"> — {prep.note}</span>}
-          <span className="text-gray-400"> (lần đầu hơi lâu, lần sau nghe ngay)</span>
+      {audioNote ? (
+        <span className="text-orange-600">{audioNote}</span>
+      ) : hasAudioFiles ? (
+        <span className="text-gray-400">Đọc bằng giọng đã gắn sẵn cho đề này.</span>
+      ) : (
+        <span className="text-gray-400">
+          Đọc bằng giọng máy của thiết bị.{" "}
+          <a href={`/import/giong-doc/${lessonId}`} className="text-blue-500 underline">
+            Gắn giọng đọc
+          </a>{" "}
+          để nghe hay hơn.
         </span>
-      )}
-      {cloudPartial && !cloudFailed && (
-        <span className="text-orange-600">
-          Chưa đọc hết bài. {cloudPartial}
-          <br />
-          <span className="text-gray-500">
-            Bấm nghe lại sau ít phút — các câu đã đọc được đã lưu nên không phải chờ lại.
-          </span>
-        </span>
-      )}
-      {cloudFailed && (
-        <span className="text-orange-600">
-          Không tải được giọng chuẩn. Bấm lại để nghe bằng giọng máy của thiết bị.
-          <br />
-          <span className="text-gray-500">Lý do: {cloudFailed}</span>
-        </span>
-      )}
-      {/* Không kích hoạt được thì phải NÓI RA lý do. Im lặng thì người dùng chỉ
-          thấy "giọng chẳng thay đổi gì" mà không biết vướng ở đâu. */}
-      {!prep && !cloudFailed && (
-        cloudAvailable && isEnglishLesson ? (
-          <label className="inline-flex cursor-pointer items-center gap-1.5 text-gray-500">
-            <input
-              type="checkbox"
-              checked={cloudOn}
-              onChange={(e) => setCloudVoiceOn(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
-            />
-            Giọng đọc chuẩn cho đề tiếng Anh
-          </label>
-        ) : cloudAvailable ? (
-          <span className="text-gray-400">
-            Đề này không phải tiếng Anh nên đọc bằng giọng máy. Giọng chuẩn chỉ dùng cho
-            môn Tiếng Anh hoặc đề có nội dung tiếng Anh.
-          </span>
-        ) : (
-          <span className="text-gray-400">
-            Đang đọc bằng giọng máy của thiết bị. Giọng chuẩn chưa bật trên máy chủ —{" "}
-            <a href="/import/kiem-tra" className="text-blue-500 underline">
-              xem trang kiểm tra
-            </a>
-            .
-          </span>
-        )
       )}
     </div>
   );
@@ -469,27 +327,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                 {canListen && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-gray-500">Giọng đọc</span>
-                    {useCloud ? (
-                      // Đang dùng giọng đám mây thì danh sách giọng máy của
-                      // thiết bị không còn liên quan — chọn trong giọng đám mây.
-                      <label className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-                        Giọng Anh
-                        <select
-                          value={cloudVoice}
-                          onChange={(e) => setCloudVoice(e.target.value)}
-                          className="max-w-[10.5rem] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        >
-                          {(cloud?.voices ?? []).map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : (
-                      <>
-                        <VoicePicker lang="vi-VN" label="Giọng Việt" />
-                        <VoicePicker lang="en-US" label="Giọng Anh" />
-                      </>
-                    )}
+                    <VoicePicker lang="vi-VN" label="Giọng Việt" />
+                    <VoicePicker lang="en-US" label="Giọng Anh" />
                     <div className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-0.5">
                       <span className="px-1.5 text-[11px] text-gray-400">Tốc độ</span>
                       {RATE_OPTIONS.map((o) => (
@@ -504,34 +343,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                         </button>
                       ))}
                     </div>
-                    {cloudStatus}
-                  </div>
-                )}
-
-                {/* Chuẩn bị giọng trước, để lúc bé học không phải chờ sinh audio */}
-                {useCloud && (
-                  <div className="space-y-1.5 border-t border-gray-200 pt-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={startPrepare}
-                        disabled={!!preparing || prepared === questions.length}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {preparing ? "Đang chuẩn bị…" : "Chuẩn bị giọng đọc"}
-                      </button>
-                      <span className="text-xs text-gray-500">
-                        {preparing
-                          ? `${preparing.done}/${preparing.total} câu${preparing.note ? ` · ${preparing.note}` : ""}`
-                          : prepared === null
-                            ? "đang kiểm tra…"
-                            : `${prepared}/${questions.length} câu đã có giọng`}
-                      </span>
-                    </div>
-                    {prepDone && <p className="text-[11px] text-gray-500">{prepDone}</p>}
-                    <p className="text-[11px] text-gray-400">
-                      Chuẩn bị trước thì lúc bé làm bài bấm Nghe là chạy ngay. Câu nào đã tạo
-                      được sẽ lưu lại vĩnh viễn, không tạo lại lần sau.
-                    </p>
+                    {listenStatus}
                   </div>
                 )}
 
@@ -730,7 +542,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                   </button>
                 ))}
               </div>
-              {cloudStatus}
+              {listenStatus}
             </div>
           )}
         </div>
@@ -745,7 +557,6 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               index={i}
               selectedAnswer={answers[i]}
               onSelect={(answer) => handleSelect(i, answer)}
-              cloudVoice={useCloud ? cloudVoice : null}
             />
           ))}
         </div>
