@@ -15,7 +15,7 @@
 //    nên các promise đang bay của lượt cũ tự biết mình đã cũ và im lặng thoát.
 
 import { DEFAULT_RATE, stripForSpeech } from "./speech";
-import type { TtsVoice } from "./ttsVoices";
+import { mapRateToSpeed, type TtsVoice } from "./ttsVoices";
 
 /** WAV 8kHz mono, ~5ms im lặng — chỉ để mở khoá audio trên iOS. */
 const SILENT_WAV =
@@ -100,8 +100,8 @@ type FetchResult = { url: string } | { error: string };
 async function fetchAudioUrl(
   text: string,
   voice: TtsVoice,
-  rate: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onRetry: (seconds: number) => void
 ): Promise<FetchResult> {
   let last = "Không gọi được máy chủ";
 
@@ -113,7 +113,7 @@ async function fetchAudioUrl(
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice, rate }),
+        body: JSON.stringify({ text, voice }),
         signal,
       });
       const data = await res.json().catch(() => null);
@@ -124,7 +124,9 @@ async function fetchAudioUrl(
       }
       last = typeof data?.error === "string" ? data.error : `Lỗi ${res.status}`;
       if (res.status !== 429 || attempt >= RETRY_DELAYS_MS.length) return { error: last };
-      await sleep(RETRY_DELAYS_MS[attempt], signal);
+      const wait = RETRY_DELAYS_MS[attempt];
+      onRetry(Math.round(wait / 1000));
+      await sleep(wait, signal);
     } catch (e) {
       // Huỷ giữa chừng cũng vào đây; bên gọi tự bỏ qua nhờ số thứ tự lượt đọc.
       return { error: e instanceof Error ? e.message : last };
@@ -132,7 +134,7 @@ async function fetchAudioUrl(
   }
 }
 
-function playOne(el: HTMLAudioElement, url: string): Promise<void> {
+function playOne(el: HTMLAudioElement, url: string, speed: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const done = (fn: () => void) => {
       el.onended = null;
@@ -142,6 +144,8 @@ function playOne(el: HTMLAudioElement, url: string): Promise<void> {
     el.onended = () => done(resolve);
     el.onerror = () => done(() => reject(new Error("audio-error")));
     el.src = url;
+    // Tốc độ chỉnh ngay lúc phát thay vì sinh nhiều bản audio khác nhau.
+    el.playbackRate = speed;
     el.play().catch((e) => done(() => reject(e)));
   });
 }
@@ -149,8 +153,8 @@ function playOne(el: HTMLAudioElement, url: string): Promise<void> {
 export type SpeakCloudOptions = {
   rate?: number;
   voice?: TtsVoice;
-  /** Số câu đã tải xong / tổng — để hiện "Đang chuẩn bị… 3/20". */
-  onProgress?: (done: number, total: number) => void;
+  /** Số câu đã xong / tổng, kèm ghi chú trạng thái để không trông như treo máy. */
+  onProgress?: (done: number, total: number, note?: string) => void;
   onSegmentStart?: (mark: number | undefined) => void;
   onEnd?: () => void;
   /** Không tải được file nào; kèm lý do để hiện cho người dùng. */
@@ -194,7 +198,7 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
 
   // Bỏ trống thì máy chủ tự dùng giọng mặc định của nhà cung cấp đang bật.
   const voice = opts.voice ?? "";
-  const rate = opts.rate ?? DEFAULT_RATE;
+  const speed = mapRateToSpeed(opts.rate ?? DEFAULT_RATE);
 
   // Một ô chờ cho mỗi câu: bên tải điền vào, bên phát lấy ra theo đúng thứ tự.
   const slots = clean.map(() => {
@@ -207,7 +211,14 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
   (async () => {
     for (let i = 0; i < clean.length; i++) {
       if (gen !== generation) break;
-      const r = await fetchAudioUrl(clean[i].text, voice, rate, controller.signal);
+      // Báo TRƯỚC khi gọi: sinh một câu mất cả chục giây, đứng im ở "0/8" suốt
+      // thời gian đó thì người dùng tưởng hỏng.
+      opts.onProgress?.(i, clean.length, `đang tạo câu ${i + 1}`);
+      const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs) => {
+        if (gen === generation) {
+          opts.onProgress?.(i, clean.length, `chờ hạn mức, thử lại sau ${secs} giây`);
+        }
+      });
       slots[i].fill(r);
       if (gen === generation) opts.onProgress?.(i + 1, clean.length);
     }
@@ -232,7 +243,7 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
       opts.onSegmentStart?.(clean[i].mark);
       played++;
       try {
-        await playOne(el, r.url);
+        await playOne(el, r.url, speed);
       } catch {
         if (gen !== generation) return;
         // Lỗi phát một file không nên làm đứt cả lượt đọc.

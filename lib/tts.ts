@@ -106,15 +106,10 @@ const SEP = "\u0000";
  * nhà cung cấp/model/giọng/hướng dẫn là tự sinh file mới thay vì phát lại bản
  * cũ sai giọng.
  */
-export function ttsCacheKey(
-  provider: TtsProvider,
-  text: string,
-  voice: string,
-  speed: number
-): string {
+export function ttsCacheKey(provider: TtsProvider, text: string, voice: string): string {
   const model = provider === "gemini" ? GEMINI_MODEL : OPENAI_MODEL;
   return createHash("sha256")
-    .update([provider, model, voice, String(speed), STYLE, text].join(SEP))
+    .update([provider, model, voice, STYLE, text].join(SEP))
     .digest("hex");
 }
 
@@ -163,22 +158,11 @@ function sampleRateFrom(mimeType: string | undefined): number {
 
 // ── Gọi nhà cung cấp ─────────────────────────────────────────────────────────
 
-/**
- * Gemini không có tham số tốc độ; điều chỉnh bằng lời dẫn ngay trong prompt.
- * Model đọc theo hướng dẫn chứ không đọc to phần hướng dẫn ra.
- */
-function geminiPrompt(text: string, speed: number): string {
-  const pace =
-    speed < 1 ? "Speak noticeably slower than normal. " :
-    speed > 1 ? "Speak at a brisk but still clear pace. " : "";
-  return `${STYLE}. ${pace}Now read exactly this, and nothing else:\n\n${text}`;
+function geminiPrompt(text: string): string {
+  return `${STYLE}. Now read exactly this, and nothing else:\n\n${text}`;
 }
 
-async function synthesizeGemini(
-  text: string,
-  voice: string,
-  speed: number
-): Promise<SynthResult> {
+async function synthesizeGemini(text: string, voice: string): Promise<SynthResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("missing-key");
 
@@ -188,7 +172,7 @@ async function synthesizeGemini(
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: geminiPrompt(text, speed) }] }],
+        contents: [{ parts: [{ text: geminiPrompt(text) }] }],
         generationConfig: {
           responseModalities: ["AUDIO"],
           speechConfig: {
@@ -219,11 +203,7 @@ async function synthesizeGemini(
   };
 }
 
-async function synthesizeOpenai(
-  text: string,
-  voice: string,
-  speed: number
-): Promise<SynthResult> {
+async function synthesizeOpenai(text: string, voice: string): Promise<SynthResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("missing-key");
 
@@ -238,7 +218,6 @@ async function synthesizeOpenai(
       voice,
       input: text,
       instructions: STYLE,
-      speed,
       response_format: "mp3",
     }),
   });
@@ -252,14 +231,20 @@ async function synthesizeOpenai(
   };
 }
 
-/** Gọi nhà cung cấp đang bật. Ném lỗi kèm `status` để route dịch sang tiếng Việt. */
+/**
+ * Gọi nhà cung cấp đang bật. Ném lỗi kèm `status` để route dịch sang tiếng Việt.
+ *
+ * Sinh ở MỘT tốc độ duy nhất. Trước đây tốc độ nằm trong khoá cache, nên người
+ * dùng đổi Chậm/Vừa/Nhanh là toàn bộ file đã sinh thành vô dụng và phải sinh
+ * lại — tốn gấp ba hạn mức cho cùng một nội dung. Giờ tốc độ do trình duyệt
+ * chỉnh lúc phát (`playbackRate`): miễn phí, tức thì, và cache dùng lại được.
+ */
 export function synthesizeSpeech(
   provider: TtsProvider,
   text: string,
-  voice: string,
-  speed: number
+  voice: string
 ): Promise<SynthResult> {
   return provider === "gemini"
-    ? synthesizeGemini(text, voice, speed)
-    : synthesizeOpenai(text, voice, speed);
+    ? synthesizeGemini(text, voice)
+    : synthesizeOpenai(text, voice);
 }

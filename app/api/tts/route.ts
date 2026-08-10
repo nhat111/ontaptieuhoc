@@ -8,7 +8,6 @@ import {
   ttsCacheKey,
   voicesFor,
 } from "@/lib/tts";
-import { mapRateToSpeed } from "@/lib/ttsVoices";
 
 // Trả về URL file audio đọc sẵn cho một đoạn text tiếng Anh.
 //
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { text?: unknown; voice?: unknown; rate?: unknown };
+  let body: { text?: unknown; voice?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -87,9 +86,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Không nhận tốc độ: file sinh ở một tốc độ duy nhất, trình duyệt tự chỉnh
+  // lúc phát. Xem ghi chú ở synthesizeSpeech.
   const voice = resolveVoice(provider, body.voice);
-  const speed = mapRateToSpeed(Number(body.rate));
-  const key = ttsCacheKey(provider, text, voice, speed);
+  const key = ttsCacheKey(provider, text, voice);
 
   const sb = getSupabaseServer();
 
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
-    result = await synthesizeSpeech(provider, text, voice, speed);
+    result = await synthesizeSpeech(provider, text, voice);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const status = (err as { status?: number }).status;

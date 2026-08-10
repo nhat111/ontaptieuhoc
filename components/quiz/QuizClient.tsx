@@ -86,7 +86,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     voices: { value: string; label: string }[];
     defaultVoice: string;
   } | null>(null);
-  const [prep, setPrep] = useState<{ done: number; total: number } | null>(null);
+  const [prep, setPrep] = useState<{ done: number; total: number; note?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/tts")
@@ -189,7 +189,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       speakCloud(cloudSegments(questions), {
         rate,
         voice: cloudVoice,
-        onProgress: (done, total) => setPrep(done >= total ? null : { done, total }),
+        onProgress: (done, total, note) => setPrep(done >= total ? null : { done, total, note }),
         onSegmentStart,
         onEnd: () => {
           setReadingAll(false);
@@ -232,6 +232,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       {prep && (
         <span className="text-blue-600">
           Đang chuẩn bị giọng đọc… {prep.done}/{prep.total} câu
+          {prep.note && <span className="text-gray-500"> — {prep.note}</span>}
           <span className="text-gray-400"> (lần đầu hơi lâu, lần sau nghe ngay)</span>
         </span>
       )}
