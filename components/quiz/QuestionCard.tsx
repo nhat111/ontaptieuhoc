@@ -78,8 +78,17 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           <SpeakButton
             segments={questionSegments(question.question, question.options)}
             cloud={
-              cloudVoice
-                ? { segments: cloudSegmentFor(question.question, question.options), voice: cloudVoice }
+              // Câu có file gắn sẵn thì bật đường phát file kể cả khi máy chủ
+              // không cấu hình nhà cung cấp nào — lúc đó `cloudVoice` rỗng.
+              cloudVoice || question.audioUrl
+                ? {
+                    segments: cloudSegmentFor(
+                      question.question,
+                      question.options,
+                      question.audioUrl
+                    ),
+                    voice: cloudVoice ?? "",
+                  }
                 : null
             }
             label="Nghe"

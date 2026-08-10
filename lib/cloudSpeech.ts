@@ -91,9 +91,18 @@ export function cloudSegments(
   }));
 }
 
-/** Đọc một câu lẻ (nút 🔊 trên từng câu). */
-export function cloudSegmentFor(question: string, options: string[]): CloudSegment[] {
-  return cloudSegments([{ question, options }]).map((s) => ({
+/**
+ * Đọc một câu lẻ (nút 🔊 trên từng câu).
+ *
+ * Phải nhận cả `audioUrl`, không thì nút này luôn gọi API kể cả khi câu đã có
+ * file gắn sẵn — đúng lỗi đã xảy ra.
+ */
+export function cloudSegmentFor(
+  question: string,
+  options: string[],
+  audioUrl?: string
+): CloudSegment[] {
+  return cloudSegments([{ question, options, audioUrl }]).map((s) => ({
     ...s,
     // Bỏ phần xướng số vì người dùng đang bấm đúng câu đó rồi.
     text: s.text.replace(/^Question \d+\.\n?/, ""),
