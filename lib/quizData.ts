@@ -19,6 +19,11 @@ export type Question = {
   /** @deprecated legacy single-image field, mirrors images[0]?.url */
   imageUrl?: string;
   explanation?: string; // optional worked solution / "lời giải", shown on the result page
+  /**
+   * File giọng đọc gắn sẵn cho câu này (sinh ngoài bằng Piper rồi tải lên).
+   * Có nó thì phát thẳng, không gọi TTS đám mây — không hạn mức, không chờ.
+   */
+  audioUrl?: string;
 };
 
 export type LessonMeta = {

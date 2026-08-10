@@ -347,6 +347,7 @@ export const getQuestionsFromDB = cache(async function getQuestionsFromDB(
       let images: { url: string; position: 'before' | 'after' }[] = []
       let imageUrl: string | undefined
       let explanation: string | undefined
+      let audioUrl: string | undefined
       try {
         const exp = typeof q.explanation === 'string' ? JSON.parse(q.explanation) : q.explanation
         if (Array.isArray(exp?.images)) {
@@ -362,6 +363,7 @@ export const getQuestionsFromDB = cache(async function getQuestionsFromDB(
         if (exp?.imageUrl) imageUrl = exp.imageUrl
         else if (images[0]?.url) imageUrl = images[0].url
         if (typeof exp?.solution === 'string' && exp.solution.trim()) explanation = exp.solution
+        if (typeof exp?.audioUrl === 'string' && exp.audioUrl.trim()) audioUrl = exp.audioUrl
       } catch {}
       return {
         id: q.id,
@@ -372,6 +374,7 @@ export const getQuestionsFromDB = cache(async function getQuestionsFromDB(
         images,
         imageUrl,
         explanation,
+        audioUrl,
       }
     })
   } catch {
