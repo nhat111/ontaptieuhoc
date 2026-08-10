@@ -122,7 +122,10 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     questions.filter((q) => detectLang(q.question) === "en-US").length * 2 >= questions.length;
   const isEnglishLesson = lesson.subjectName === "Tiếng Anh" || englishByContent;
 
-  const useCloud = cloudAvailable && cloudOn && isEnglishLesson;
+  // Câu đã gắn file sẵn (sinh bằng Piper) thì phát được kể cả khi máy chủ không
+  // cấu hình nhà cung cấp TTS nào — đó chính là điểm của luồng tự sinh.
+  const hasManualAudio = questions.some((q) => !!q.audioUrl);
+  const useCloud = (cloudAvailable || hasManualAudio) && cloudOn && isEnglishLesson;
 
   // ── Chuẩn bị giọng trước ─────────────────────────────────────────────────
   //
@@ -601,15 +604,27 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </div>
             )}
 
-            <a
-              href={`/import/edit/${lessonId}`}
-              className="inline-flex items-center gap-1 mt-5 text-xs text-gray-400 hover:text-blue-600 transition-colors"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
-              </svg>
-              Sửa đề
-            </a>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
+              <a
+                href={`/import/edit/${lessonId}`}
+                className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+                </svg>
+                Sửa đề
+              </a>
+              <a
+                href={`/import/giong-doc/${lessonId}`}
+                className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H3v6h3l5 4V5z" />
+                  <path strokeLinecap="round" d="M15.5 8.5a5 5 0 010 7" />
+                </svg>
+                Gắn giọng đọc
+              </a>
+            </div>
           </div>
         </div>
       </div>

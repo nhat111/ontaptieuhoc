@@ -40,7 +40,16 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-export type CloudSegment = { text: string; mark?: number };
+export type CloudSegment = {
+  text: string;
+  mark?: number;
+  /**
+   * File đã gắn sẵn cho câu này (sinh ngoài bằng Piper). Có thì phát thẳng,
+   * không gọi `/api/tts` — nên vẫn nghe được kể cả khi máy chủ không cấu hình
+   * nhà cung cấp TTS nào.
+   */
+  url?: string;
+};
 
 let audioEl: HTMLAudioElement | null = null;
 let generation = 0;
@@ -66,11 +75,12 @@ function getAudio(): HTMLAudioElement {
  * giọng Anh duy nhất — chen tiếng Việt vào sẽ thành giọng Anh đọc tiếng Việt.
  */
 export function cloudSegments(
-  questions: { question: string; options: string[] }[]
+  questions: { question: string; options: string[]; audioUrl?: string }[]
 ): CloudSegment[] {
   const LABELS = ["A", "B", "C", "D", "E", "F"];
   return questions.map((q, i) => ({
     mark: i,
+    url: q.audioUrl,
     text: [
       `Question ${i + 1}.`,
       stripForSpeech(q.question),
@@ -254,6 +264,12 @@ export function speakCloud(segments: CloudSegment[], opts: SpeakCloudOptions = {
       if (gen !== generation) break;
       // Báo TRƯỚC khi gọi: sinh một câu mất cả chục giây, đứng im ở "0/8" suốt
       // thời gian đó thì người dùng tưởng hỏng.
+      // Câu đã có file gắn sẵn thì dùng luôn, khỏi gọi API.
+      if (clean[i].url) {
+        slots[i].fill({ url: clean[i].url! });
+        opts.onProgress?.(i + 1, clean.length);
+        continue;
+      }
       opts.onProgress?.(i, clean.length, `đang tạo câu ${i + 1}`);
       const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs, why) => {
         if (gen === generation) {
@@ -330,6 +346,7 @@ export async function countPrepared(
 ): Promise<number> {
   const results = await Promise.all(
     segments.map(async (seg) => {
+      if (seg.url) return true; // đã gắn file thủ công
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -369,6 +386,11 @@ export function prepareAll(segments: CloudSegment[], opts: PrepareOptions = {}):
 
     for (let i = 0; i < clean.length; i++) {
       if (controller.signal.aborted) return;
+      if (clean[i].url) {
+        ready++;
+        opts.onProgress?.(ready, clean.length);
+        continue;
+      }
       opts.onProgress?.(ready, clean.length, `đang tạo câu ${i + 1}`);
       const r = await fetchAudioUrl(clean[i].text, voice, controller.signal, (secs, why) => {
         opts.onProgress?.(ready, clean.length, `thử lại sau ${secs}s · ${why}`);

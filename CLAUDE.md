@@ -152,7 +152,15 @@ Because of that iOS caveat, **English** exams can be read by a paid cloud TTS in
 - `lib/cloudSpeech.ts` has three invariants, all commented at the top of the file: (1) `speakCloud` plays a ~5 ms silent WAV **synchronously** to unlock the audio element inside the tap — no `await` before it, or iOS blocks playback; (2) exactly one `HTMLAudioElement` for the page's lifetime, since the unlock binds to the element; (3) a `generation` counter so a stopped read's in-flight promises exit quietly. Stopping also aborts in-flight fetches — an abandoned request is still billed.
 - It downloads **all** chunks before playing any (progress shown as "Đang chuẩn bị… 3/20"). Streaming as it goes would leave unpredictable multi-second gaps between questions on a first listen.
 - On failure the code does **not** silently retry with Web Speech in the same tap — the gesture is already gone, so iOS would be mute with no error. It reports the failure and lets the next tap use the device voice.
-- The lesson is treated as English when **≥ half the question stems** detect as `en-US` (`detectLang`), not by subject name — an English exam filed under the wrong subject still gets the good voice.
+- The lesson is treated as English when the subject is `Tiếng Anh` **or** ≥ half the question stems detect as `en-US` (`detectLang`). Content alone misses the common case of a Vietnamese-authored English test whose rubrics are Vietnamese.
+- **Prepare-ahead**: the start screen has a *Chuẩn bị giọng đọc* button (`prepareAll`) plus a `probe: true` mode on `POST /api/tts` that only checks Storage and never calls the provider, so the counter costs no quota. Partial progress persists, which is what makes a small daily quota usable.
+
+### Giọng đọc gắn sẵn (Piper) — không cần nhà cung cấp nào
+
+`questions.explanation` also carries `audioUrl`. When a question has one, playback uses it directly and never calls `/api/tts` — so audio works with **no** TTS provider configured at all.
+
+- `/import/giong-doc/[id]` (`components/import/AudioMapper.tsx`) exports a **Piper JSONL** batch file (`{text, output_file}` per line, so one command renders the whole exam), takes the resulting files, and maps them to questions **by the number in the filename** (`cau-03.wav` → question 3), not by pick order.
+- `POST /api/upload-audio` stores the file (named by content hash, so re-uploading the same file overwrites itself). `POST /api/lesson-audio` merges `audioUrl` into the existing `explanation` blob — read-merge-write, so images and solutions survive, and it deliberately does **not** go through `/api/update-lesson`, which wipes and reinserts every question.
 
 ### Math handling
 

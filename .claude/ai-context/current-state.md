@@ -11,6 +11,7 @@ _Last synced with codebase: May 2026_
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
 - **Trộn thứ tự**: 2 tuỳ chọn ở màn hình đầu (trộn câu hỏi / trộn đáp án), lưu localStorage (`lib/quizPrefs.ts`), trộn 1 lần lúc bấm Bắt đầu
 - **Nghe**: nút 🔊 từng câu, và **"Nghe cả bài"** (có ở cả màn hình đầu lẫn lúc đang làm) đọc liền mạch cả đề (xướng "Câu N", tự cuộn tới câu đang đọc). Tốc độ Chậm/Vừa/Nhanh lưu ở localStorage, mặc định 0.7. Web Speech API của trình duyệt — miễn phí, không cần key
+- **Giọng đọc gắn sẵn**: `/import/giong-doc/[id]` — tải file JSONL cho Piper, sinh ngoài rồi upload, ghép theo số trong tên file. Lưu `audioUrl` trong blob `questions.explanation`; có file gắn sẵn thì phát thẳng, **không cần key nhà cung cấp nào**
 - **Giọng Anh chuẩn**: đề tiếng Anh (≥ nửa số câu nhận diện là en-US) đọc bằng TTS đám mây qua `POST /api/tts` thay vì giọng máy, vì Safari iOS không cho web dùng giọng Enhanced/Premium người dùng tải. File mp3 cache theo nội dung trong Storage `question-audio` → mỗi câu chỉ tốn tiền một lần. Cần `OPENAI_API_KEY`; thiếu key thì tự quay về giọng máy, không hỏng gì. Chọn giọng + bật/tắt ở màn hình đầu. Tiếng Việt vẫn dùng Web Speech miễn phí
 - `/result`: breakdown điểm, làm lại, quay lại `/lop/[grade]` (breadcrumb lấy `grade`/`subjectName` từ payload `sessionStorage`)
 - `POST /api/quiz-result`: ghi `quiz_results` (+ `user_id` nếu đăng nhập)
