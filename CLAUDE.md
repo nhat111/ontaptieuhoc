@@ -53,8 +53,9 @@ The codebase uses three distinct Supabase wrappers and mixing them up causes aut
 
 ### Next.js 16 quirks
 
-- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It refreshes Supabase auth cookies on `/import/*` navigations (`supabase.auth.getUser()` triggers token rotation) and, when `IMPORT_PASSWORD` is set, redirects unauthenticated `/import/*` visits to `/import/khoa`.
-- **The proxy does not run for `/api/*`** — which is exactly where content can be destroyed. Every write route therefore calls `blockIfNoImportAccess(req)` itself (`lib/importAuth.ts`); gating only the UI would leave the dangerous half open. The cookie holds a SHA-256 of the passphrase, not the passphrase, and is compared in constant time. No password configured → both gates are no-ops.
+- **`proxy.ts` at the repo root is Next.js 16's renamed middleware** (`export async function proxy` + `export const config = { matcher }`). It only refreshes Supabase auth cookies on `/import/*`; **do not put access control in it.** `next build` leaves `middleware-manifest.json` empty here, so a gate there works under `next start` locally and is silently inert once deployed to Vercel — it looks locked while standing wide open. Verified by hand: same commit, same env, local production redirects and the Vercel preview did not.
+- **Access control for `/import/*` lives in `app/import/layout.tsx`** (same runtime as the API routes, which demonstrably read env vars on Vercel), and the lock page sits at **`/import-khoa`, outside that segment** — inside it, the page would block itself into a redirect loop.
+- **Layout gating covers pages only; `/api/*` has no layout** — and that is exactly where content gets destroyed. Every write route calls `blockIfNoImportAccess(req)` itself (`lib/importAuth.ts`). The cookie holds a SHA-256 of the passphrase, not the passphrase, compared in constant time. No password configured → every gate is a no-op.
 - `searchParams` and `params` in server components are `Promise<...>` — always `await` them (see `app/quiz/page.tsx`, `app/lop/[grade]/page.tsx`).
 
 ### Subjects — static catalogue, not a queried table

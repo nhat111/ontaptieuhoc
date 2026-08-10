@@ -82,7 +82,7 @@ export async function blockIfNoImportAccess(
   if (await hasImportAccess(cookie)) return null;
 
   return new Response(
-    JSON.stringify({ error: "Cần mật khẩu để sửa nội dung. Vào /import để nhập." }),
+    JSON.stringify({ error: "Cần mật khẩu để sửa nội dung. Vào /import-khoa để nhập." }),
     { status: 401, headers: { "content-type": "application/json" } }
   );
 }
