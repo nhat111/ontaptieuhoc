@@ -11,6 +11,11 @@ interface Props {
   onChange: (text: string) => void;
   placeholder?: string;
   minHeight?: string;
+  /**
+   * Chặn được cú dán để tự xử lý. Trả `true` nghĩa là đã xử lý xong, trình soạn
+   * không chèn text nữa.
+   */
+  onPasteText?: (text: string) => boolean;
 }
 
 const QUICK_MATH: { label: string; snippet: string; title: string }[] = [
@@ -22,8 +27,20 @@ const QUICK_MATH: { label: string; snippet: string; title: string }[] = [
   { label: "≥", snippet: "$\\geq$", title: "Lớn hơn hoặc bằng" },
 ];
 
-export default function TiptapEditor({ value, onChange, placeholder, minHeight = "72px" }: Props) {
+export default function TiptapEditor({
+  value,
+  onChange,
+  placeholder,
+  minHeight = "72px",
+  onPasteText,
+}: Props) {
   const syncing = useRef(false);
+  // Giữ trong ref để `handlePaste` (tạo một lần lúc khởi tạo editor) luôn gọi
+  // bản mới nhất, thay vì đóng băng bản đầu tiên.
+  const pasteRef = useRef(onPasteText);
+  useEffect(() => {
+    pasteRef.current = onPasteText;
+  }, [onPasteText]);
 
   const editor = useEditor({
     extensions: [
@@ -32,6 +49,13 @@ export default function TiptapEditor({ value, onChange, placeholder, minHeight =
     ],
     content: value,
     immediatelyRender: false,
+    editorProps: {
+      handlePaste: (_view, event) => {
+        const text = event.clipboardData?.getData("text/plain");
+        if (!text || !pasteRef.current) return false;
+        return pasteRef.current(text);
+      },
+    },
     onFocus: ({ editor }) => setFocusedEditor(editor),
     onUpdate: ({ editor }) => {
       if (!syncing.current) {

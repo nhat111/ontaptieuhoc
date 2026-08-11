@@ -9,6 +9,7 @@ _Last synced with codebase: May 2026_
 - `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10, email mask `abc***`)
 - `/de-thi`: list động `lessons` với `type='exam'`
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
+- **Tải đề để in**: nút Word (.doc) / PDF / +Đáp án ở màn hình đầu, **mở cho mọi người** — mục đích là để phụ huynh in cho bé làm trên giấy
 - **Trộn thứ tự**: 2 tuỳ chọn ở màn hình đầu (trộn câu hỏi / trộn đáp án), lưu localStorage (`lib/quizPrefs.ts`), trộn 1 lần lúc bấm Bắt đầu
 - **Nghe**: nút 🔊 từng câu, và **"Nghe cả bài"** (có ở cả màn hình đầu lẫn lúc đang làm) đọc liền mạch cả đề (xướng "Câu N", tự cuộn tới câu đang đọc). Tốc độ Chậm/Vừa/Nhanh lưu ở localStorage, mặc định 0.7. Web Speech API của trình duyệt — miễn phí, không cần key
 - **Giọng đọc gắn sẵn**: `/import/giong-doc/[id]` — sinh file ngoài (Piper…) rồi upload, ghép theo số trong tên file (`wav_1.wav` → câu 1), mỗi câu có nhãn đã lưu/chưa lưu và trình phát để nghe thử. Lưu `audioUrl` trong blob `questions.explanation`. **Không gọi dịch vụ ngoài nào, không cần key.**

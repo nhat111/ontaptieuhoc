@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import TiptapEditor from "./TiptapEditor";
 import MathText from "@/components/MathText";
+import { splitOptions } from "@/lib/optionSplitter";
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
@@ -63,6 +64,57 @@ export default function QuestionCard({
 
   function patch(partial: Partial<QDraft>) {
     onChange({ ...question, ...partial });
+  }
+
+  // ── Dán cả cụm "câu hỏi + A/B/C/D" vào ô nội dung ────────────────────────
+  //
+  // Chép đề từ Word hay web thì câu hỏi và đáp án dính liền một khối. Tự tách
+  // giúp bỏ hẳn việc cắt dán từng đáp án — việc lặp đi lặp lại và dễ sót.
+  //
+  // Tách xong thì BÁO RA và cho hoàn tác: tự ý sửa nội dung người dùng vừa dán
+  // mà im lặng là kiểu "thông minh" khó chịu nhất, nhất là khi đoán sai.
+  const [splitNote, setSplitNote] = useState<{ text: string; before: QDraft; raw: string } | null>(null);
+
+  function handlePasteIntoContent(text: string): boolean {
+    // Chỉ tách cho loại có lựa chọn, và chỉ khi các ô đáp án còn trống — người
+    // dùng đã gõ đáp án rồi thì đừng ghi đè.
+    if (question.type !== "mcq" && question.type !== "multi") return false;
+    if (question.options.some((o) => o.trim())) return false;
+    // Ô nội dung đã có chữ thì đừng tách: phần tách sẽ thay TOÀN BỘ nội dung,
+    // tức là xoá mất những gì người dùng đã gõ trước đó.
+    if (question.content.trim()) return false;
+
+    const parsed = splitOptions(text);
+    if (!parsed) return false;
+
+    const before = question;
+    const next: Partial<QDraft> = {
+      content: parsed.stem,
+      options: parsed.options,
+    };
+    if (question.type === "mcq" && parsed.correctIdx !== null) {
+      next.correctIdx = parsed.correctIdx;
+    }
+    onChange({ ...question, ...next });
+
+    const found = LABELS[parsed.correctIdx ?? -1];
+    setSplitNote({
+      before,
+      raw: text,
+      text:
+        `Đã tách ${parsed.options.length} đáp án ra khỏi nội dung` +
+        (question.type === "mcq" && found ? ` · chọn sẵn đáp án ${found}` : ""),
+    });
+    return true; // đã xử lý, đừng chèn text thô vào ô nội dung nữa
+  }
+
+  function undoSplit() {
+    if (!splitNote) return;
+    // Trả lại NGUYÊN VĂN đoạn vừa dán, không quay về trạng thái trước khi dán:
+    // người dùng bấm hoàn tác là muốn "đừng tách", chứ không phải "xoá luôn cái
+    // tôi vừa dán" — bắt họ dán lại là mất công vô lý.
+    onChange({ ...splitNote.before, content: splitNote.raw });
+    setSplitNote(null);
   }
 
   function setOption(i: number, val: string) {
@@ -293,8 +345,21 @@ export default function QuestionCard({
             <TiptapEditor
               value={question.content}
               onChange={(v) => patch({ content: v })}
+              onPasteText={handlePasteIntoContent}
               placeholder="Nhập câu hỏi... (hỗ trợ LaTeX: $x^2$, \frac{1}{2})"
             />
+            {splitNote && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg bg-green-50 px-3 py-1.5 text-xs text-green-800">
+                <span>{splitNote.text}</span>
+                <button
+                  type="button"
+                  onClick={undoSplit}
+                  className="font-semibold text-green-700 underline"
+                >
+                  Hoàn tác
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Images */}
