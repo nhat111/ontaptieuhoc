@@ -39,7 +39,7 @@ DB schema lives in `schema.sql` — run it once in the Supabase SQL editor to pr
 
 **Removed routes (do not recreate):** `/teacher`, `/import/ai` / `/api/ai-import`. Image-to-exam scanning lives at **`POST /api/ocr-exam`** instead — a separate route, deliberately not a revival of the removed `/import/ai` surface.
 
-**Premium (phase 1, manual):** `profiles (user_id, is_premium, premium_until, note)` table gates exam download (Word/PDF) — browsing/quizzes stay free. `lib/premium.ts → isUserPremium(userId)` (service-role read); `GET /api/me/premium` returns `{ loggedIn, isPremium }` for client gating; `QuizClient` redirects non-premium users to `/nang-cap` (manual bank/MoMo transfer + activate by setting `is_premium` in the dashboard). The gate is client-side only for now — fine for printable exams; not real DRM.
+**Premium — currently gates nothing.** `profiles (user_id, is_premium, …)`, `lib/premium.ts → isUserPremium(userId)`, `GET /api/me/premium` and `/nang-cap` all still exist, but **exam download (Word/PDF) is open to everyone**: the whole point of that button is letting a parent print the exam for a child to do on paper, so a paywall blocked exactly the people it was for. Nothing in the app reads `isPremium` today — wire it to a new feature rather than assuming downloads are still gated.
 
 ## Architecture
 
