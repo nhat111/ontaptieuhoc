@@ -25,6 +25,9 @@ Bài luyện tập: `type = 'lesson'` hoặc `NULL` (legacy).
 - Grade color badges (rose → violet)
 - Link tới `/quiz?lessonId=`
 
+## Tải đề để in (Word / PDF)
+Nút ở **màn hình đầu** của `/quiz`, có bản kèm đáp án. **Mở cho mọi người, không rào premium** — mục đích của nó là để phụ huynh in cho bé làm trên giấy, dựng rào là chặn đúng người cần dùng. Đừng gắn lại `isPremium` vào đây (xem `feature-specs/access-control.md`).
+
 ## Header nav
 "Mục **Đề kiểm tra**" → `/de-thi`  
 "Tạo đề kiểm tra" → `/import/exam`

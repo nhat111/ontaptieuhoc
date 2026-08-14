@@ -15,7 +15,7 @@
 
 ### Server
 - `lib/supabase/server-client.ts` — `createSessionClient()`, `getUser()`
-- `proxy.ts` — matcher `/import/:path*`, gọi `auth.getUser()` để **refresh cookie** (không redirect nếu chưa login)
+- `proxy.ts` — matcher `/import/:path*`, gọi `auth.getUser()` để **refresh cookie**. **Chỉ có vậy** — không có kiểm tra quyền nào ở đây, và cũng đừng thêm vào (xem `feature-specs/access-control.md`)
 
 ### Logout
 - `POST /api/auth/logout` — xóa session phía server (nếu dùng)
@@ -29,7 +29,7 @@
 | Làm `/quiz` | ✓ | ✓ |
 | `quiz_results.user_id` | `null` | `auth.users.id` |
 | `/progress` | Redirect login | Lịch sử quiz |
-| `/import/*` | ✓ (guest được phép tạo nội dung) | ✓ |
+| `/import/*` | Tuỳ `IMPORT_PASSWORD` (xem dưới) | Như guest — tài khoản Supabase không mở khoá import |
 
 ## Quiz result tie-in
 
@@ -47,11 +47,22 @@ POST /api/quiz-result
   else getUserResults(userId) + join lesson/subject metadata
 ```
 
+## Hai cơ chế tách rời
+
+Đăng nhập Supabase và khoá import **không liên quan gì tới nhau**:
+
+| | Đăng nhập Supabase | `IMPORT_PASSWORD` |
+|---|---|---|
+| Cho ai | học sinh / phụ huynh | người quản trị nội dung |
+| Bảo vệ gì | `/progress`, `quiz_results.user_id` | `/import/*` + mọi API ghi |
+| Giữ ở đâu | cookie phiên Supabase | cookie `ontap_import` = SHA-256 của passphrase |
+
+Đăng nhập tài khoản **không** mở khoá `/import`, và ngược lại. Chi tiết: `feature-specs/access-control.md`.
+
 ## Không có
 - Social OAuth UI (có thể bật trên Supabase dashboard)
-- Role admin / teacher flag trong DB
-- Protected import (chỉ refresh cookie)
+- Role admin / teacher flag trong DB — vai trò quản trị là "biết mật khẩu chung", không phải cột trong DB
 
 ## Thêm auth mới
 
-Chỉ khi user yêu cầu. Nếu khóa import: sửa `proxy.ts` redirect + RLS, không chỉ refresh token.
+Chỉ khi user yêu cầu. Và **đừng đặt kiểm tra quyền vào `proxy.ts`** — trên Vercel nó không được đăng ký nên im lặng vô hiệu; đặt ở layout của segment hoặc trong chính route.
