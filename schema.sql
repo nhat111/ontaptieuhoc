@@ -168,11 +168,14 @@ INSERT INTO questions (lesson_id, content, options, correct_answer, order_index)
   (4, '1 tuần có bao nhiêu ngày?',     '["5","6","7","8"]',                             '7',        5);
 
 -- ============================================================================
--- Premium (phase 1: manual activation)
--- Browse + take quizzes free; downloading printable exams (Word/PDF) and
--- premium reports are gated behind is_premium. Activated manually after a
--- bank/MoMo transfer (set profiles.is_premium = true in the dashboard), or
--- automatically by a future payment webhook.
+-- Premium (phase 1: manual activation) — CURRENTLY GATES NOTHING.
+-- Downloading printable exams (Word/PDF) used to be gated here and is now open
+-- to everyone: the point of that button is letting a parent print the exam for
+-- a child to do on paper, so the paywall blocked exactly the people it was for.
+-- The table, lib/premium.ts and GET /api/me/premium still exist, but nothing in
+-- the app reads is_premium today — wire it to a new feature rather than assuming
+-- downloads are still gated. Activated manually after a bank/MoMo transfer
+-- (set profiles.is_premium = true in the dashboard), or by a future webhook.
 CREATE TABLE IF NOT EXISTS profiles (
   user_id       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   is_premium    BOOLEAN NOT NULL DEFAULT false,
