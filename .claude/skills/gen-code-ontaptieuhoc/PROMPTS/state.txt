@@ -7,7 +7,10 @@ Patterns to follow:
   multi answers as JSON.stringify(string[]); normalize "" and "[]" to null;
   submit → POST /api/quiz-result (fire-and-forget) + sessionStorage.quizResult → /result
 - Import: ImportClient — localStorage draft keys ontap_import_draft_v1 / ontap_exam_draft_v1;
-  preserve pendingSubjectId/pendingChapterId refs on draft restore
-- No Zustand; use useState/useRef/useEffect only
+  preserve the pendingChapterId ref on draft restore, or a restored draft loses its chapter.
+  Subjects need no such ref: they come from lib/subjects.ts synchronously.
+- No Zustand; useState/useRef/useEffect, plus useSyncExternalStore for values that live in
+  localStorage (speech rate, shuffle prefs, voice choice) — avoids setState-in-effect and
+  hydration mismatch
 
 Keep logic in existing files; do not introduce global state libraries.
