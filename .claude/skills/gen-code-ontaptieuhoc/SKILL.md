@@ -106,9 +106,14 @@ Role prompts: `PROMPTS/*.txt` in this skill folder.
 
 ## Never
 
-- Add auth gates to `/import` unless explicitly requested
+- **Remove or weaken the `/import` lock.** It exists on purpose: `app/import/layout.tsx` for
+  pages, `blockIfNoImportAccess(req)` inside every write route. `/api/update-lesson` wipes and
+  reinserts a lesson's questions and there are no backups
+- **Put access control in `proxy.ts`.** Its manifest ships empty here, so a gate there works
+  under `next start` locally and is silently inert on Vercel — see `ai-context/feature-specs/access-control.md`
 - Store quiz state in localStorage during play (DB props + sessionStorage on submit only)
-- Call Anthropic from client or add `/import/ai` without user request
+- Call Anthropic from the client — image scanning goes through `POST /api/ocr-exam` (server-side).
+  Do not recreate the removed `/import/ai` / `/api/ai-import` surface
 - Commit `.env.local` or service role keys
 
 ## Output style
