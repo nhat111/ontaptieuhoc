@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
         "/reset-password",
         "/auth/",
         "/nang-cap",
+        // Trang thử camera dành cho người phát triển, không phải nội dung học tập.
+        "/camera-capture.html",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
