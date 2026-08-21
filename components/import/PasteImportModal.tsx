@@ -1,19 +1,11 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { parseExamText } from "@/lib/examParser";
 import { parseLoigiaihay, looksLikeLoigiaihay } from "@/lib/loigiaihayParser";
 import { normalizeMath } from "@/lib/mathNormalizer";
 import { nanoid } from "@/lib/nanoid";
 import MathText from "@/components/MathText";
-import CameraCapture from "./CameraCapture";
 import type { QDraft } from "./QuestionCard";
-
-// Khả năng dùng camera không bao giờ đổi trong một phiên, nên subscribe là no-op.
-// Đọc qua useSyncExternalStore thay vì setState-in-effect: không lệch hydration, và
-// khớp cách lib/speech.ts đọc tốc độ đọc.
-const subscribeNever = () => () => {};
-const hasCamera = () => !!navigator.mediaDevices?.getUserMedia;
-const hasCameraOnServer = () => false;
 
 interface Props {
   open: boolean;
@@ -114,8 +106,6 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [ocrAvailable, setOcrAvailable] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const cameraSupported = useSyncExternalStore(subscribeNever, hasCamera, hasCameraOnServer);
 
   // Quét ảnh cần ANTHROPIC_API_KEY phía máy chủ. Hỏi trước khi mở modal để ẩn
   // hẳn nút khi chưa cấu hình, thay vì để người dùng bấm vào rồi nhận lỗi 503.
@@ -373,30 +363,10 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
               Quét ảnh đề <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
             </label>
             <div className="flex flex-wrap items-center gap-2">
-              {cameraSupported && (
-                <button
-                  type="button"
-                  disabled={scanning}
-                  onClick={() => setCameraOpen(true)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                    scanning
-                      ? "bg-orange-300 text-white cursor-not-allowed"
-                      : "bg-orange-500 hover:bg-orange-600 text-white"
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <circle cx="11.5" cy="13" r="3.5" />
-                  </svg>
-                  Chụp ảnh đề
-                </button>
-              )}
               <label
                 className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   scanning
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : cameraSupported
-                    ? "bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 cursor-pointer"
+                    ? "bg-orange-300 text-white cursor-not-allowed"
                     : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
                 }`}
               >
@@ -411,10 +381,10 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="16" rx="2" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16l5-5 4 4 3-3 6 6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <circle cx="11.5" cy="13" r="3.5" />
                     </svg>
-                    Chọn ảnh có sẵn
+                    Chọn ảnh đề
                   </>
                 )}
                 <input
@@ -622,19 +592,6 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
           </div>
         </div>
       </div>
-
-      {cameraOpen && (
-      <CameraCapture
-        busy={scanning}
-        onClose={() => setCameraOpen(false)}
-        onCapture={(file) => {
-          // Đóng ngay để camera tắt hẳn trong lúc chờ Claude đọc; kết quả đổ xuống
-          // phần xem trước của modal như luồng chọn file.
-          setCameraOpen(false);
-          handleScanImage(file);
-        }}
-      />
-      )}
     </div>
   );
 }

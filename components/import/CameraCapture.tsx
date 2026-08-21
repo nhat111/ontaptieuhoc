@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Chụp ảnh đề bằng camera, zoom được ngay lúc đang ngắm, rồi căn lại lần nữa trước khi
-// gửi sang /api/ocr-exam.
+// Chụp ảnh bằng camera, zoom được ngay lúc đang ngắm, rồi căn lại lần nữa trước khi dùng.
+//
+// Trả về một File JPEG qua onCapture; người gọi quyết định làm gì với nó. Hiện QuestionCard
+// dùng để gắn ảnh vào câu hỏi (upload qua /api/upload-image) — không phụ thuộc dịch vụ ngoài
+// nào, nên nút lúc nào cũng dùng được.
 //
 // Zoom lúc ngắm chạy theo hai đường, chọn tự động:
 //
@@ -24,8 +27,8 @@ type ZoomCapability = { min: number; max: number; step: number };
 type ZoomCapabilities = MediaTrackCapabilities & { zoom?: ZoomCapability };
 type ZoomConstraints = MediaTrackConstraints & { advanced?: { zoom: number }[] };
 
-// Cạnh dài tối đa của ảnh gửi đi. Claude hạ mẫu ảnh về ~1568px cạnh dài, nên gửi to hơn
-// nhiều chỉ tốn băng thông mà không rõ thêm; 2000px chừa dư cho chữ nhỏ.
+// Cạnh dài tối đa của ảnh xuất ra. Ảnh câu hỏi hiển thị rộng vài trăm px, nên 2000px đã
+// thừa nét kể cả khi người xem phóng to, mà file vẫn nhẹ (hạn upload là 10MB).
 const MAX_EDGE = 2000;
 const JPEG_QUALITY = 0.92;
 const MAX_ZOOM = 8;
@@ -82,7 +85,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       // getUserMedia chỉ tồn tại trong secure context (HTTPS hoặc localhost). Trên máy
       // dev truy cập qua IP LAN thì API vắng mặt hẳn — báo rõ thay vì ném lỗi khó hiểu.
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError("Trình duyệt chỉ cho dùng camera trên kết nối HTTPS. Bro dùng nút “Chọn ảnh đề” nhé.");
+        setError("Trình duyệt chỉ cho dùng camera trên kết nối HTTPS (hoặc localhost). Dùng nút “Thêm ảnh” để chọn ảnh có sẵn.");
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -119,7 +122,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
     } catch (e) {
       const name = (e as DOMException)?.name;
       if (name === "NotAllowedError" || name === "SecurityError") {
-        setError("Bro chưa cho phép dùng camera. Mở lại quyền trong cài đặt trình duyệt rồi thử lại, hoặc dùng nút “Chọn ảnh đề”.");
+        setError("Chưa cho phép dùng camera. Mở lại quyền trong cài đặt trình duyệt rồi thử lại, hoặc dùng nút “Thêm ảnh” để chọn ảnh có sẵn.");
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         setError("Không tìm thấy camera trên thiết bị này.");
       } else if (name === "NotReadableError") {
@@ -418,10 +421,10 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
     out.toBlob(
       (blob) => {
         if (!blob) {
-          setError("Không tạo được ảnh để gửi đi.");
+          setError("Không tạo được ảnh.");
           return;
         }
-        onCapture(new File([blob], `de-thi-${Date.now()}.jpg`, { type: "image/jpeg" }));
+        onCapture(new File([blob], `anh-cau-hoi-${Date.now()}.jpg`, { type: "image/jpeg" }));
       },
       "image/jpeg",
       JPEG_QUALITY
@@ -433,7 +436,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 text-white shrink-0">
         <span className="text-sm font-bold">
-          {stage === "live" ? "Chụp ảnh đề" : "Căn khung ảnh"}
+          {stage === "live" ? "Chụp ảnh" : "Căn khung ảnh"}
         </span>
         <button
           type="button"
@@ -553,7 +556,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
               disabled={busy}
               className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-50"
             >
-              {busy ? "Đang đọc ảnh…" : "Dùng ảnh này"}
+              {busy ? "Đang tải lên…" : "Dùng ảnh này"}
             </button>
           </>
         )}
@@ -563,7 +566,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
         <p className="pb-4 text-center text-[11px] text-white/50">
           {stage === "live"
             ? "Chụp thẳng, đủ sáng. Chụm hai ngón hoặc dùng +/− để phóng to trước khi chụp."
-            : "Kéo để di chuyển, chụm hai ngón hoặc dùng nút +/− để phóng to. Chỉ phần đang nhìn thấy được gửi đi."}
+            : "Kéo để di chuyển, chụm hai ngón hoặc dùng nút +/− để phóng to. Chỉ phần đang nhìn thấy được dùng."}
         </p>
       )}
     </div>

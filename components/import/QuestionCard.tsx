@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import TiptapEditor from "./TiptapEditor";
 import MathText from "@/components/MathText";
 import { splitOptions } from "@/lib/optionSplitter";
+import CameraCapture from "./CameraCapture";
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
@@ -61,6 +62,7 @@ export default function QuestionCard({
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   function patch(partial: Partial<QDraft>) {
     onChange({ ...question, ...partial });
@@ -173,8 +175,14 @@ export default function QuestionCard({
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
     e.target.value = "";
-    if (!file || uploading) return;
+    if (file) uploadImage(file);
+  }
+
+  // Dùng chung cho cả chọn file lẫn chụp bằng camera — ảnh chụp cũng chỉ là một File.
+  async function uploadImage(file: File) {
+    if (uploading) return;
     setUploading(true);
     try {
       const fd = new FormData();
@@ -451,6 +459,18 @@ export default function QuestionCard({
               )}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            <button
+              type="button"
+              onClick={() => setCameraOpen(true)}
+              disabled={uploading}
+              className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <circle cx="11.5" cy="13" r="3.5" />
+              </svg>
+              Chụp ảnh
+            </button>
           </div>
 
           {/* Body per type */}
@@ -606,6 +626,18 @@ export default function QuestionCard({
             )}
           </div>
         </div>
+      )}
+
+      {cameraOpen && (
+        <CameraCapture
+          busy={uploading}
+          onClose={() => setCameraOpen(false)}
+          onCapture={(file) => {
+            // Đóng ngay để camera tắt hẳn trong lúc đang tải ảnh lên.
+            setCameraOpen(false);
+            uploadImage(file);
+          }}
+        />
       )}
     </div>
   );
