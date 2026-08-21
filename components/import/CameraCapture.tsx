@@ -2,21 +2,36 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Chụp ảnh đề bằng camera rồi căn khung trước khi gửi sang /api/ocr-exam.
+// Chụp ảnh đề bằng camera, zoom được ngay lúc đang ngắm, rồi căn lại lần nữa trước khi
+// gửi sang /api/ocr-exam.
 //
-// Vì sao zoom trên ảnh đã chụp chứ không zoom ống kính: `track.applyConstraints({ zoom })`
-// hỗ trợ rất chập chờn (nhiều máy Android và toàn bộ Safari iOS không có), còn zoom trên
-// ảnh tĩnh thì chạy ở mọi thiết bị. Quan trọng hơn: vùng đang nhìn thấy chính là vùng
-// được gửi đi, nên phóng to để bỏ bớt mép bàn / trang bên cạnh giúp Claude đọc chữ nhỏ
-// chính xác hơn — zoom ống kính không làm được điều đó.
+// Zoom lúc ngắm chạy theo hai đường, chọn tự động:
+//
+//   1. Zoom thật của camera (`track.applyConstraints({ advanced: [{ zoom }] })`) khi máy
+//      có hỗ trợ — cho chi tiết thật, không phải phóng to pixel.
+//   2. Zoom số: phóng khung hình bằng CSS rồi lúc chụp CẮT đúng phần đang nhìn thấy ở
+//      độ phân giải gốc của cảm biến. Safari iOS và nhiều máy Android không có đường 1,
+//      nên đây là đường luôn dùng được.
+//
+// Cả hai cho ra cùng một trải nghiệm; khác nhau chỉ ở chất lượng. Cắt lúc chụp (chứ không
+// phóng to ảnh đã cắt) nghĩa là zoom số vẫn giữ nguyên độ nét, chỉ hẹp khung lại.
 
 type Stage = "live" | "review";
+
+// `zoom` chưa có trong kiểu chuẩn của TypeScript cho MediaStreamTrack — khai báo hẹp ở
+// đây thay vì rải `as any` ra khắp nơi.
+type ZoomCapability = { min: number; max: number; step: number };
+type ZoomCapabilities = MediaTrackCapabilities & { zoom?: ZoomCapability };
+type ZoomConstraints = MediaTrackConstraints & { advanced?: { zoom: number }[] };
 
 // Cạnh dài tối đa của ảnh gửi đi. Claude hạ mẫu ảnh về ~1568px cạnh dài, nên gửi to hơn
 // nhiều chỉ tốn băng thông mà không rõ thêm; 2000px chừa dư cho chữ nhỏ.
 const MAX_EDGE = 2000;
 const JPEG_QUALITY = 0.92;
 const MAX_ZOOM = 8;
+// Mức zoom số tối đa lúc ngắm. Quá 4× thì khung quá hẹp để lấy trọn một câu hỏi, mà
+// người dùng đưa máy lại gần vẫn nét hơn nhiều.
+const DIGITAL_MAX_ZOOM = 4;
 
 type Props = {
   onClose: () => void;
@@ -29,6 +44,7 @@ type Props = {
 // theo cleanup lúc unmount.
 export default function CameraCapture({ onClose, onCapture, busy = false }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const liveBoxRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   // Ảnh đã chụp, giữ nguyên độ phân giải gốc của camera.
@@ -37,8 +53,17 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
   const viewRef = useRef({ scale: 1, ox: 0, oy: 0, fit: 1 });
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
+  // Zoom lúc ngắm dùng bộ theo dõi ngón riêng: hai giai đoạn không bao giờ hiện cùng lúc,
+  // nhưng dùng chung ref thì rất dễ để sót ngón từ giai đoạn trước.
+  const livePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const livePinchRef = useRef<{ dist: number; zoom: number } | null>(null);
 
   const [stage, setStage] = useState<Stage>("live");
+  const [liveZoom, setLiveZoom] = useState(1);
+  const [liveZoomMax, setLiveZoomMax] = useState(DIGITAL_MAX_ZOOM);
+  // Có giá trị ⇒ máy hỗ trợ zoom thật; null ⇒ rơi về zoom số. Để ở state chứ không ở ref
+  // vì phần render phải biết có cần phóng bằng CSS hay không.
+  const [hardwareZoom, setHardwareZoom] = useState<ZoomCapability | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [zoomLabel, setZoomLabel] = useState("100%");
@@ -69,6 +94,21 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
         audio: false,
       });
       streamRef.current = stream;
+
+      // Hỏi xem camera có zoom thật không. Không có thì zoom số, nên không cần báo gì
+      // cho người dùng — nút zoom lúc nào cũng hiện và lúc nào cũng chạy.
+      const track = stream.getVideoTracks()[0];
+      const caps = track?.getCapabilities?.() as ZoomCapabilities | undefined;
+      const cap = caps?.zoom;
+      if (cap && cap.max > cap.min && cap.min > 0) {
+        setHardwareZoom(cap);
+        setLiveZoomMax(Math.min(MAX_ZOOM, cap.max / cap.min));
+      } else {
+        setHardwareZoom(null);
+        setLiveZoomMax(DIGITAL_MAX_ZOOM);
+      }
+      setLiveZoom(1);
+
       const v = videoRef.current;
       if (v) {
         v.srcObject = stream;
@@ -91,6 +131,50 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       setStarting(false);
     }
   }, []);
+
+  // Đặt mức zoom lúc ngắm. `mult` là bội số so với góc rộng nhất (1 = không zoom).
+  const applyLiveZoom = useCallback((mult: number) => {
+    const clamped = Math.min(Math.max(mult, 1), liveZoomMax);
+    setLiveZoom(clamped);
+
+    const cap = hardwareZoom;
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!cap || !track) return;
+
+    const value = Math.min(cap.max, Math.max(cap.min, cap.min * clamped));
+    track
+      .applyConstraints({ advanced: [{ zoom: value }] } as ZoomConstraints)
+      // Máy báo hỗ trợ nhưng từ chối áp thì bỏ hẳn đường zoom thật cho phần còn lại của
+      // phiên; lần bấm sau sẽ tự chạy bằng zoom số thay vì im lặng không phản hồi.
+      .catch(() => {
+        setHardwareZoom(null);
+        setLiveZoomMax(DIGITAL_MAX_ZOOM);
+      });
+  }, [liveZoomMax, hardwareZoom]);
+
+  // Chụm hai ngón ngay trên khung ngắm.
+  function onLivePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    livePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  }
+
+  function onLivePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const pts = livePointersRef.current;
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size < 2) return;
+    const [a, b] = Array.from(pts.values());
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    if (!livePinchRef.current) {
+      livePinchRef.current = { dist, zoom: liveZoom };
+      return;
+    }
+    applyLiveZoom(livePinchRef.current.zoom * (dist / (livePinchRef.current.dist || dist)));
+  }
+
+  function onLivePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    livePointersRef.current.delete(e.pointerId);
+    if (livePointersRef.current.size < 2) livePinchRef.current = null;
+  }
 
   // Bật camera lúc mount; TẮT HẲN lúc unmount — không dừng track thì đèn camera vẫn
   // sáng sau khi người dùng đóng, trông như site đang lén quay.
@@ -176,10 +260,33 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
   function handleShoot() {
     const v = videoRef.current;
     if (!v || !v.videoWidth) return;
+
+    // Zoom thật thì khung hình camera đã zoom sẵn, lấy nguyên. Zoom số thì khung hình
+    // vẫn là góc rộng, phải cắt đúng phần người dùng đang nhìn — cắt ở đây, trên khung
+    // gốc của cảm biến, nên ảnh giữ nguyên độ nét thay vì là ảnh phóng to.
+    //
+    // KHÔNG cắt đều 1/Z cả hai chiều: video dùng object-contain nên một chiều có viền
+    // đen, và khi phóng to chiều đó lộ ra nhiều hơn 1/Z. Cắt đều sẽ ra ảnh hẹp hơn phần
+    // người dùng nhìn thấy — mất chữ ở mép mà không ai biết. Tính theo hình học thật:
+    const box = liveBoxRef.current?.getBoundingClientRect();
+    const zoom = hardwareZoom ? 1 : liveZoom;
+    let visibleX = 1 / zoom;
+    let visibleY = 1 / zoom;
+    if (box && box.width > 0 && box.height > 0) {
+      // object-contain: khung hình co về vừa hộp, rồi phóng thêm `zoom` lần từ tâm.
+      const base = Math.min(box.width / v.videoWidth, box.height / v.videoHeight);
+      visibleX = Math.min(1, box.width / (v.videoWidth * base * zoom));
+      visibleY = Math.min(1, box.height / (v.videoHeight * base * zoom));
+    }
+    const sw = v.videoWidth * visibleX;
+    const sh = v.videoHeight * visibleY;
+    const sx = (v.videoWidth - sw) / 2;
+    const sy = (v.videoHeight - sh) / 2;
+
     const shot = document.createElement("canvas");
-    shot.width = v.videoWidth;
-    shot.height = v.videoHeight;
-    shot.getContext("2d")?.drawImage(v, 0, 0);
+    shot.width = Math.round(sw);
+    shot.height = Math.round(sh);
+    shot.getContext("2d")?.drawImage(v, sx, sy, sw, sh, 0, 0, shot.width, shot.height);
     photoRef.current = shot;
     // Chụp xong là tắt camera ngay — ảnh đã nằm trên canvas, giữ stream sống chỉ làm
     // đèn camera sáng vô cớ trong lúc người dùng ngồi căn khung.
@@ -189,6 +296,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
 
   function handleRetake() {
     photoRef.current = null;
+    setLiveZoom(1);
     setStage("live");
     startStream();
   }
@@ -351,13 +459,24 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
           </div>
         ) : stage === "live" ? (
           <>
-            <video
-              ref={videoRef}
-              playsInline
-              muted
-              autoPlay
-              className="absolute inset-0 h-full w-full object-contain"
-            />
+            <div
+              ref={liveBoxRef}
+              className="absolute inset-0 overflow-hidden touch-none"
+              onPointerDown={onLivePointerDown}
+              onPointerMove={onLivePointerMove}
+              onPointerUp={onLivePointerUp}
+              onPointerCancel={onLivePointerUp}
+            >
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                autoPlay
+                className="h-full w-full object-contain"
+                // Zoom thật đã nằm sẵn trong khung hình camera; chỉ zoom số mới phóng bằng CSS.
+                style={hardwareZoom ? undefined : { transform: `scale(${liveZoom})` }}
+              />
+            </div>
             {starting && (
               <p className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
                 Đang mở camera…
@@ -378,6 +497,22 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       </div>
 
       {/* Điều khiển */}
+      {!error && stage === "live" && !starting && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 shrink-0">
+          <button type="button" onClick={() => applyLiveZoom(liveZoom / 1.3)} disabled={liveZoom <= 1} aria-label="Thu nhỏ"
+            className="h-10 w-10 rounded-full bg-white/15 text-lg font-bold text-white hover:bg-white/25 disabled:opacity-30">−</button>
+          <span className="min-w-[56px] text-center text-xs font-semibold text-white/80">
+            {liveZoom.toFixed(1)}×
+          </span>
+          <button type="button" onClick={() => applyLiveZoom(liveZoom * 1.3)} disabled={liveZoom >= liveZoomMax} aria-label="Phóng to"
+            className="h-10 w-10 rounded-full bg-white/15 text-lg font-bold text-white hover:bg-white/25 disabled:opacity-30">+</button>
+          {liveZoom > 1 && (
+            <button type="button" onClick={() => applyLiveZoom(1)}
+              className="rounded-full bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25">Về 1×</button>
+          )}
+        </div>
+      )}
+
       {!error && stage === "review" && (
         <div className="flex items-center justify-center gap-2 px-4 py-2 shrink-0">
           <button type="button" onClick={() => zoomByStep(1 / 1.4)} aria-label="Thu nhỏ"
@@ -427,7 +562,7 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       {!error && (
         <p className="pb-4 text-center text-[11px] text-white/50">
           {stage === "live"
-            ? "Chụp thẳng, đủ sáng, để cả đề lọt trong khung."
+            ? "Chụp thẳng, đủ sáng. Chụm hai ngón hoặc dùng +/− để phóng to trước khi chụp."
             : "Kéo để di chuyển, chụm hai ngón hoặc dùng nút +/− để phóng to. Chỉ phần đang nhìn thấy được gửi đi."}
         </p>
       )}
