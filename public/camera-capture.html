@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CameraCapture — chụp ảnh có zoom (vanilla JS)</title>
+<!-- Chặn trình duyệt tự đòi /favicon.ico rồi 404. Dùng data: cho khỏi phụ thuộc
+     đường dẫn của dự án nào — file này phải chạy được ở bất kỳ đâu. -->
+<link rel="icon" href="data:,">
+<style>
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background:#f8fafc; color:#1e293b; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color:#64748b; font-size: 13px; margin: 0 0 20px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#64748b; margin:0 0 10px; }
+  button.primary { background:#f97316; color:#fff; border:0; border-radius:10px;
+                   padding:11px 18px; font-size:14px; font-weight:700; cursor:pointer; }
+  button.primary:hover { background:#ea580c; }
+  #out img { max-width:100%; border-radius:10px; border:1px solid #e2e8f0; display:block; }
+  #meta { font-size:12px; color:#64748b; margin-top:8px; line-height:1.7; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
+  pre { background:#0f172a; color:#e2e8f0; padding:12px; border-radius:10px;
+        overflow-x:auto; font-size:12px; line-height:1.6; }
+  .note { font-size:12.5px; color:#475569; line-height:1.75; }
+  .note b { color:#1e293b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CameraCapture</h1>
+  <p class="sub">Chụp ảnh bằng camera, zoom được ngay lúc ngắm. Vanilla JS, không thư viện.</p>
+
+  <div class="card">
+    <h2>Thử</h2>
+    <button class="primary" id="open">Chụp ảnh</button>
+    <div id="out" style="margin-top:14px"></div>
+    <div id="meta"></div>
+  </div>
+
+  <div class="card">
+    <h2>Cách dùng</h2>
+    <pre>CameraCapture.open({
+  onCapture: function (file) {
+    // file: File JPEG, đã cắt đúng phần người dùng nhìn thấy
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/upload-image', { method: 'POST', body: fd });
+  },
+  onClose: function () {},
+
+  // tuỳ chọn
+  maxEdge: 2000,        // cạnh dài tối đa của ảnh xuất ra
+  jpegQuality: 0.92,
+  digitalMaxZoom: 4     // mức zoom số tối đa lúc ngắm
+});</pre>
+  </div>
+
+  <div class="card">
+    <h2>Lưu ý khi chạy</h2>
+    <p class="note">
+      <b>Camera chỉ chạy trên HTTPS hoặc localhost.</b> Mở file bằng
+      <code>file://</code> hoặc qua IP LAN <code>http://192.168.x.x</code> thì trình duyệt
+      không cho dùng camera — không phải lỗi code. Chạy thử bằng:
+      <code>npx serve</code> hoặc <code>python3 -m http.server</code> rồi vào
+      <code>http://localhost:…</code>
+    </p>
+  </div>
+</div>
+
+<!-- Toàn bộ widget nằm ở camera-capture.js — copy đúng file đó sang dự án khác là dùng được. -->
+<script src="camera-capture.js"></script>
+
+<!-- demo -->
+<script>
+document.getElementById('open').addEventListener('click', function () {
+  CameraCapture.open({
+    onCapture: function (file) {
+      var out = document.getElementById('out');
+      var meta = document.getElementById('meta');
+      out.innerHTML = '';
+      var img = new Image();
+      img.onload = function () {
+        meta.innerHTML =
+          'Kích thước: <b>' + img.naturalWidth + ' × ' + img.naturalHeight + '</b><br>' +
+          'Dung lượng: <b>' + (file.size / 1024).toFixed(0) + ' KB</b><br>' +
+          'Tên file: <code>' + file.name + '</code>';
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
+      out.appendChild(img);
+    }
+  });
+});
+</script>
+</body>
+</html>
