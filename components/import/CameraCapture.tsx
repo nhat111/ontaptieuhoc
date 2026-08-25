@@ -152,6 +152,10 @@ export default function CameraCapture({ onClose, onCapture, busy = false }: Prop
       .catch(() => {
         setHardwareZoom(null);
         setLiveZoomMax(DIGITAL_MAX_ZOOM);
+        // Kéo luôn mức zoom hiện tại về trần zoom số. Camera có thể báo tới 8×; nếu
+        // người dùng đang ở 6× lúc áp constraint thất bại thì zoom số sẽ phóng CSS 6×,
+        // vượt trần và làm nút +/− khoá sai.
+        setLiveZoom((z) => Math.min(z, DIGITAL_MAX_ZOOM));
       });
   }, [liveZoomMax, hardwareZoom]);
 
