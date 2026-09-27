@@ -107,7 +107,8 @@ const CONSONANTS: Record<string, string> = {
 };
 
 // Cặp nghe gần như giống nhau (giọng máy miền Bắc) — không cho đứng chung một câu.
-const CONFUSABLE = [["s", "x"], ["d", "r"], ["a", "ă"]];
+// ă đọc "á", â đọc "ớ" (tên theo SGK lớp 1) nên chỉ khác a / ơ đúng một dấu thanh.
+const CONFUSABLE = [["s", "x"], ["d", "r"], ["a", "ă"], ["â", "ơ"]];
 
 function clash(a: string, b: string): boolean {
   return CONFUSABLE.some((g) => g.includes(a) && g.includes(b));
