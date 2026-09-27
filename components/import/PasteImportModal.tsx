@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { parseExamText } from "@/lib/examParser";
 import { parseLoigiaihay, looksLikeLoigiaihay } from "@/lib/loigiaihayParser";
 import { normalizeMath } from "@/lib/mathNormalizer";
+import { cleanOcrText } from "@/lib/ocrText";
+import type { OcrProgress } from "@/lib/browserOcr";
 import { nanoid } from "@/lib/nanoid";
 import MathText from "@/components/MathText";
 import type { QDraft } from "./QuestionCard";
@@ -106,6 +108,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [ocrAvailable, setOcrAvailable] = useState(false);
+  const [freeScan, setFreeScan] = useState<OcrProgress | null>(null);
+  const [freeScanError, setFreeScanError] = useState<string | null>(null);
 
   // Quét ảnh cần ANTHROPIC_API_KEY phía máy chủ. Hỏi trước khi mở modal để ẩn
   // hẳn nút khi chưa cấu hình, thay vì để người dùng bấm vào rồi nhận lỗi 503.
@@ -175,6 +179,33 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
       setScanError("Không thể kết nối máy chủ.");
     } finally {
       setScanning(false);
+    }
+  }
+
+  // ── Quét ảnh miễn phí (Tesseract trên trình duyệt) ─────────────────────────
+  // Khác quét bằng AI: chỉ ra chữ thô, nên đổ vào ô văn bản để người dùng sửa
+  // lỗi đọc sai rồi mới đi qua examParser như luồng dán thường.
+  async function handleFreeScan(files: File[]) {
+    setFreeScanError(null);
+    setError(null);
+    setPreview(null);
+    setFreeScan({ index: 1, total: files.length, phase: "loading", progress: 0 });
+    try {
+      const { recognizeImages } = await import("@/lib/browserOcr");
+      const raw = await recognizeImages(files, setFreeScan);
+      const cleaned = cleanOcrText(raw);
+      if (!cleaned) {
+        setFreeScanError("Không đọc được chữ nào. Thử ảnh rõ hơn, chụp thẳng và đủ sáng.");
+        return;
+      }
+      setText(cleaned);
+      setMode("text");
+      handleParse(cleaned, "text");
+    } catch (err) {
+      console.error("[PasteImportModal] OCR lỗi:", err);
+      setFreeScanError("Không đọc được ảnh. Kiểm tra kết nối mạng (lần đầu cần tải bộ đọc chữ) rồi thử lại.");
+    } finally {
+      setFreeScan(null);
     }
   }
 
@@ -315,6 +346,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     setMode("text");
     setUrl("");
     setUrlError(null);
+    setFreeScanError(null);
     onClose();
   }
 
@@ -356,11 +388,65 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-auto p-5 space-y-4">
-          {/* Quét ảnh đề — ẩn khi máy chủ chưa có ANTHROPIC_API_KEY */}
+          {/* Quét ảnh miễn phí — Tesseract chạy trên trình duyệt, luôn hiện */}
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
+              Quét ảnh đề — miễn phí <span className="font-normal text-gray-400">(đọc chữ ngay trên máy, chọn được nhiều trang)</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  freeScan
+                    ? "bg-green-300 text-white cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                }`}
+              >
+                {freeScan ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    {freeScan.phase === "loading"
+                      ? "Đang tải bộ đọc chữ…"
+                      : `Đang đọc${freeScan.total > 1 ? ` ảnh ${freeScan.index}/${freeScan.total}` : ""}… ${Math.round(freeScan.progress * 100)}%`}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <circle cx="11.5" cy="13" r="3.5" />
+                    </svg>
+                    Chụp / chọn ảnh
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={!!freeScan}
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
+                    e.target.value = "";
+                    if (files.length) handleFreeScan(files);
+                  }}
+                />
+              </label>
+              <span className="text-[11px] text-gray-500">Chọn nhiều ảnh cho đề nhiều trang</span>
+            </div>
+            {freeScanError && <p className="mt-2 text-xs text-red-500">✗ {freeScanError}</p>}
+            <p className="mt-1.5 text-[11px] text-gray-400">
+              Chữ đọc được sẽ hiện ở ô bên dưới để sửa. Không nhận ra đáp án khoanh bút — nhớ tự chọn đáp án đúng.
+            </p>
+          </div>
+
+          {/* Quét ảnh bằng AI — ẩn khi máy chủ chưa có ANTHROPIC_API_KEY */}
           {ocrAvailable && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
             <label className="text-xs font-semibold text-gray-600 block mb-1.5">
-              Quét ảnh đề <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
+              Quét ảnh bằng AI <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <label
