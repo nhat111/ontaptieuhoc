@@ -72,10 +72,14 @@ function playOne(el: HTMLAudioElement, url: string, speed: number): Promise<void
     let settled = false;
     let guard: ReturnType<typeof setTimeout> | null = null;
 
+    // Chỉ gỡ handler nếu nó vẫn là của lượt này. Lượt cũ bị thay giữa chừng
+    // (bấm nghe lại, sang câu mới) vẫn còn hẹn giờ dự phòng; khi hẹn giờ đó
+    // chạy mà gỡ bừa thì sẽ gỡ luôn handler của lượt MỚI đang phát, làm chuỗi
+    // đọc đứng tới 60 giây.
     const cleanup = () => {
-      el.onended = null;
-      el.onerror = null;
-      el.onloadedmetadata = null;
+      if (el.onended === finish) el.onended = null;
+      if (el.onerror === onError) el.onerror = null;
+      if (el.onloadedmetadata === onMeta) el.onloadedmetadata = null;
       if (guard) clearTimeout(guard);
     };
     const finish = () => {
@@ -91,10 +95,8 @@ function playOne(el: HTMLAudioElement, url: string, speed: number): Promise<void
       reject(e);
     };
 
-    el.onended = finish;
-    el.onerror = () => fail(new Error("audio-error"));
-
-    el.onloadedmetadata = () => {
+    const onError = () => fail(new Error("audio-error"));
+    const onMeta = () => {
       // Biết độ dài thật rồi thì hẹn giờ sát hơn. Cộng dư 3 giây phòng khi máy
       // phát chậm hơn dự kiến, để không cắt ngang câu đang đọc.
       const d = el.duration;
@@ -105,6 +107,9 @@ function playOne(el: HTMLAudioElement, url: string, speed: number): Promise<void
       // iOS đặt lại playbackRate khi nạp nguồn mới, nên đặt lại ở đây.
       el.playbackRate = speed;
     };
+    el.onended = finish;
+    el.onerror = onError;
+    el.onloadedmetadata = onMeta;
 
     el.src = url;
     el.playbackRate = speed;
