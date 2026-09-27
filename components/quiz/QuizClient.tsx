@@ -33,7 +33,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   useEffect(() => {
     fetch("/api/me/premium")
       .then((r) => r.json())
-      .then((d) => setIsPremium(!!d.isPremium))
+      .then((d) => setIsPremium(!!d.isPremium || !!d.isAdmin))
       .catch(() => {});
   }, []);
 
