@@ -1,6 +1,7 @@
 "use client";
 import GameShell, { type GameRound } from "./GameShell";
 import { makeLetterQuestion, type LetterLevel } from "@/lib/games";
+import { LETTER_CLIPS } from "@/lib/letterClips";
 
 const LEVELS = [
   { id: "nguyen-am", label: "🅰️ Nguyên âm", hint: "a, ă, â, e, ê, i, o, ô, ơ, u, ư" },
@@ -11,8 +12,8 @@ const LEVELS = [
 function make(level: string, prev: GameRound | null): GameRound {
   const q = makeLetterQuestion(level as LetterLevel, prev?.answer);
   return {
-    // Đọc cả cụm "âm á" như cô giáo, không đưa riêng một chữ: giọng máy gặp
-    // "á" đứng một mình thì đánh vần thành "a sắc" thay vì đọc âm.
+    // Đọc cả cụm "âm á" như cô giáo. Câu này là khoá tra file trong
+    // lib/letterClips.ts — đổi cách viết thì chạy lại scripts/gen-letter-audio.py.
     say: `Âm ${q.sound}`,
     visual: (
       <div className="text-center">
@@ -35,7 +36,9 @@ export default function LetterGame({ backHref }: { backHref: string }) {
       intro="Máy đọc một âm, bé chạm vào chữ đúng. Bấm 🔊 để nghe lại."
       levels={LEVELS}
       make={make}
-      requiresSpeech
+      // Mọi câu của trò này đã có file đọc sẵn (Piper), nên không cần giọng máy
+      // và máy nào cũng nghe cùng một cách đọc.
+      clips={LETTER_CLIPS}
       optionCols={2}
       backHref={backHref}
     />

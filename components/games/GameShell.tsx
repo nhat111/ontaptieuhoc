@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import { isSpeechSupported, speakSegments, stopSpeaking, type SpeakSegment } from "@/lib/speech";
+import { speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 import { addStars, pick } from "@/lib/games";
 import { Burst, Mascot, type Mood } from "./Fx";
 
@@ -33,6 +34,12 @@ interface Props {
   requiresSpeech?: boolean;
   /** Lưới đáp án: 2 cột cho chữ to, 4 cột cho số. */
   optionCols?: 2 | 4;
+  /**
+   * File đọc sẵn theo câu (vd: lib/letterClips.ts). Một lượt nói mà mọi câu
+   * đều có file thì phát file; thiếu câu nào thì cả lượt dùng giọng máy, để
+   * không lẫn hai giọng trong một lượt.
+   */
+  clips?: Record<string, string>;
   /** Bảng chọn riêng thay cho lưới nút mặc định (vd: cây táo). */
   Board?: ComponentType<BoardProps>;
   backHref: string;
@@ -53,7 +60,7 @@ const vi = (text: string): SpeakSegment => ({ text, lang: "vi-VN" });
  * `await`: iOS chỉ cho phát tiếng trong luồng của cú chạm (xem lib/speech.ts).
  */
 export default function GameShell({
-  title, intro, levels, make, requiresSpeech, optionCols = 4, Board, backHref,
+  title, intro, levels, make, requiresSpeech, optionCols = 4, clips, Board, backHref,
 }: Props) {
   const speech = useSyncExternalStore(
     () => () => {},
@@ -77,8 +84,21 @@ export default function GameShell({
 
   useEffect(() => () => {
     stopSpeaking();
+    stopAudioFiles();
     if (timer.current) clearTimeout(timer.current);
   }, []);
+
+  /** Nói một lượt. Gọi thẳng trong handler của cú chạm (luật iOS). */
+  function say(texts: string[]) {
+    const urls = clips ? texts.map((t) => clips[t]) : [];
+    if (clips && urls.every(Boolean)) {
+      stopSpeaking();
+      speakAudioFiles(urls.map((url) => ({ url })));
+    } else {
+      stopAudioFiles();
+      speakSegments(texts.map(vi));
+    }
+  }
 
   function react(m: Mood, text: string) {
     setMood(m);
@@ -97,7 +117,7 @@ export default function GameShell({
     setCorrectKey(null);
     setDone(false);
     react("idle", IDLE_TEXT);
-    speakSegments([vi(first.say)]);
+    say([first.say]);
   }
 
   function choose(key: string) {
@@ -107,7 +127,7 @@ export default function GameShell({
       if (!wrong.includes(key)) setWrong([...wrong, key]);
       setShakeKey(key);
       react("sad", "Thử lại nhé!");
-      speakSegments([vi("Chưa đúng, bé thử lại nhé."), vi(round.say)]);
+      say(["Chưa đúng, bé thử lại nhé.", round.say]);
       return;
     }
 
@@ -120,11 +140,7 @@ export default function GameShell({
     setCorrectKey(key);
     setStars(total);
     react("happy", praise);
-    speakSegments(
-      last
-        ? [vi(praise), vi(`Bé được ${total} ngôi sao!`)]
-        : [vi(praise), vi(next!.say)]
-    );
+    say(last ? [praise, `Bé được ${total} ngôi sao!`] : [praise, next!.say]);
 
     // Giữ ô đúng sáng lên một nhịp cho bé thấy (và cho táo kịp rơi) rồi mới
     // sang câu mới.
@@ -216,7 +232,7 @@ export default function GameShell({
               Chơi lại
             </button>
             <button
-              onClick={() => { stopSpeaking(); setLevel(null); setRound(null); }}
+              onClick={() => { stopSpeaking(); stopAudioFiles(); setLevel(null); setRound(null); }}
               className="bg-white border-2 border-b-[6px] border-gray-200 hover:border-blue-400 text-gray-700 font-bold text-lg px-6 py-3 rounded-2xl active:translate-y-1 active:border-b-2 transition-all"
             >
               Đổi cấp độ
@@ -294,10 +310,10 @@ export default function GameShell({
           {round.visual}
         </div>
 
-        {speech && (
+        {(speech || clips) && (
           <div className="flex justify-center mt-4">
             <button
-              onClick={() => speakSegments([vi(round.say)])}
+              onClick={() => say([round.say])}
               className="inline-flex items-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold px-5 py-2.5 rounded-full text-base border-b-4 border-orange-300 active:translate-y-0.5 active:border-b-2 transition-all"
             >
               🔊 Nghe lại
