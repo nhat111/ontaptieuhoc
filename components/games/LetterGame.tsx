@@ -11,7 +11,9 @@ const LEVELS = [
 function make(level: string, prev: GameRound | null): GameRound {
   const q = makeLetterQuestion(level as LetterLevel, prev?.answer);
   return {
-    say: q.sound,
+    // Đọc cả cụm "âm á" như cô giáo, không đưa riêng một chữ: giọng máy gặp
+    // "á" đứng một mình thì đánh vần thành "a sắc" thay vì đọc âm.
+    say: `Âm ${q.sound}`,
     visual: (
       <div className="text-center">
         <p className="text-6xl mb-2">👂</p>

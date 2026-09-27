@@ -7,7 +7,7 @@ import StarTotal from "@/components/games/StarTotal";
 export const metadata: Metadata = {
   title: "Trò chơi học Toán, Tiếng Việt lớp 1",
   description:
-    "Vừa học vừa chơi cho bé lớp 1: đếm hình làm quen phép cộng trừ, nghe và chọn chữ cái. Miễn phí, không cần đăng nhập.",
+    "Vừa học vừa chơi cho bé lớp 1: đếm hình, hái táo làm quen phép cộng trừ, nghe và chọn chữ cái. Miễn phí, không cần đăng nhập.",
   alternates: { canonical: "/lop/1/tro-choi" },
 };
 
@@ -19,6 +19,14 @@ const GAMES = [
     subject: "Toán",
     desc: "Đếm hình, cộng trừ trong phạm vi 10 bằng hình ảnh.",
     color: "from-rose-400 to-orange-400",
+  },
+  {
+    href: "hai-tao",
+    emoji: "🌳",
+    title: "Hái táo",
+    subject: "Toán",
+    desc: "Tính nhẩm rồi hái quả táo đúng — táo rơi vào giỏ!",
+    color: "from-lime-400 to-emerald-500",
   },
   {
     href: "nghe-chu",

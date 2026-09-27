@@ -19,7 +19,12 @@ function Items({ emoji, count, crossed = 0 }: { emoji: string; count: number; cr
       {Array.from({ length: count }, (_, i) => {
         const gone = i >= count - crossed;
         return (
-          <span key={i} className="relative inline-flex items-center justify-center">
+          <span
+            key={i}
+            // Từng hình bật ra lần lượt, như đang đếm.
+            className="relative inline-flex items-center justify-center drop-shadow motion-safe:animate-pop"
+            style={{ animationDelay: `${i * 70}ms` }}
+          >
             <span className={gone ? "opacity-30" : ""}>{emoji}</span>
             {gone && <span className="absolute text-3xl sm:text-4xl">❌</span>}
           </span>
