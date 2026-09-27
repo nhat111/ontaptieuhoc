@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
@@ -110,6 +111,20 @@ export default async function GradePage({
             ? "Đề kiểm tra theo chương · Luyện thi cuối kỳ"
             : "Bộ bài tập bám sát sách giáo khoa · Luyện tập từng chương, từng bài"}
         </p>
+
+        {gradeNum === 1 && (
+          <Link
+            href="/lop/1/tro-choi"
+            className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-orange-200 rounded-2xl px-4 py-3 mb-5 hover:shadow-md transition-shadow"
+          >
+            <span className="text-3xl">🎮</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold text-gray-800">Vừa học vừa chơi</span>
+              <span className="block text-sm text-gray-500">Trò chơi đếm hình và nghe chọn chữ cho bé lớp 1</span>
+            </span>
+            <span className="text-orange-500 font-bold">Chơi ›</span>
+          </Link>
+        )}
 
         {/* Toggle */}
         <div className="flex gap-2 mb-7">
