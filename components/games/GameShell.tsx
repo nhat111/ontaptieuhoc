@@ -11,6 +11,8 @@ export type GameRound = {
   visual: ReactNode;
   options: { key: string; label: ReactNode }[];
   answer: string;
+  /** Đọc sau lời khen khi bé chọn đúng, vd: tên hình ("cá"), tên dấu ("dấu sắc"). */
+  reveal?: string;
 };
 
 export type GameLevel = { id: string; label: string; hint: string };
@@ -35,7 +37,7 @@ interface Props {
   /** Lưới đáp án: 2 cột cho chữ to, 4 cột cho số. */
   optionCols?: 2 | 4;
   /**
-   * File đọc sẵn theo câu (vd: lib/letterClips.ts). Một lượt nói mà mọi câu
+   * File đọc sẵn theo câu (vd: lib/gameClips.ts). Một lượt nói mà mọi câu
    * đều có file thì phát file; thiếu câu nào thì cả lượt dùng giọng máy, để
    * không lẫn hai giọng trong một lượt.
    */
@@ -140,7 +142,8 @@ export default function GameShell({
     setCorrectKey(key);
     setStars(total);
     react("happy", praise);
-    say(last ? [praise, `Bé được ${total} ngôi sao!`] : [praise, next!.say]);
+    const reveal = round.reveal ? [round.reveal] : [];
+    say(last ? [praise, ...reveal, `Bé được ${total} ngôi sao!`] : [praise, ...reveal, next!.say]);
 
     // Giữ ô đúng sáng lên một nhịp cho bé thấy (và cho táo kịp rơi) rồi mới
     // sang câu mới.
@@ -156,7 +159,7 @@ export default function GameShell({
         setRound(next);
         setIndex(index + 1);
       }
-    }, 1200);
+    }, round.reveal ? 1800 : 1200);
   }
 
   const header = (

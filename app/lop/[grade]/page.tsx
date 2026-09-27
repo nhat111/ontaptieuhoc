@@ -120,7 +120,7 @@ export default async function GradePage({
             <span className="text-3xl">🎮</span>
             <span className="flex-1 min-w-0">
               <span className="block font-bold text-gray-800">Vừa học vừa chơi</span>
-              <span className="block text-sm text-gray-500">Đếm hình, hái táo, nghe chọn chữ cho bé lớp 1</span>
+              <span className="block text-sm text-gray-500">Toán và Tiếng Việt: đếm hình, hái táo, chọn chữ, chọn dấu</span>
             </span>
             <span className="text-orange-500 font-bold">Chơi ›</span>
           </Link>
