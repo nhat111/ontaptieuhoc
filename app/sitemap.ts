@@ -16,9 +16,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/de-thi`, lastModified, changeFrequency: "daily", priority: 0.9 },
-    // Trò chơi lớp 1 (câu hỏi sinh trên trình duyệt, nội dung trang cố định).
-    ...["", "/dem-hinh", "/hai-tao", "/nghe-chu", "/nhin-hinh", "/chon-dau"].map((p) => ({
-      url: `${SITE_URL}/lop/1/tro-choi${p}`,
+    // Trò chơi lớp 1, lớp 2 (câu hỏi sinh trên trình duyệt, nội dung trang cố định).
+    ...[
+      ...["", "/dem-hinh", "/hai-tao", "/nghe-chu", "/nhin-hinh", "/chon-dau"].map((p) => `/lop/1/tro-choi${p}`),
+      ...["", "/dong-ho", "/hai-tao", "/chinh-ta", "/loai-tu"].map((p) => `/lop/2/tro-choi${p}`),
+    ].map((path) => ({
+      url: `${SITE_URL}${path}`,
       lastModified,
       changeFrequency: "monthly" as const,
       priority: 0.7,

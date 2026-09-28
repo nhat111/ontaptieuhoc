@@ -112,15 +112,17 @@ export default async function GradePage({
             : "Bộ bài tập bám sát sách giáo khoa · Luyện tập từng chương, từng bài"}
         </p>
 
-        {gradeNum === 1 && (
+        {(gradeNum === 1 || gradeNum === 2) && (
           <Link
-            href="/lop/1/tro-choi"
+            href={`/lop/${gradeNum}/tro-choi`}
             className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-orange-200 rounded-2xl px-4 py-3 mb-5 hover:shadow-md transition-shadow"
           >
             <span className="text-3xl">🎮</span>
             <span className="flex-1 min-w-0">
               <span className="block font-bold text-gray-800">Vừa học vừa chơi</span>
-              <span className="block text-sm text-gray-500">Toán và Tiếng Việt: đếm hình, hái táo, chọn chữ, chọn dấu</span>
+              <span className="block text-sm text-gray-500">{gradeNum === 1
+                  ? "Toán và Tiếng Việt: đếm hình, hái táo, chọn chữ, chọn dấu"
+                  : "Xem đồng hồ, tính nhẩm, chính tả, phân loại từ"}</span>
             </span>
             <span className="text-orange-500 font-bold">Chơi ›</span>
           </Link>
