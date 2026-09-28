@@ -1,35 +1,30 @@
-// Xử lý bản thu ngay trên trình duyệt trước khi tải lên:
-// giải mã → trộn về mono → cắt khoảng lặng đầu/cuối → chỉnh âm lượng đều →
-// đổi về 22 kHz → WAV 16-bit.
+// Làm sạch bản thu ngay trên máy trước khi tải lên:
+// cắt khoảng lặng đầu/cuối → chỉnh âm lượng đều → hạ tần số lấy mẫu → WAV 16-bit.
 //
-// Vì sao WAV: MediaRecorder cho ra WebM/Opus (Chrome, Android) hoặc MP4/AAC
-// (Safari) — iPhone đời cũ không phát được WebM. WAV máy nào cũng phát, và một
-// câu vài giây ở 22 kHz mono chỉ cỡ 100–200KB.
+// Nhận mẫu PCM thô từ lib/micRecorder.ts — không giải mã file nén nào, nên
+// không vướng lỗi codec của từng trình duyệt (xem ghi chú ở micRecorder).
+//
+// Vì sao WAV: máy nào cũng phát được, và một câu vài giây ở ~24 kHz mono chỉ
+// cỡ 100–200KB.
 
-const RATE = 22050;
 const PAD_S = 0.15; // lặng hai đầu: vài máy nuốt mất phần đầu khi vừa phát
 const KEEP_BEFORE_S = 0.15; // giữ lại chút trước/sau tiếng nói để không cụt âm (phụ âm đầu, đuôi thanh)
 const KEEP_AFTER_S = 0.3;
 
-export async function toCleanWav(recording: Blob): Promise<{ wav: Blob; seconds: number }> {
-  const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const ctx = new Ctx();
-  let audio: AudioBuffer;
-  try {
-    audio = await ctx.decodeAudioData(await recording.arrayBuffer());
-  } finally {
-    ctx.close().catch(() => {});
-  }
-
-  // Trộn mono.
-  const mono = new Float32Array(audio.length);
-  for (let c = 0; c < audio.numberOfChannels; c++) {
-    const data = audio.getChannelData(c);
-    for (let i = 0; i < data.length; i++) mono[i] += data[i] / audio.numberOfChannels;
+export function pcmToCleanWav(input: Float32Array, inputRate: number): { wav: Blob; seconds: number } {
+  // Hạ về ~22–24 kHz bằng cách lấy trung bình từng cặp mẫu (đồng thời lọc bớt
+  // tần số cao), đủ cho giọng nói mà file nhẹ một nửa.
+  let rate = inputRate;
+  let mono = input;
+  while (rate >= 44100) {
+    const half = new Float32Array(Math.floor(mono.length / 2));
+    for (let i = 0; i < half.length; i++) half[i] = (mono[2 * i] + mono[2 * i + 1]) / 2;
+    mono = half;
+    rate = rate / 2;
   }
 
   // Tìm đoạn có tiếng theo năng lượng từng khung 10 ms.
-  const frame = Math.max(1, Math.round(audio.sampleRate * 0.01));
+  const frame = Math.max(1, Math.round(rate * 0.01));
   let peak = 0;
   for (const x of mono) peak = Math.max(peak, Math.abs(x));
   const thresh = Math.max(0.015, peak * 0.08);
@@ -46,31 +41,20 @@ export async function toCleanWav(recording: Blob): Promise<{ wav: Blob; seconds:
   }
   if (first < 0) throw new Error("silent");
 
-  const start = Math.max(0, first - Math.round(audio.sampleRate * KEEP_BEFORE_S));
-  const stop = Math.min(mono.length, last + Math.round(audio.sampleRate * KEEP_AFTER_S));
+  const start = Math.max(0, first - Math.round(rate * KEEP_BEFORE_S));
+  const stop = Math.min(mono.length, last + Math.round(rate * KEEP_AFTER_S));
   const voiced = mono.subarray(start, stop);
 
   // Đưa đỉnh về 0.9, nhưng không khuếch đại quá 4 lần (đỡ to cả tiếng ồn).
   const gain = peak > 0 ? Math.min(4, 0.9 / peak) : 1;
 
-  // Đổi tần số lấy mẫu bằng OfflineAudioContext (lọc chống răng cưa có sẵn).
-  const src = new AudioBuffer({ length: voiced.length, numberOfChannels: 1, sampleRate: audio.sampleRate });
-  src.copyToChannel(Float32Array.from(voiced, (x) => x * gain), 0);
-  const outLen = Math.ceil((voiced.length * RATE) / audio.sampleRate);
-  const off = new OfflineAudioContext(1, outLen, RATE);
-  const node = off.createBufferSource();
-  node.buffer = src;
-  node.connect(off.destination);
-  node.start();
-  const resampled = (await off.startRendering()).getChannelData(0);
-
-  const pad = Math.round(RATE * PAD_S);
-  const pcm = new Int16Array(new ArrayBuffer((pad + resampled.length + pad) * 2));
-  for (let i = 0; i < resampled.length; i++) {
-    const x = Math.max(-1, Math.min(1, resampled[i]));
+  const pad = Math.round(rate * PAD_S);
+  const pcm = new Int16Array(new ArrayBuffer((pad + voiced.length + pad) * 2));
+  for (let i = 0; i < voiced.length; i++) {
+    const x = Math.max(-1, Math.min(1, voiced[i] * gain));
     pcm[pad + i] = x < 0 ? x * 0x8000 : x * 0x7fff;
   }
-  return { wav: encodeWav(pcm, RATE), seconds: pcm.length / RATE };
+  return { wav: encodeWav(pcm, Math.round(rate)), seconds: pcm.length / rate };
 }
 
 function encodeWav(pcm: Int16Array<ArrayBuffer>, rate: number): Blob {

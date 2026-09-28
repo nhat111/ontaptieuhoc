@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadRecordedClips } from "@/lib/recordedClips";
-import { toCleanWav } from "@/lib/wavEncode";
+import { pcmToCleanWav } from "@/lib/wavEncode";
+import { MicRecorder } from "@/lib/micRecorder";
 
 export type VoiceGroup = { id: string; title: string; tip: string; texts: string[] };
 
@@ -11,9 +12,14 @@ interface Props {
   piper: Record<string, string>;
 }
 
-type Phase = "idle" | "recording" | "processing" | "review" | "saving";
+type Phase = "idle" | "recording" | "review" | "saving";
 
 const MAX_SECONDS = 8;
+
+/** Tên lỗi ngắn gọn, hiện kèm thông báo để dò được lỗi trên máy người dùng. */
+function errName(e: unknown): string {
+  return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+}
 
 /**
  * Thu giọng thật cho các câu trò chơi lớp 1, từng câu một:
@@ -39,9 +45,8 @@ export default function GameVoiceRecorder({ groups, piper }: Props) {
   const [onlyMissing, setOnlyMissing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
-  const streamRef = useRef<MediaStream | null>(null);
-  const recRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const micRef = useRef<MicRecorder | null>(null);
+  const recordingRef = useRef(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const playerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -58,7 +63,7 @@ export default function GameVoiceRecorder({ groups, piper }: Props) {
     return () => {
       alive = false;
       if (tickRef.current) clearInterval(tickRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      micRef.current?.dispose();
     };
   }, [order]);
 
@@ -82,54 +87,46 @@ export default function GameVoiceRecorder({ groups, piper }: Props) {
     setError(null);
     if (take) URL.revokeObjectURL(take.url);
     setTake(null);
+    micRef.current ??= new MicRecorder();
     try {
-      if (!streamRef.current) {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
-      }
-    } catch {
-      setError("Không mở được micro. Bấm vào biểu tượng ổ khoá trên thanh địa chỉ và cho phép dùng micro.");
+      await micRef.current.start();
+    } catch (e) {
+      setError(
+        `Không mở được micro. Bấm vào biểu tượng ổ khoá trên thanh địa chỉ và cho phép dùng micro. (${errName(e)})`
+      );
       return;
     }
-    const rec = new MediaRecorder(streamRef.current);
-    chunksRef.current = [];
-    rec.ondataavailable = (e) => {
-      if (e.data.size) chunksRef.current.push(e.data);
-    };
-    rec.onstop = async () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-      setPhase("processing");
-      try {
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
-        const { wav, seconds } = await toCleanWav(blob);
-        const url = URL.createObjectURL(wav);
-        setTake({ url, wav, seconds });
-        setPhase("review");
-        play(url);
-      } catch (e) {
-        setPhase("idle");
-        setError(
-          e instanceof Error && e.message === "silent"
-            ? "Không nghe thấy tiếng. Nói to hơn một chút hoặc lại gần micro rồi thu lại nhé."
-            : "Không xử lý được bản thu, thử thu lại nhé."
-        );
-      }
-    };
-    recRef.current = rec;
-    rec.start();
+    recordingRef.current = true;
     setElapsed(0);
     const t0 = Date.now();
     tickRef.current = setInterval(() => {
       const s = (Date.now() - t0) / 1000;
       setElapsed(s);
-      if (s >= MAX_SECONDS && rec.state === "recording") rec.stop();
+      if (s >= MAX_SECONDS) stopRecording();
     }, 100);
     setPhase("recording");
   }
 
+  /** Dừng thu và xử lý ngay (đồng bộ) — nhờ vậy vẫn còn trong cú chạm, iOS cho phát nghe lại. */
   function stopRecording() {
-    if (recRef.current?.state === "recording") recRef.current.stop();
+    if (!recordingRef.current || !micRef.current) return;
+    recordingRef.current = false;
+    if (tickRef.current) clearInterval(tickRef.current);
+    const { samples, sampleRate } = micRef.current.stop();
+    try {
+      const { wav, seconds } = pcmToCleanWav(samples, sampleRate);
+      const url = URL.createObjectURL(wav);
+      setTake({ url, wav, seconds });
+      setPhase("review");
+      play(url);
+    } catch (e) {
+      setPhase("idle");
+      setError(
+        e instanceof Error && e.message === "silent"
+          ? "Không nghe thấy tiếng. Nói to hơn một chút hoặc lại gần micro rồi thu lại nhé."
+          : `Không xử lý được bản thu, thử thu lại nhé. (${errName(e)})`
+      );
+    }
   }
 
   async function save() {
@@ -174,7 +171,7 @@ export default function GameVoiceRecorder({ groups, piper }: Props) {
 
   const done = order.filter((t) => recorded[t]).length;
   const group = groupOf.get(current);
-  const busy = phase === "recording" || phase === "processing" || phase === "saving";
+  const busy = phase === "recording" || phase === "saving";
 
   return (
     <div className="space-y-5">
@@ -235,7 +232,6 @@ export default function GameVoiceRecorder({ groups, piper }: Props) {
           )}
         </div>
 
-        {phase === "processing" && <p className="text-sm text-gray-500 mt-3">Đang xử lý bản thu…</p>}
         {take && <p className="text-xs text-gray-400 mt-2">Bản thu dài {take.seconds.toFixed(1)} giây (đã tự cắt khoảng lặng).</p>}
         {error && <p className="text-sm text-red-600 mt-3">✗ {error}</p>}
 
