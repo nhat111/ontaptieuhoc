@@ -93,6 +93,13 @@ export default async function GamesPage({ params }: { params: Promise<{ grade: s
             </Link>
           ))}
         </div>
+
+        {/* Lối vào cho người soạn nội dung; trang đích nằm trong /import nên có khoá. */}
+        <p className="text-center text-xs text-gray-400 mt-8">
+          <Link href="/import/giong-tro-choi" className="hover:text-blue-600">
+            🎙 Thu giọng đọc cho trò chơi (dành cho người soạn nội dung)
+          </Link>
+        </p>
       </div>
     </div>
   );

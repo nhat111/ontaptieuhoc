@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import { isSpeechSupported, speakSegments, stopSpeaking, type SpeakSegment } from "@/lib/speech";
 import { speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
+import { useRecordedClips } from "@/lib/recordedClips";
 import { addStars, pick } from "@/lib/games";
 import { Burst, Mascot, type Mood } from "./Fx";
 
@@ -90,10 +91,14 @@ export default function GameShell({
     if (timer.current) clearTimeout(timer.current);
   }, []);
 
+  // Bản thu giọng thật (thu ở /import/giong-tro-choi) đè lên file Piper cùng câu.
+  const recorded = useRecordedClips(!!clips);
+  const allClips = clips ? { ...clips, ...recorded } : undefined;
+
   /** Nói một lượt. Gọi thẳng trong handler của cú chạm (luật iOS). */
   function say(texts: string[]) {
-    const urls = clips ? texts.map((t) => clips[t]) : [];
-    if (clips && urls.every(Boolean)) {
+    const urls = allClips ? texts.map((t) => allClips[t]) : [];
+    if (allClips && urls.every(Boolean)) {
       stopSpeaking();
       speakAudioFiles(urls.map((url) => ({ url })));
     } else {
