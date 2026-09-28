@@ -478,6 +478,35 @@ export async function getAllExams(): Promise<ExamListItem[]> {
   }
 }
 
+// ---- Trang chủ: số liệu thật ----
+
+export type GradeStats = Record<number, { lessons: number; exams: number }>
+
+/**
+ * Số bài học / đề kiểm tra ĐÃ CÓ câu hỏi theo từng lớp. Trang chủ hiện số này
+ * thay cho con số viết cứng — phụ huynh bấm vào lớp thấy trống thì mất tin ngay.
+ * Lỗi thì trả rỗng: trang chủ hiện "Đang cập nhật" chứ không vỡ.
+ */
+export async function getGradeStats(): Promise<GradeStats> {
+  try {
+    const { data } = await getSupabaseServer()
+      .from('lessons')
+      .select('type, questions(count), chapters!inner(subjects!inner(grade))')
+    const stats: GradeStats = {}
+    for (const l of (data ?? []) as any[]) {
+      if ((l.questions?.[0]?.count ?? 0) === 0) continue
+      const grade = l.chapters?.subjects?.grade as number | undefined
+      if (!grade) continue
+      const s = (stats[grade] ??= { lessons: 0, exams: 0 })
+      if (l.type === 'exam') s.exams++
+      else s.lessons++
+    }
+    return stats
+  } catch {
+    return {}
+  }
+}
+
 // ---- Sitemap ----
 
 /**

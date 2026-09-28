@@ -51,6 +51,8 @@ interface Props {
 const ROUNDS = 10;
 const PRAISE = ["Giỏi quá!", "Đúng rồi!", "Tuyệt vời!", "Bé làm đúng rồi!"];
 const IDLE_TEXT = "Bé chọn đi nào!";
+// Nghỉ giữa các câu trong một lượt nói (khen → câu hỏi kế tiếp).
+const GAP_MS = 600;
 const vi = (text: string): SpeakSegment => ({ text, lang: "vi-VN" });
 
 /**
@@ -100,7 +102,7 @@ export default function GameShell({
     const urls = allClips ? texts.map((t) => allClips[t]) : [];
     if (allClips && urls.every(Boolean)) {
       stopSpeaking();
-      speakAudioFiles(urls.map((url) => ({ url })));
+      speakAudioFiles(urls.map((url) => ({ url })), { gapMs: GAP_MS });
     } else {
       stopAudioFiles();
       speakSegments(texts.map(vi));

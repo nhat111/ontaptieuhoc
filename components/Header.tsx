@@ -6,17 +6,19 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+// Menu cho phụ huynh và học sinh. Lối soạn bài/đề nằm trong menu tài khoản và
+// ở chân trang — không để chen vào đây, phụ huynh không cần tới.
 const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–5", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
-  { label: "Tạo bài học", href: "/import" },
-  { label: "Tạo đề kiểm tra", href: "/import/exam" },
+  { label: "Trò chơi lớp 1", href: "/lop/1/tro-choi" },
 ];
 
 function isActivePath(path: string, href: string) {
   if (href === "/") return path === "/";
-  if (href.startsWith("/#")) return path === "/";
+  // Neo trong trang chủ: không tô sáng, kẻo sáng cùng lúc với "Trang chủ".
+  if (href.startsWith("/#")) return false;
   return path.startsWith(href);
 }
 

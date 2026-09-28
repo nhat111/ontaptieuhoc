@@ -8,8 +8,8 @@
 
 const RATE = 22050;
 const PAD_S = 0.15; // lặng hai đầu: vài máy nuốt mất phần đầu khi vừa phát
-const KEEP_BEFORE_S = 0.08; // giữ lại chút trước/sau tiếng nói để không cụt âm
-const KEEP_AFTER_S = 0.15;
+const KEEP_BEFORE_S = 0.15; // giữ lại chút trước/sau tiếng nói để không cụt âm (phụ âm đầu, đuôi thanh)
+const KEEP_AFTER_S = 0.3;
 
 export async function toCleanWav(recording: Blob): Promise<{ wav: Blob; seconds: number }> {
   const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

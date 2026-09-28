@@ -2,12 +2,15 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 import { getSubjects } from "@/lib/subjects";
+import { getGradeStats } from "@/lib/db";
+
+// Số bài/đề đếm từ DB; làm mới mỗi 5 phút là đủ, không cần truy vấn mỗi lượt xem.
+export const revalidate = 300;
 
 const grades = [
   {
     grade: 1,
     emoji: "🌱",
-    totalTopics: 24,
     color: {
       bg: "bg-rose-50",
       badge: "bg-rose-100",
@@ -21,7 +24,6 @@ const grades = [
   {
     grade: 2,
     emoji: "🌿",
-    totalTopics: 30,
     color: {
       bg: "bg-orange-50",
       badge: "bg-orange-100",
@@ -35,7 +37,6 @@ const grades = [
   {
     grade: 3,
     emoji: "🌳",
-    totalTopics: 38,
     color: {
       bg: "bg-emerald-50",
       badge: "bg-emerald-100",
@@ -49,7 +50,6 @@ const grades = [
   {
     grade: 4,
     emoji: "🌟",
-    totalTopics: 42,
     color: {
       bg: "bg-blue-50",
       badge: "bg-blue-100",
@@ -63,7 +63,6 @@ const grades = [
   {
     grade: 5,
     emoji: "🏆",
-    totalTopics: 48,
     color: {
       bg: "bg-violet-50",
       badge: "bg-violet-100",
@@ -115,7 +114,10 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stats = await getGradeStats();
+  const total = Object.values(stats).reduce((n, g) => n + g.lessons + g.exams, 0);
+
   return (
     <div className="min-h-screen bg-gray-50 text-slate-800">
       <Header />
@@ -168,15 +170,16 @@ export default function HomePage() {
           </div>
 
           {/* Stats inline */}
-          <div className="mx-auto mt-12 grid max-w-md grid-cols-3 gap-2 sm:max-w-lg sm:gap-6">
+          <div className="mx-auto mt-12 flex max-w-md justify-center gap-2 sm:max-w-lg sm:gap-6">
             {[
-              { value: "500+", label: "Bộ đề" },
+              // Số thật; chưa đếm được (DB lỗi / chưa có bài) thì bỏ ô này đi.
+              ...(total > 0 ? [{ value: String(total), label: "Bài & đề" }] : []),
               { value: "5 lớp", label: "Lớp 1 → 5" },
               { value: "0đ", label: "Miễn phí" },
             ].map((s) => (
               <div
                 key={s.label}
-                className="group rounded-2xl border border-white/15 bg-white/10 px-2 py-3 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-lg hover:shadow-indigo-900/20"
+                className="group w-1/3 rounded-2xl border border-white/15 bg-white/10 px-2 py-3 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-lg hover:shadow-indigo-900/20"
               >
                 <div className="text-xl sm:text-2xl font-extrabold text-white transition-transform duration-200 group-hover:scale-105">
                   {s.value}
@@ -208,7 +211,7 @@ export default function HomePage() {
         {/* 2 cols mobile · 3 cols tablet · 5 cols desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {grades.map((g) => (
-            <GradeCard key={g.grade} {...g} subjects={[...getSubjects(g.grade)]} />
+            <GradeCard key={g.grade} {...g} subjects={[...getSubjects(g.grade)]} stats={stats[g.grade]} />
           ))}
         </div>
       </section>
@@ -233,87 +236,20 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative overflow-hidden border-t border-slate-200 bg-[#f6f6f7]">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-200/40 to-transparent" />
-        <div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="36" height="36" rx="9" fill="#2563EB"/>
-                <path d="M8 25V12C8 11.4 8.4 11 9 11H17V26H9C8.4 26 8 25.6 8 25Z" fill="white" fillOpacity="0.85"/>
-                <path d="M28 25V12C28 11.4 27.6 11 27 11H19V26H27C27.6 26 28 25.6 28 25Z" fill="white"/>
-                <rect x="17" y="11" width="2" height="15" rx="0.5" fill="#BFDBFE"/>
-                <path d="M21 19L23.5 22L27 16" stroke="#F97316" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <div className="leading-none">
-                <p className="text-lg font-extrabold text-blue-700">Ôn Tập Tiểu Học</p>
-                <p className="mt-0.5 text-xs text-slate-500">Luyện tập miễn phí cho học sinh Việt Nam</p>
-              </div>
-            </div>
-            <p className="text-sm leading-relaxed text-slate-600">
-              Học mỗi ngày 15 phút, bám sát chương trình từ lớp 1 đến lớp 5.
-            </p>
-          </div>
-
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
-              Về chúng tôi
-            </h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
-              <li><Link href="/" className="hover:text-blue-700">Giới thiệu</Link></li>
-              <li><Link href="/de-thi" className="hover:text-blue-700">Kho đề miễn phí</Link></li>
-              <li><Link href="/login" className="hover:text-blue-700">Đăng nhập</Link></li>
-            </ul>
+            <p className="font-extrabold text-blue-700">Ôn Tập Tiểu Học</p>
+            <p className="text-sm text-slate-500">Luyện tập miễn phí, bám sát chương trình lớp 1 đến lớp 5.</p>
           </div>
-
-          <div>
-            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
-              Luyện tập online
-            </h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
-              <li><Link href="/lop/1" className="hover:text-blue-700">Lớp 1–2</Link></li>
-              <li><Link href="/lop/3" className="hover:text-blue-700">Lớp 3–4</Link></li>
-              <li><Link href="/lop/5" className="hover:text-blue-700">Lớp 5</Link></li>
-              <li><Link href="/import/exam" className="hover:text-blue-700">Tạo đề kiểm tra</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="inline-block border-b-2 border-orange-400 pb-1 text-lg font-extrabold text-slate-800">
-              Kết nối
-            </h3>
-            <div className="mt-4 flex items-center gap-2.5">
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
-                aria-label="YouTube"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-                  <path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.13C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.57A3.02 3.02 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.13c1.88.57 9.38.57 9.38.57s7.5 0 9.38-.57a3.02 3.02 0 0 0 2.12-2.13A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.6 15.57V8.43L15.86 12 9.6 15.57Z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
-                aria-label="Facebook"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-                  <path d="M13.5 21v-8.2h2.75L16.7 9.9h-3.2V8.2c0-.84.24-1.42 1.46-1.42h1.86V3.9A24.7 24.7 0 0 0 14.1 3c-2.7 0-4.55 1.64-4.55 4.66v2.24H6.8v2.9h2.75V21h3.95Z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition hover:-translate-y-0.5 hover:bg-orange-600"
-                aria-label="TikTok"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-                  <path d="M17.9 8.46a6.86 6.86 0 0 1-4.02-1.29v5.88a5.12 5.12 0 1 1-4.43-5.07v2.58a2.57 2.57 0 1 0 1.86 2.49V2.5h2.57c.2 1.91 1.73 3.44 3.64 3.64v2.32c.13 0 .25 0 .38-.02Z" />
-                </svg>
-              </a>
-            </div>
-            <p className="mt-6 text-xs text-slate-500">© 2026 Ôn Tập Tiểu Học</p>
-          </div>
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
+            <Link href="/de-thi" className="hover:text-blue-700">Kho đề</Link>
+            <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi lớp 1</Link>
+            <Link href="/progress" className="hover:text-blue-700">Tiến độ học tập</Link>
+            <Link href="/import" className="hover:text-blue-700">Dành cho người soạn đề</Link>
+          </nav>
         </div>
+        <p className="pb-6 text-center text-xs text-slate-400">© 2026 Ôn Tập Tiểu Học</p>
       </footer>
     </div>
   );

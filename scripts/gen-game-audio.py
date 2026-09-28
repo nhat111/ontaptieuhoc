@@ -38,8 +38,13 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "public" / "audio" / "tro-choi"
 MANIFEST = ROOT / "lib" / "gameClips.ts"
 
-# Chậm hơn mặc định và bớt "rè" (noise thấp) cho bé lớp 1 nghe rõ.
+# Chậm hơn mặc định và bớt "rè" (noise thấp) cho bé lớp 1 nghe rõ. Tiếng đơn
+# (âm, từ một tiếng) kéo chậm hơn nữa: giọng này đọc tiếng cuối câu rất gọn.
 CFG = SynthesisConfig(length_scale=1.9, noise_scale=0.35, noise_w_scale=0.4)
+CFG_SLOW = SynthesisConfig(length_scale=2.4, noise_scale=0.35, noise_w_scale=0.4)
+# "Âm … á": đọc hai tiếng riêng rồi chèn khoảng nghỉ, như cô giáo đọc. Đọc liền
+# "Âm á" thì hai tiếng dính nhau, cả câu chưa tới 0,6 giây.
+PAUSE_S = 0.4
 
 # Câu cố định — khớp GameShell.tsx (PRAISE, thử lại, kết quả) và WordGame.tsx.
 PHRASES = [
@@ -86,16 +91,26 @@ def slug(text: str) -> str:
     return f"{base}-{hashlib.md5(text.encode()).hexdigest()[:6]}"
 
 
-def to_mp3(voice: PiperVoice, text: str) -> bytes:
+def synth(voice: PiperVoice, text: str, cfg: SynthesisConfig) -> tuple[int, bytes]:
     # Giọng vais1000 nuốt âm cuối nếu câu không có dấu kết thúc ("Âm ớ" chỉ
     # còn ~0,3 giây); thêm dấu chấm thì đọc trọn.
     spoken = text if text[-1] in ".!?" else text + "."
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
-        voice.synthesize_wav(spoken, w, syn_config=CFG)
+        voice.synthesize_wav(spoken, w, syn_config=cfg)
     buf.seek(0)
     with wave.open(buf, "rb") as w:
-        rate, pcm = w.getframerate(), w.readframes(w.getnframes())
+        return w.getframerate(), w.readframes(w.getnframes())
+
+
+def to_mp3(voice: PiperVoice, text: str) -> bytes:
+    if text.startswith("Âm "):
+        rate, a = synth(voice, "Âm", CFG)
+        _, b = synth(voice, text[3:], CFG_SLOW)
+        pcm = a + b"\x00\x00" * int(rate * PAUSE_S) + b
+    else:
+        single = " " not in text.strip(".!?")
+        rate, pcm = synth(voice, text, CFG_SLOW if single else CFG)
     # 150 ms lặng hai đầu: vài máy cắt mất phần đầu khi vừa bắt đầu phát.
     pad = b"\x00\x00" * int(rate * 0.15)
     enc = lameenc.Encoder()
