@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { createHash } from "crypto";
 import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { AUDIO_BUCKET as BUCKET, ensureAudioBucket } from "@/lib/audioStorage";
 
 // Nhận file giọng đọc sinh sẵn ngoài web (Piper, Audacity, thu âm thật…) và cất
 // vào kho, trả về URL để gắn cho câu hỏi.
@@ -9,7 +10,6 @@ import { blockIfNoImportAccess } from "@/lib/importAuth";
 // Ở đây KHÔNG sinh gì cả — chỉ nhận file có sẵn. Nhờ vậy không dính hạn mức của
 // bất kỳ dịch vụ nào.
 
-const BUCKET = "question-audio";
 // File WAV không nén khá nặng: một câu đọc 20 giây ở 22kHz đã cỡ 1MB. 25MB dư
 // sức cho một câu mà vẫn chặn được file nhầm (video, ảnh RAW…).
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -23,18 +23,6 @@ const ALLOWED = new Map<string, string>([
   ["audio/mp4", "m4a"],
   ["audio/x-m4a", "m4a"],
 ]);
-
-type Sb = ReturnType<typeof getSupabaseServer>;
-
-async function ensureBucket(sb: Sb): Promise<{ error?: string }> {
-  const { error } = await sb.storage.createBucket(BUCKET, {
-    public: true,
-    allowedMimeTypes: ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4"],
-  });
-  if (!error) return {};
-  if (/already exists|duplicate/i.test(error.message)) return {};
-  return { error: error.message };
-}
 
 export async function POST(req: NextRequest) {
   const blocked = await blockIfNoImportAccess(req);
@@ -78,7 +66,7 @@ export async function POST(req: NextRequest) {
   let { error } = await sb.storage.from(BUCKET).upload(path, bytes, opts);
 
   if (error && /bucket not found|not found/i.test(error.message)) {
-    const ensured = await ensureBucket(sb);
+    const ensured = await ensureAudioBucket(sb);
     if (ensured.error) {
       return NextResponse.json(
         { error: `Không tạo được bucket "${BUCKET}": ${ensured.error}` },
