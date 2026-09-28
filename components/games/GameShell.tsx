@@ -35,8 +35,8 @@ interface Props {
   make: (level: string, prev: GameRound | null) => GameRound;
   /** Trò chỉ chơi được bằng tai (nghe chữ) thì cần giọng đọc. */
   requiresSpeech?: boolean;
-  /** Lưới đáp án: 2 cột cho chữ to, 4 cột cho số. */
-  optionCols?: 2 | 4;
+  /** Lưới đáp án: 1 cột cho đáp án dài, 2 cột cho chữ to, 4 cột cho số. */
+  optionCols?: 1 | 2 | 4;
   /**
    * File đọc sẵn theo câu (vd: lib/gameClips.ts). Một lượt nói mà mọi câu
    * đều có file thì phát file; thiếu câu nào thì cả lượt dùng giọng máy, để
@@ -264,7 +264,11 @@ export default function GameShell({
       clearShake={() => setShakeKey(null)}
     />
   ) : (
-    <div className={`grid gap-3 mt-6 ${optionCols === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}`}>
+    <div
+      className={`grid gap-3 mt-6 ${
+        optionCols === 1 ? "grid-cols-1" : optionCols === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"
+      }`}
+    >
       {round.options.map((o, i) => {
         const isWrong = wrong.includes(o.key);
         const isRight = correctKey === o.key;

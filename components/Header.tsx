@@ -12,13 +12,15 @@ const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–5", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
-  { label: "Trò chơi lớp 1", href: "/lop/1/tro-choi" },
+  { label: "Trò chơi", href: "/lop/1/tro-choi" },
 ];
 
 function isActivePath(path: string, href: string) {
   if (href === "/") return path === "/";
   // Neo trong trang chủ: không tô sáng, kẻo sáng cùng lúc với "Trang chủ".
   if (href.startsWith("/#")) return false;
+  // Khu trò chơi có trang cho từng lớp (/lop/1/tro-choi, /lop/2/tro-choi…).
+  if (href.endsWith("/tro-choi")) return path.includes("/tro-choi");
   return path.startsWith(href);
 }
 

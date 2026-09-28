@@ -123,7 +123,7 @@ export default async function HomePage() {
                 "Miễn phí, không cần đăng nhập",
                 "Có giọng đọc cho bé chưa đọc thạo",
                 "Tải đề Word / PDF để in",
-                total > 0 ? `${total} bài và đề đã có câu hỏi` : "Lớp 1 có khu trò chơi học chữ, học số",
+                total > 0 ? `${total} bài và đề đã có câu hỏi` : "Lớp 1, lớp 2 có khu trò chơi học chữ, học số",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <span className="mt-0.5 text-green-600">✓</span>
@@ -158,9 +158,9 @@ export default async function HomePage() {
         >
           <span className="text-6xl motion-safe:group-hover:animate-jump" aria-hidden>🦉</span>
           <span className="flex-1">
-            <span className="block text-xl font-extrabold text-slate-800">Bé vào lớp 1? Học mà chơi cùng bạn Cú</span>
+            <span className="block text-xl font-extrabold text-slate-800">Lớp 1, lớp 2: học mà chơi cùng bạn Cú</span>
             <span className="mt-1 block text-slate-600">
-              Đếm hình, hái táo, nghe âm chọn chữ, chọn dấu thanh — có giọng đọc, chạm là chơi.
+              Đếm hình, nghe âm chọn chữ, chọn dấu thanh, xem đồng hồ, chính tả ch/tr, s/x… — chạm là chơi.
             </span>
           </span>
           <span className="font-bold text-blue-600 group-hover:underline">Vào chơi →</span>
@@ -176,7 +176,7 @@ export default async function HomePage() {
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
             <Link href="/de-thi" className="hover:text-blue-700">Kho đề</Link>
-            <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi lớp 1</Link>
+            <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi</Link>
             <Link href="/progress" className="hover:text-blue-700">Tiến độ học tập</Link>
             <Link href="/import" className="hover:text-blue-700">Dành cho người soạn đề</Link>
           </nav>

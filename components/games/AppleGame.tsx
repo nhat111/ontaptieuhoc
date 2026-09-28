@@ -1,11 +1,19 @@
 "use client";
 import GameShell, { type BoardProps, type GameRound } from "./GameShell";
 import { makeCountQuestion, type CountLevel } from "@/lib/games";
+import { calcWord, makeCalcQuestion, type CalcLevel } from "@/lib/games2";
 
-const LEVELS = [
+const LEVELS_1 = [
   { id: "cong5", label: "➕ Cộng trong phạm vi 5", hint: "Hái quả có kết quả phép cộng" },
   { id: "cong10", label: "➕ Cộng trong phạm vi 10", hint: "Tổng đến 10" },
   { id: "tru10", label: "➖ Trừ trong phạm vi 10", hint: "Hái quả có kết quả phép trừ" },
+];
+
+const LEVELS_2 = [
+  { id: "cong100", label: "➕ Cộng có nhớ (phạm vi 100)", hint: "38 + 25, 47 + 36…" },
+  { id: "tru100", label: "➖ Trừ có nhớ (phạm vi 100)", hint: "52 − 17, 80 − 36…" },
+  { id: "nhan25", label: "✖️ Bảng nhân 2 và 5", hint: "2 × 7, 5 × 4…" },
+  { id: "chia25", label: "➗ Bảng chia 2 và 5", hint: "18 : 2, 35 : 5…" },
 ];
 
 // Chỗ treo 4 quả trên tán cây, tính theo % khung cây.
@@ -18,19 +26,27 @@ const SLOTS = [
 // Miệng giỏ, nơi quả đúng rơi vào.
 const BASKET = { left: 50, top: 86 };
 
-function make(level: string): GameRound {
-  const q = makeCountQuestion(level as CountLevel);
-  const word = q.op === "+" ? "cộng" : "trừ";
+function round(a: number, sign: string, word: string, b: number, answer: number, options: number[]): GameRound {
   return {
-    say: `Hái quả táo có kết quả ${q.a} ${word} ${q.b}`,
+    say: `Hái quả táo có kết quả ${a} ${word} ${b}`,
     visual: (
       <p className="text-5xl font-extrabold text-gray-700 tracking-wide">
-        {q.a} {q.op === "+" ? "+" : "−"} {q.b} = <span className="text-orange-500">?</span>
+        {a} {sign} {b} = <span className="text-orange-500">?</span>
       </p>
     ),
-    options: q.options.map((n) => ({ key: String(n), label: n })),
-    answer: String(q.answer),
+    options: options.map((n) => ({ key: String(n), label: n })),
+    answer: String(answer),
   };
+}
+
+function make1(level: string): GameRound {
+  const q = makeCountQuestion(level as CountLevel);
+  return round(q.a, q.op === "+" ? "+" : "−", q.op === "+" ? "cộng" : "trừ", q.b, q.answer, q.options);
+}
+
+function make2(level: string): GameRound {
+  const q = makeCalcQuestion(level as CalcLevel);
+  return round(q.a, q.op, calcWord(q.op), q.b, q.answer, q.options);
 }
 
 /** Cây táo: tán, thân, cỏ, giỏ — vẽ bằng CSS, không dùng ảnh. */
@@ -85,13 +101,13 @@ function AppleTree({ round, wrong, correctKey, shakeKey, choose, clearShake }: B
   );
 }
 
-export default function AppleGame({ backHref }: { backHref: string }) {
+export default function AppleGame({ backHref, grade = 1 }: { backHref: string; grade?: 1 | 2 }) {
   return (
     <GameShell
-      title="Hái táo"
+      title={grade === 2 ? "Hái táo lớp 2" : "Hái táo"}
       intro="Tính nhẩm rồi chạm vào quả táo có kết quả đúng — táo sẽ rơi vào giỏ!"
-      levels={LEVELS}
-      make={make}
+      levels={grade === 2 ? LEVELS_2 : LEVELS_1}
+      make={grade === 2 ? make2 : make1}
       Board={AppleTree}
       backHref={backHref}
     />
