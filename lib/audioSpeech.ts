@@ -128,6 +128,11 @@ export type SpeakAudioOptions = {
    * lặng thì người nghe chỉ thấy bài đọc nhảy cóc mà không hiểu vì sao.
    */
   onIncomplete?: (skipped: number, total: number) => void;
+  /**
+   * Nghỉ giữa hai file, tính bằng ms. Trò chơi lớp 1 cần khoảng nghỉ rõ giữa
+   * lời khen và câu hỏi kế tiếp — nối liền nhau thì bé nghe như bị đọc dồn.
+   */
+  gapMs?: number;
 };
 
 /** Phát lần lượt các câu đã có file. Câu chưa gắn file thì bỏ qua. */
@@ -151,6 +156,11 @@ export function speakAudioFiles(
     for (const seg of segments) {
       if (gen !== generation) return;
       if (!seg.url) continue;
+      // Thẻ audio đã được mở khoá ở trên nên chờ ở đây không làm iOS chặn tiếng.
+      if (played > 0 && opts.gapMs) {
+        await new Promise((r) => setTimeout(r, opts.gapMs));
+        if (gen !== generation) return;
+      }
       opts.onSegmentStart?.(seg.mark);
       played++;
       try {

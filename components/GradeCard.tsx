@@ -11,10 +11,11 @@ interface GradeCardProps {
     ring: string;
   };
   emoji: string;
-  totalTopics: number;
+  /** Số bài / đề đã có câu hỏi (lib/db.ts → getGradeStats). Không có = chưa có bài. */
+  stats?: { lessons: number; exams: number };
 }
 
-export default function GradeCard({ grade, subjects, color, emoji, totalTopics }: GradeCardProps) {
+export default function GradeCard({ grade, subjects, color, emoji, stats }: GradeCardProps) {
   return (
     <a
       href={`/lop/${grade}`}
@@ -38,7 +39,11 @@ export default function GradeCard({ grade, subjects, color, emoji, totalTopics }
           Ôn tập lớp {grade}
         </h2>
 
-        <p className="text-[11px] text-slate-500/90 sm:text-xs">{totalTopics} chủ đề</p>
+        <p className="text-[11px] text-slate-500/90 sm:text-xs">
+          {stats && stats.lessons + stats.exams > 0
+            ? [stats.lessons && `${stats.lessons} bài`, stats.exams && `${stats.exams} đề`].filter(Boolean).join(" · ")
+            : "Đang cập nhật"}
+        </p>
 
         {/* Subjects — keep concise to avoid text-heavy cards */}
         <ul className="flex flex-wrap gap-1">

@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Biến CSS do next/font đặt ở app/layout.tsx.
+        sans: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],
+      },
       // Lắc nhẹ khi bé chọn sai (components/games/GameShell.tsx).
       // Hiệu ứng "2.5D" của trò chơi lớp 1 — chỉ CSS, không thư viện.
       keyframes: {

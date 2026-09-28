@@ -85,7 +85,7 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 
 ### Page routes
 
-- `/` — landing, grade picker. "Xem đề mẫu" CTA links to `/de-thi`.
+- `/` — landing, grade picker. "Xem đề mẫu" CTA links to `/de-thi`. Counts are **real** (`getGradeStats` in `lib/db.ts`: lessons/exams that have ≥1 question, per grade; ISR `revalidate = 300`) — never hard-code numbers here; a grade with none shows "Đang cập nhật". Public nav (`components/Header.tsx`) is for parents/kids only; editor entry points live in the account menu and the footer. Font is Be Vietnam Pro via `next/font` (`--font-be-vietnam`, wired as Tailwind `font-sans`).
 - `/de-thi` — server-rendered list of all `type='exam'` lessons grouped by grade.
 - `/lop/[grade]?subject=...&view=lesson|exam` — server-rendered subject tabs + chapters + leaderboard sidebar.
 - `/quiz?lessonId=X` — quiz page. Renders a Start screen first (title, # questions, duration, **Nghe cả bài** + speech-rate picker, and **Trộn thứ tự câu hỏi / đáp án** toggles persisted in `localStorage` via `lib/quizPrefs.ts`). Shuffling happens **once**, on Start (`shuffleQuiz` in `lib/quizData.ts`) — never mid-quiz, or questions would move under the child's hand. Shuffling options is safe because `correct_answer` stores the option **text**, not its index. Timer (`lessons.duration_minutes`, default 15) only begins after user clicks Start. On submit (manual or 0-timeout), posts to `/api/quiz-result`, stashes payload in `sessionStorage.quizResult`, redirects to `/result`.
