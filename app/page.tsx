@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
+import Footer from "@/components/Footer";
 import TryQuestion from "@/components/home/TryQuestion";
 import { GRADES, getSubjects } from "@/lib/subjects";
 import { getGradeStats } from "@/lib/db";
@@ -105,24 +106,7 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-extrabold text-blue-700">Ôn Tập Tiểu Học</p>
-            <p className="text-sm text-slate-500">Luyện tập miễn phí, bám sát chương trình lớp 1 đến lớp 5.</p>
-          </div>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
-            <Link href="/de-thi" className="hover:text-blue-700">Kho đề</Link>
-            <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi</Link>
-            <Link href="/huong-dan" className="hover:text-blue-700">Hướng dẫn</Link>
-            <Link href="/gop-y" className="hover:text-blue-700">Góp ý &amp; liên hệ</Link>
-            <Link href="/progress" className="hover:text-blue-700">Tiến độ học tập</Link>
-            <Link href="/import" className="hover:text-blue-700">Dành cho người soạn đề</Link>
-          </nav>
-        </div>
-        <p className="pb-6 text-center text-xs text-slate-400">© 2026 Ôn Tập Tiểu Học</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
