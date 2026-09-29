@@ -505,6 +505,13 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/huong-dan/soan-de"
+              target="_blank"
+              className="text-sm font-semibold text-gray-500 hover:text-blue-600 px-2 py-2.5"
+            >
+              ❓ Hướng dẫn soạn đề
+            </Link>
             <button
               onClick={() => setPasteOpen(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all"

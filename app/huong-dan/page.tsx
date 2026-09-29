@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import Header from "@/components/Header";
+import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/GuidePage";
 
 export const metadata: Metadata = {
   title: "Hướng dẫn sử dụng",
@@ -12,16 +11,7 @@ export const metadata: Metadata = {
 // Chỉ mô tả những gì web thật sự có — tên nút viết đúng như trên giao diện
 // để phụ huynh nhìn là thấy. Đổi nhãn nút ở đâu thì sửa luôn ở đây.
 
-type Step = {
-  id: string;
-  emoji: string;
-  title: string;
-  points: React.ReactNode[];
-  tip?: string;
-  cta?: { href: string; label: string };
-};
-
-const STEPS: Step[] = [
+const STEPS: GuideStep[] = [
   {
     id: "chon-lop",
     emoji: "🎒",
@@ -102,7 +92,7 @@ const STEPS: Step[] = [
   },
 ];
 
-const FAQ: { q: string; a: string }[] = [
+const FAQ: GuideFaq[] = [
   { q: "Web có mất phí không?", a: "Không. Làm bài, nghe đọc, tải đề và trò chơi đều miễn phí." },
   { q: "Có cần tạo tài khoản không?", a: "Không cần. Tài khoản chỉ để lưu lại kết quả và xem tiến độ học tập." },
   {
@@ -115,109 +105,24 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
-export default function GuidePage() {
+export default function ParentGuidePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      {/* Đầu trang */}
-      <section className="border-b border-amber-100 bg-[#FFF9EE]">
-        <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-10">
-          <span className="text-6xl motion-safe:animate-float" aria-hidden>🦉</span>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Hướng dẫn sử dụng</h1>
-            <p className="mt-1 text-gray-600">
-              Lần đầu dùng Ôn Tập Tiểu Học? Bạn Cú chỉ cho phụ huynh từng bước — mất khoảng 2 phút đọc.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        {/* Mục lục */}
-        <nav aria-label="Mục lục" className="mb-8 flex flex-wrap gap-2">
-          {STEPS.map((s, i) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-blue-300 hover:text-blue-600"
-            >
-              {i + 1}. {s.title.replace(/ \(.*\)$/, "")}
-            </a>
-          ))}
-          <a
-            href="#hoi-dap"
-            className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-blue-300 hover:text-blue-600"
-          >
-            ❓ Hỏi đáp
-          </a>
-        </nav>
-
-        {/* Các bước */}
-        <ol className="space-y-5">
-          {STEPS.map((s, i) => (
-            <li key={s.id} id={s.id} className="scroll-mt-24 rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-sm">
-              <div className="mb-3 flex items-center gap-3">
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl" aria-hidden>
-                  {s.emoji}
-                </span>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Bước {i + 1}</p>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">{s.title}</h2>
-                </div>
-              </div>
-              <ul className="space-y-2 text-[15px] leading-relaxed text-gray-700">
-                {s.points.map((p, j) => (
-                  <li key={j} className="flex gap-2">
-                    <span className="mt-0.5 text-green-600">✓</span>
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-              {s.tip && (
-                <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  💡 {s.tip}
-                </p>
-              )}
-              {s.cta && (
-                <Link
-                  href={s.cta.href}
-                  className="mt-4 inline-flex items-center gap-1 rounded-2xl border-b-4 border-blue-800 bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-blue-500 active:translate-y-0.5 active:border-b-2"
-                >
-                  {s.cta.label} →
-                </Link>
-              )}
-            </li>
-          ))}
-        </ol>
-
-        {/* Hỏi đáp */}
-        <section id="hoi-dap" className="scroll-mt-24 mt-10">
-          <h2 className="mb-4 text-xl font-extrabold text-gray-800">❓ Hỏi đáp nhanh</h2>
-          <div className="space-y-3">
-            {FAQ.map((f) => (
-              <details key={f.q} className="group rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-gray-800">
-                  {f.q}
-                  <span className="text-gray-400 transition-transform group-open:rotate-180">▾</span>
-                </summary>
-                <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-10 rounded-3xl border border-amber-200 bg-[#FFF9EE] p-6 text-center">
-          <p className="text-lg font-extrabold text-gray-800">Sẵn sàng rồi! 🎉</p>
-          <p className="mt-1 text-gray-600">Chọn lớp của con để bắt đầu bài đầu tiên.</p>
-          <Link
-            href="/#grades"
-            className="mt-4 inline-flex rounded-2xl border-b-4 border-blue-800 bg-blue-600 px-6 py-3 font-bold text-white transition-all hover:bg-blue-500 active:translate-y-0.5 active:border-b-2"
-          >
-            Chọn lớp của con
-          </Link>
-        </div>
-      </div>
-    </div>
+    <GuidePage
+      title="Hướng dẫn sử dụng"
+      intro="Lần đầu dùng Ôn Tập Tiểu Học? Bạn Cú chỉ cho phụ huynh từng bước — mất khoảng 2 phút đọc."
+      steps={STEPS}
+      faq={FAQ}
+      switchTo={{
+        href: "/huong-dan/soan-de",
+        label: "✍️ Thầy cô, phụ huynh muốn tự soạn bài / đề?",
+        desc: "Xem hướng dẫn soạn đề: gõ câu hỏi, dán cả đề, quét ảnh đề, sửa đề, gắn giọng đọc.",
+      }}
+      outro={{
+        title: "Sẵn sàng rồi! 🎉",
+        desc: "Chọn lớp của con để bắt đầu bài đầu tiên.",
+        href: "/#grades",
+        label: "Chọn lớp của con",
+      }}
+    />
   );
 }
