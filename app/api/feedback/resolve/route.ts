@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { blockIfNoImportAccess, isImportProtected } from "@/lib/importAuth";
 
 // Đánh dấu góp ý đã xử lý / chưa xử lý — chỉ người có mật khẩu soạn đề.
+// Chưa đặt IMPORT_PASSWORD thì từ chối luôn (giống hộp thư /import/gop-y),
+// không mở toang như các route soạn đề khác.
 export async function POST(req: NextRequest) {
+  if (!isImportProtected()) {
+    return NextResponse.json({ error: "Chưa đặt mật khẩu soạn đề nên hộp thư góp ý đang khoá." }, { status: 403 });
+  }
   const blocked = await blockIfNoImportAccess(req);
   if (blocked) return blocked;
 
