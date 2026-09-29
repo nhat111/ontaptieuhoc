@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Shorter feature index: `.claude/ai-context/README.md` · Codegen skill: `.claude/skills/gen-code-ontaptieuhoc/SKILL.md`.
+Shorter feature index: `.claude/ai-context/README.md` · Codegen skill: `.claude/skills/gen-code-ontaptieuhoc/SKILL.md` · Kid-friendly UI skill: `.claude/skills/ui-tre-em/SKILL.md` (on top of the vendored `ui-ux-pro-max` design skill).
 
 ## Project
 

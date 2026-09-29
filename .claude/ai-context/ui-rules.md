@@ -2,6 +2,7 @@
 
 ## Design
 - Minimal, clean, educational — mobile-first
+- Làm UI cho bé: theo skill `.claude/skills/ui-tre-em/SKILL.md`
 - Toàn bộ copy user-facing: **tiếng Việt**
 
 ## Color system
