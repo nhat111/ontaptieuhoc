@@ -16,6 +16,7 @@ Tài liệu ngắn cho agent/LLM khi làm việc trong repo. **Nguồn chính x�
 | Trang lớp, leaderboard | `feature-specs/lesson.md` |
 | Đọc thành tiếng, giọng gắn sẵn | `feature-specs/tts-audio.md` |
 | **Khoá `/import` + API ghi** | `feature-specs/access-control.md` |
+| Đăng nhập / đăng ký / quên mật khẩu | `feature-specs/auth.md` |
 | Auth, progress | `flows/auth-flow.md` |
 | DB columns, encoding đáp án, blob `explanation` | `database/schema.md` |
 | RLS / service role | `database/rls-rules.md` |
