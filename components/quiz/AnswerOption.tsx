@@ -9,6 +9,10 @@ interface AnswerOptionProps {
   variant?: "radio" | "checkbox";
 }
 
+/**
+ * Một đáp án dạng thẻ to, cả thẻ là vùng bấm (ngón tay bé dễ trúng), có ô chữ
+ * cái A/B/C/D giống trang kết quả. Chọn thì thẻ chuyển xanh và "lún" xuống.
+ */
 export default function AnswerOption({
   option,
   index,
@@ -18,31 +22,27 @@ export default function AnswerOption({
 }: AnswerOptionProps) {
   const isCheckbox = variant === "checkbox";
   return (
-    <label
+    <button
+      type="button"
+      role={isCheckbox ? "checkbox" : "radio"}
+      aria-checked={isSelected}
       onClick={onSelect}
-      className="flex items-center gap-3 cursor-pointer group py-1.5"
+      className={`flex w-full min-h-[52px] items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left transition-all ${
+        isSelected
+          ? "border-blue-500 bg-blue-50 border-b-2 translate-y-0.5"
+          : "border-gray-200 border-b-[5px] bg-white hover:border-blue-300 active:translate-y-0.5 active:border-b-2"
+      }`}
     >
-      <div
-        className={`w-5 h-5 ${isCheckbox ? "rounded-md" : "rounded-full"} border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-          isSelected
-            ? "border-orange-500 bg-orange-500"
-            : "border-gray-300 group-hover:border-orange-400"
-        }`}
+      <span
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center text-sm font-extrabold transition-colors ${
+          isCheckbox ? "rounded-lg" : "rounded-full"
+        } ${isSelected ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500"}`}
       >
-        {isSelected && (
-          isCheckbox ? (
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <div className="w-2 h-2 rounded-full bg-white" />
-          )
-        )}
-      </div>
-
-      <span className={`text-sm leading-relaxed ${isSelected ? "font-medium text-gray-900" : "text-gray-700"}`}>
-        {LABELS[index]}. <MathText text={option} />
+        {isSelected && isCheckbox ? "✓" : LABELS[index]}
       </span>
-    </label>
+      <span className={`text-base leading-snug ${isSelected ? "font-semibold text-blue-900" : "text-gray-800"}`}>
+        <MathText text={option} />
+      </span>
+    </button>
   );
 }

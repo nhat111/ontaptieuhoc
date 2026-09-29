@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
+import { Mascot } from "@/components/games/Fx";
+import { gradeTheme } from "@/lib/gradeTheme";
 import {
   getShuffleOptions,
   getShuffleQuestions,
@@ -42,6 +44,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   const [questions, setQuestions] = useState(initialQuestions);
   const lesson = initialLesson;
   const durationMinutes = lesson.durationMinutes ?? 15;
+  const theme = gradeTheme(lesson.grade);
   const totalSeconds = durationMinutes * 60;
 
   const [started, setStarted] = useState(false);
@@ -272,12 +275,12 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             <span className="text-orange-500 font-medium">{lesson.title}</span>
           </nav>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 mb-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden text-center">
+            {/* Dải màu theo lớp + bạn Cú chào bé */}
+            <div className={`${theme.soft} border-b ${theme.border} px-6 pt-6 pb-2`}>
+              <Mascot mood="idle" text="Sẵn sàng chưa nào?" beat={0} />
             </div>
+            <div className="p-6 sm:p-8">
             <h1 className="text-2xl font-extrabold text-gray-800 mb-1">{lesson.title}</h1>
             {(lesson.grade || lesson.subjectName) && (
               <p className="text-sm text-gray-500 mb-6">
@@ -287,12 +290,14 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             )}
 
             <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-7">
-              <div className="bg-gray-50 rounded-xl border border-gray-100 py-4">
-                <div className="text-2xl font-extrabold text-gray-800">{questions.length}</div>
+              <div className={`${theme.soft} rounded-2xl border ${theme.border} py-4`}>
+                <div className="text-2xl">📝</div>
+                <div className={`text-2xl font-extrabold ${theme.text}`}>{questions.length}</div>
                 <div className="text-xs text-gray-500 mt-0.5">Câu hỏi</div>
               </div>
-              <div className="bg-gray-50 rounded-xl border border-gray-100 py-4">
-                <div className="text-2xl font-extrabold text-gray-800">{durationMinutes}</div>
+              <div className={`${theme.soft} rounded-2xl border ${theme.border} py-4`}>
+                <div className="text-2xl">⏰</div>
+                <div className={`text-2xl font-extrabold ${theme.text}`}>{durationMinutes}</div>
                 <div className="text-xs text-gray-500 mt-0.5">Phút</div>
               </div>
             </div>
@@ -363,7 +368,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             <button
               onClick={start}
               disabled={questions.length === 0}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base px-10 py-3.5 rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 mx-auto"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-lg px-10 py-4 rounded-2xl border-b-[6px] border-blue-800 active:translate-y-1 active:border-b-2 transition-all flex items-center justify-center gap-2 mx-auto"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -421,6 +426,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                 </svg>
                 Gắn giọng đọc
               </a>
+            </div>
             </div>
           </div>
         </div>
