@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import ResolveButton from "@/components/feedback/ResolveButton";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { reasonLabel } from "@/lib/feedback";
+import { IMPORT_COOKIE, hasImportAccess, isImportProtected } from "@/lib/importAuth";
 
 // Hộp thư góp ý cho người quản lý — nằm trong /import nên có khoá mật khẩu
 // (app/import/layout.tsx). Đọc bằng service role vì bảng feedback bật RLS.
@@ -45,11 +48,38 @@ async function load(showAll: boolean): Promise<{ rows: Row[]; error?: string }> 
   }
 }
 
+function Locked() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="mx-auto max-w-xl px-4 py-12">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+          <p className="text-3xl">🔒</p>
+          <h1 className="mt-2 text-xl font-extrabold">Hộp thư góp ý đang khoá</h1>
+          <p className="mt-2 text-sm leading-relaxed">
+            Góp ý có thể chứa số điện thoại, email của phụ huynh nên chỉ mở khi web đã đặt mật khẩu soạn đề.
+            Thêm biến môi trường <code className="rounded bg-white px-1">IMPORT_PASSWORD</code> (Vercel → Settings →
+            Environment Variables), deploy lại, rồi đăng nhập khu soạn đề bằng mật khẩu đó.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function when(iso: string) {
   return new Date(iso).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" });
 }
 
 export default async function FeedbackInboxPage({ searchParams }: { searchParams: Promise<{ tat_ca?: string }> }) {
+  // Góp ý chứa SĐT/email người dùng để lại, nên khác phần còn lại của /import:
+  // chưa đặt mật khẩu thì KHÔNG mở cho ai cả (không theo kiểu "chưa đặt → mở").
+  // Kiểm tra cookie lại ở đây chứ không chỉ trông vào layout, để trang này tự
+  // đứng vững nếu sau này ai đó chuyển nó ra khỏi /import.
+  if (!isImportProtected()) return <Locked />;
+  const jar = await cookies();
+  if (!(await hasImportAccess(jar.get(IMPORT_COOKIE)?.value))) redirect("/import-khoa");
+
   const { tat_ca } = await searchParams;
   const showAll = tat_ca === "1";
   const { rows, error } = await load(showAll);
