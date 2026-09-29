@@ -183,3 +183,23 @@ CREATE TABLE IF NOT EXISTS profiles (
   note          TEXT,          -- free-text (e.g. transfer ref) for manual activation
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- GÓP Ý / BÁO LỖI (form /gop-y và nút "Báo lỗi câu này" ở trang kết quả)
+-- Xem ở /import/gop-y (có mật khẩu soạn đề). Chỉ service role đọc/ghi.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS feedback (
+  id             BIGSERIAL PRIMARY KEY,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  kind           TEXT NOT NULL CHECK (kind IN ('question', 'general')),
+  reason         TEXT,                 -- dap-an-sai | de-sai | thieu-hinh | khac (chỉ với kind='question')
+  message        TEXT,
+  contact        TEXT,                 -- email / SĐT người gửi để lại, không bắt buộc
+  lesson_id      INT REFERENCES lessons(id) ON DELETE SET NULL,
+  question_index INT,                  -- câu số mấy trong bài (1-based)
+  -- Chụp lại nội dung câu: /api/update-lesson xoá và chèn lại câu hỏi nên id câu đổi sau mỗi lần sửa.
+  question_text  TEXT,
+  resolved       BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;  -- không có policy: anon không đọc/ghi được, chỉ service role

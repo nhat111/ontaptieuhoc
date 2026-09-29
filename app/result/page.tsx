@@ -91,7 +91,7 @@ export default function ResultPage() {
         <h2 className="text-base font-bold text-gray-700 mb-3">Chi tiết từng câu</h2>
         <div className="space-y-3 mb-8">
           {questions.map((q, i) => (
-            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} />
+            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} lessonId={lessonId} />
           ))}
         </div>
 

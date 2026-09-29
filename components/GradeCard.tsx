@@ -1,73 +1,50 @@
+import Link from "next/link";
+import { gradeTheme } from "@/lib/gradeTheme";
+
 interface GradeCardProps {
   grade: number;
   subjects: string[];
-  color: {
-    bg: string;
-    badge: string;
-    text: string;
-    border: string;
-    hover: string;
-    accent: string;
-    ring: string;
-  };
-  emoji: string;
   /** Số bài / đề đã có câu hỏi (lib/db.ts → getGradeStats). Không có = chưa có bài. */
   stats?: { lessons: number; exams: number };
 }
 
-export default function GradeCard({ grade, subjects, color, emoji, stats }: GradeCardProps) {
+/**
+ * Thẻ chọn lớp ở trang chủ. Màu, biểu tượng lấy từ lib/gradeTheme.ts để đồng
+ * bộ với trang lớp. Điện thoại: một hàng ngang (5 thẻ xếp dọc gọn gàng, không
+ * lệch cột); màn rộng: thẻ đứng, 5 cột.
+ */
+export default function GradeCard({ grade, subjects, stats }: GradeCardProps) {
+  const theme = gradeTheme(grade);
+  const hasContent = !!stats && stats.lessons + stats.exams > 0;
+  const counts = hasContent
+    ? [stats!.lessons && `${stats!.lessons} bài`, stats!.exams && `${stats!.exams} đề`].filter(Boolean).join(" · ")
+    : "Đang cập nhật";
+
   return (
-    <a
+    <Link
       href={`/lop/${grade}`}
-      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border ${color.border} ${color.bg} shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg`}
+      className={`group flex items-center gap-4 rounded-3xl border-2 border-b-[6px] ${theme.border} ${theme.edge} bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:border-b-2 lg:flex-col lg:items-stretch lg:gap-3 lg:p-5`}
     >
-      {/* Accent top bar */}
-      <div className={`h-1.5 w-full bg-gradient-to-r ${color.accent} opacity-90`} />
+      <span
+        className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ${theme.soft} text-3xl transition-transform group-hover:scale-110 lg:h-16 lg:w-16 lg:text-4xl`}
+        aria-hidden
+      >
+        {theme.emoji}
+      </span>
 
-      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4">
-        {/* Emoji + badge row */}
-        <div className="flex items-center justify-between">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${color.badge} ${color.text}`}>
-            <span className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${color.accent}`} />
-            Lớp {grade}
-          </span>
-          <span className="text-2xl leading-none sm:text-3xl">{emoji}</span>
-        </div>
+      <span className="min-w-0 flex-1">
+        <span className={`block text-2xl font-extrabold leading-tight ${theme.text}`}>Lớp {grade}</span>
+        <span className={`mt-0.5 block text-sm font-semibold ${hasContent ? "text-slate-700" : "text-slate-400"}`}>
+          {counts}
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-slate-400">{subjects.join(" · ")}</span>
+      </span>
 
-        {/* Title */}
-        <h2 className="text-base font-extrabold leading-tight text-slate-800 sm:text-lg">
-          Ôn tập lớp {grade}
-        </h2>
-
-        <p className="text-[11px] text-slate-500/90 sm:text-xs">
-          {stats && stats.lessons + stats.exams > 0
-            ? [stats.lessons && `${stats.lessons} bài`, stats.exams && `${stats.exams} đề`].filter(Boolean).join(" · ")
-            : "Đang cập nhật"}
-        </p>
-
-        {/* Subjects — keep concise to avoid text-heavy cards */}
-        <ul className="flex flex-wrap gap-1">
-          {subjects.slice(0, 2).map((subject) => (
-            <li
-              key={subject}
-              className={`max-w-[88px] truncate rounded-lg border border-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight sm:max-w-none sm:text-xs ${color.badge} ${color.text}`}
-            >
-              {subject}
-            </li>
-          ))}
-          {subjects.length > 2 && (
-            <li className={`rounded-lg border border-white/70 px-2 py-0.5 text-[10px] font-medium leading-tight sm:text-xs ${color.badge} ${color.text}`}>
-              +{subjects.length - 2} môn
-            </li>
-          )}
-        </ul>
-
-        {/* CTA */}
-        <div className={`mt-auto flex items-center gap-1 pt-1 text-xs font-semibold transition-colors ${color.hover}`}>
-          <span>Bắt đầu</span>
-          <span className="transition-transform group-hover:translate-x-1">→</span>
-        </div>
-      </div>
-    </a>
+      {/* Mũi tên ở hàng ngang (điện thoại), nút "Vào học" ở thẻ đứng (màn rộng) */}
+      <span className={`text-2xl font-bold ${theme.text} lg:hidden`} aria-hidden>›</span>
+      <span className={`hidden rounded-xl ${theme.solid} py-2 text-center text-sm font-bold text-white lg:block`}>
+        Vào học →
+      </span>
+    </Link>
   );
 }

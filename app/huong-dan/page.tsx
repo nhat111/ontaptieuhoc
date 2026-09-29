@@ -93,6 +93,10 @@ const STEPS: GuideStep[] = [
 ];
 
 const FAQ: GuideFaq[] = [
+  {
+    q: "Thấy câu hỏi sai đáp án, hoặc muốn góp ý?",
+    a: "Ở trang kết quả, mỗi câu có nút “🚩 Báo lỗi câu này” — web tự gửi kèm bài và số câu. Góp ý chung thì vào trang Góp ý & liên hệ (link ở cuối trang chủ).",
+  },
   { q: "Web có mất phí không?", a: "Không. Làm bài, nghe đọc, tải đề và trò chơi đều miễn phí." },
   { q: "Có cần tạo tài khoản không?", a: "Không cần. Tài khoản chỉ để lưu lại kết quả và xem tiến độ học tập." },
   {

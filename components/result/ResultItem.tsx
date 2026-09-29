@@ -2,6 +2,7 @@ import { Question, LABELS, scoreAnswer } from "@/lib/quizData";
 import MathText from "@/components/MathText";
 import SpeakButton from "@/components/SpeakButton";
 import { questionSegments } from "@/lib/speech";
+import ReportButton from "@/components/feedback/ReportButton";
 
 const STATUS = {
   skipped: { border: "border-gray-200", icon: "—", cls: "bg-gray-200 text-gray-600" },
@@ -13,6 +14,8 @@ interface ResultItemProps {
   question: Question;
   userAnswer: string | null;
   index: number;
+  /** Bài đang xem kết quả — gửi kèm khi báo lỗi câu. */
+  lessonId?: number;
 }
 
 function parseList(json: string): string[] {
@@ -24,7 +27,7 @@ function parseList(json: string): string[] {
   }
 }
 
-export default function ResultItem({ question, userAnswer, index }: ResultItemProps) {
+export default function ResultItem({ question, userAnswer, index, lessonId }: ResultItemProps) {
   const isSkipped = userAnswer === null || userAnswer === "" || userAnswer === "[]";
   const isCorrect = !isSkipped && scoreAnswer(question, userAnswer);
   const status = STATUS[isSkipped ? "skipped" : isCorrect ? "correct" : "incorrect"];
@@ -101,6 +104,10 @@ export default function ResultItem({ question, userAnswer, index }: ResultItemPr
           </div>
         </div>
       )}
+
+      <div className="ml-10">
+        <ReportButton lessonId={lessonId} questionIndex={index + 1} questionText={question.question} />
+      </div>
     </div>
   );
 }
@@ -136,7 +143,7 @@ function McqMultiBody({ question, userAnswer }: { question: Question; userAnswer
             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${circleCls}`}>
               {LABELS[i]}
             </span>
-            <span className="truncate"><MathText text={opt} /></span>
+            <span className="min-w-0 break-words"><MathText text={opt} /></span>
             {isRight && <span className="ml-auto font-bold">✓</span>}
           </div>
         );
