@@ -27,6 +27,6 @@ Tài khoản là **không bắt buộc**: chỉ dùng cho tiến độ học t�
    - **Site URL** = tên miền thật (trùng `NEXT_PUBLIC_SITE_URL`), **không có dấu `/` ở cuối**; nếu có, `{{ .SiteURL }}/auth/callback` trong mẫu email sẽ thành `//auth/callback`.
    - **Redirect URLs** thêm `https://<tên-miền>/auth/callback` (và `http://localhost:3000/auth/callback` cho dev).
    - Thiếu mục này thì Supabase bỏ qua `emailRedirectTo`, và link trong email trỏ về Site URL (thường là localhost).
-2. **(Tuỳ chọn) Email Templates**: để link mở được trên mọi máy, đổi link trong mẫu:
+2. **Email Templates**: bản tiếng Việt có sẵn trong `supabase/email-templates/` (xem README ở đó). Hoặc tối thiểu: để link mở được trên mọi máy, đổi link trong mẫu:
    - Confirm signup: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email`
    - Reset password: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`
