@@ -59,16 +59,55 @@ type ComponentChapter = {
 export type LeaderboardEntry = {
   rank: number
   name: string
+  /** Tổng điểm: mỗi bài lấy lần làm tốt nhất, quy ra thang 100, rồi cộng lại. */
+  points: number
   avgScore: number
   lessonCount: number
 }
 
+/**
+ * "ngotannhat1101@gmail.com" → "ngo***01". Giữ 2 ký tự cuối để hai người cùng
+ * đầu email (trước đây cùng hiện "ngo***") còn phân biệt được, mà vẫn không lộ
+ * địa chỉ.
+ */
 function maskEmail(email: string): string {
-  const local = email.split('@')[0]
-  if (local.length <= 3) return local
-  return local.slice(0, 3) + '***'
+  const local = email.split('@')[0] || 'user'
+  if (local.length <= 3) return local[0] + '**'
+  if (local.length <= 6) return local.slice(0, 2) + '***'
+  return local.slice(0, 3) + '***' + local.slice(-2)
 }
 
+/** Supabase trả tối đa 1000 dòng mỗi lần; đọc hết theo từng trang. */
+async function fetchAllResults(sb: ReturnType<typeof getSupabaseServer>, lessonIds: number[]) {
+  const rows: { user_id: string; lesson_id: number; score: number; total: number }[] = []
+  const PAGE = 1000
+  // Chia nhỏ danh sách bài để URL của .in() không quá dài.
+  for (let i = 0; i < lessonIds.length; i += 200) {
+    const chunk = lessonIds.slice(i, i + 200)
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await sb
+        .from('quiz_results')
+        .select('user_id, lesson_id, score, total')
+        .in('lesson_id', chunk)
+        .not('user_id', 'is', null)
+        .order('id')
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      rows.push(...((data ?? []) as typeof rows))
+      if (!data || data.length < PAGE) break
+    }
+  }
+  return rows
+}
+
+/**
+ * Bảng xếp hạng một lớp.
+ *
+ * Xếp theo TỔNG điểm (mỗi bài tối đa 100, lấy lần làm tốt nhất), không theo
+ * điểm trung bình: xếp theo trung bình thì làm đúng 1 bài may mắn là đứng đầu,
+ * còn bé chăm làm nhiều bài lại tụt xuống — ngược với điều bảng xếp hạng nên
+ * khuyến khích. Làm lại một bài không cộng thêm điểm, chỉ nâng điểm bài đó.
+ */
 export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardEntry[]> {
   try {
     const sb = getSupabaseServer()
@@ -82,21 +121,14 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
     const { data: lessons } = await sb.from('lessons').select('id').in('chapter_id', chapters.map((c: any) => c.id))
     if (!lessons?.length) return []
 
-    const lessonIds = lessons.map((l: any) => l.id)
+    const results = await fetchAllResults(sb, lessons.map((l: any) => l.id))
+    if (!results.length) return []
 
-    const { data: results } = await sb
-      .from('quiz_results')
-      .select('user_id, lesson_id, score, total')
-      .in('lesson_id', lessonIds)
-      .not('user_id', 'is', null)
-
-    if (!results?.length) return []
-
-    // Best score % per (user, lesson)
+    // Điểm tốt nhất (thang 100) của mỗi (người, bài)
     const userBest = new Map<string, Map<number, number>>()
-    for (const r of results as any[]) {
-      if (!r.user_id) continue
-      const pct = (r.score / r.total) * 100
+    for (const r of results) {
+      if (!r.user_id || !(r.total > 0)) continue
+      const pct = Math.min(100, Math.max(0, (r.score / r.total) * 100))
       if (!userBest.has(r.user_id)) userBest.set(r.user_id, new Map())
       const lm = userBest.get(r.user_id)!
       if (!lm.has(r.lesson_id) || pct > lm.get(r.lesson_id)!) lm.set(r.lesson_id, pct)
@@ -105,22 +137,30 @@ export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardE
     const stats = [...userBest.entries()]
       .map(([userId, lm]) => {
         const scores = [...lm.values()]
-        return { userId, lessonCount: scores.length, avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) }
+        const sum = scores.reduce((a, b) => a + b, 0)
+        return { userId, lessonCount: scores.length, points: Math.round(sum), avgScore: Math.round(sum / scores.length) }
       })
-      .sort((a, b) => b.avgScore - a.avgScore || b.lessonCount - a.lessonCount)
+      .sort((a, b) => b.points - a.points || b.avgScore - a.avgScore || b.lessonCount - a.lessonCount)
       .slice(0, 10)
 
-    const userIds = stats.map((s) => s.userId)
-    const { data: { users } } = await sb.auth.admin.listUsers({ perPage: 1000 })
-    const emailMap = new Map((users ?? []).map((u: any) => [u.id, u.email ?? '']))
+    // Chỉ tra email của ≤10 người trong bảng, thay vì listUsers (chỉ lấy được
+    // 1000 người đầu, quá số đó thì tên hiện "user").
+    const emails = await Promise.all(
+      stats.map(async (s) => {
+        const { data } = await sb.auth.admin.getUserById(s.userId)
+        return data?.user?.email ?? ''
+      })
+    )
 
     return stats.map((s, i) => ({
       rank: i + 1,
-      name: maskEmail(emailMap.get(s.userId) ?? 'user'),
+      name: maskEmail(emails[i] || 'user'),
+      points: s.points,
       avgScore: s.avgScore,
       lessonCount: s.lessonCount,
     }))
-  } catch {
+  } catch (e) {
+    console.error('[getLeaderboardByGrade]', e)
     return []
   }
 }

@@ -16,7 +16,7 @@ export default function Sidebar({
         <h3 className="text-sm font-bold text-gray-800 mb-1">
           🏆 Bảng xếp hạng{grade ? ` Lớp ${grade}` : ""}
         </h3>
-        <p className="text-xs text-gray-400 mb-4">Xếp hạng theo điểm trung bình tốt nhất</p>
+        <p className="text-xs text-gray-400 mb-4">Mỗi bài tính lần làm tốt nhất, tối đa 100 điểm — làm càng nhiều bài càng nhiều điểm.</p>
 
         {leaderboard.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">
@@ -46,20 +46,13 @@ export default function Sidebar({
                 {/* Name + lessons */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-700 truncate">{row.name}</p>
-                  <p className="text-xs text-gray-400">{row.lessonCount} bài đã làm</p>
+                  <p className="text-xs text-gray-400">{row.lessonCount} bài · đúng TB {row.avgScore}%</p>
                 </div>
 
                 {/* Score */}
-                <span
-                  className={`text-sm font-extrabold flex-shrink-0 ${
-                    row.avgScore >= 80
-                      ? "text-green-600"
-                      : row.avgScore >= 50
-                      ? "text-yellow-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  {row.avgScore}%
+                <span className="flex-shrink-0 text-right leading-tight">
+                  <span className="block text-sm font-extrabold text-blue-700">{row.points}</span>
+                  <span className="block text-[11px] text-gray-400">điểm</span>
                 </span>
               </div>
             ))}
@@ -75,7 +68,7 @@ export default function Sidebar({
             { emoji: "🥇", label: "Giỏi", desc: "≥ 80%", bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700" },
             { emoji: "🥈", label: "Khá", desc: "≥ 65%", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
             { emoji: "🥉", label: "Trung bình", desc: "≥ 50%", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
-            { emoji: "⬜", label: "Chưa làm", desc: "< 50%", bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-500" },
+            { emoji: "💪", label: "Cố gắng thêm", desc: "< 50%", bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-500" },
           ].map((b) => (
             <div key={b.label} className={`${b.bg} border ${b.border} rounded-xl p-3 text-center`}>
               <div className="text-2xl mb-1">{b.emoji}</div>

@@ -181,10 +181,13 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     const score = finalAnswers.filter((a, i) => scoreAnswer(questions[i], a)).length;
     const total = questions.length;
 
+    // keepalive: trang chuyển sang /result ngay sau dòng này; thiếu nó trình
+    // duyệt thường huỷ request giữa chừng và kết quả không bao giờ được lưu.
     fetch("/api/quiz-result", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lessonId, score, total }),
+      keepalive: true,
     }).catch(() => {});
 
     sessionStorage.setItem(

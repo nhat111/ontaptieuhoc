@@ -177,7 +177,7 @@ All use the service-role client unless noted:
 
 ### Leaderboard
 
-`getLeaderboardByGrade` in `lib/db.ts` does a 4-table join in app code (subjects → chapters → lessons → quiz_results) plus an `auth.admin.listUsers({ perPage: 1000 })` call to resolve emails, which it then masks to `abc***`. Top 10 by average best-score-per-lesson. Wrapped in `try/catch` returning `[]` because it requires service-role access.
+`getLeaderboardByGrade` in `lib/db.ts` joins subjects → chapters → lessons → quiz_results in app code. Ranking is by **total points**: each lesson counts once at its best attempt, scaled to 100, then summed. Ties break on average, then lesson count. It deliberately does **not** rank by average: averaging let one lucky single-lesson attempt outrank a child who did many lessons. `quiz_results` is paged in 1000-row pages (Supabase's cap) with lesson ids chunked at 200. Emails are resolved with `auth.admin.getUserById` for the top 10 only, then masked to `abc***yz`; the last two characters are kept so two `ngo…` accounts are distinguishable. Wrapped in `try/catch` returning `[]`. `QuizClient` posts results with `keepalive: true`, because the page navigates to `/result` immediately and the browser otherwise cancels the request. `/api/quiz-result` rejects non-integer, negative, or `score > total` values.
 
 ### Offline NXBGD import (`scripts/`)
 
