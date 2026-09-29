@@ -83,6 +83,8 @@ export default function ClockGame({ backHref }: { backHref: string }) {
       intro="Nhìn kim đồng hồ rồi chọn giờ đúng. Kim ngắn chỉ giờ, kim dài chỉ phút."
       levels={LEVELS}
       make={make}
+      // Câu hỏi giống nhau mọi câu: chỉ đọc một lần ở đầu.
+      promptOnce
       optionCols={2}
       backHref={backHref}
     />

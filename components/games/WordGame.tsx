@@ -34,6 +34,8 @@ export default function WordGame({ backHref }: { backHref: string }) {
       intro="Nhìn hình rồi chạm vào chữ đúng. Chọn đúng sẽ được nghe đọc từ đó."
       levels={LEVELS}
       make={make}
+      // Câu hỏi giống nhau mọi câu: chỉ đọc một lần ở đầu.
+      promptOnce
       clips={GAME_CLIPS}
       optionCols={2}
       backHref={backHref}

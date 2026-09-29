@@ -45,6 +45,12 @@ interface Props {
   clips?: Record<string, string>;
   /** Bảng chọn riêng thay cho lưới nút mặc định (vd: cây táo). */
   Board?: ComponentType<BoardProps>;
+  /**
+   * `say` là câu hướng dẫn chung, giống nhau mọi câu ("Đồng hồ chỉ mấy giờ?",
+   * "Chọn chữ đúng để điền vào chỗ trống."). Khi bật: chỉ đọc ở câu đầu (và khi
+   * bấm Nghe lại), không đọc lại sau mỗi lần chọn — đọc đi đọc lại rất nhàm.
+   */
+  promptOnce?: boolean;
   backHref: string;
 }
 
@@ -65,7 +71,7 @@ const vi = (text: string): SpeakSegment => ({ text, lang: "vi-VN" });
  * `await`: iOS chỉ cho phát tiếng trong luồng của cú chạm (xem lib/speech.ts).
  */
 export default function GameShell({
-  title, intro, levels, make, requiresSpeech, optionCols = 4, clips, Board, backHref,
+  title, intro, levels, make, requiresSpeech, optionCols = 4, clips, Board, promptOnce, backHref,
 }: Props) {
   const speech = useSyncExternalStore(
     () => () => {},
@@ -86,6 +92,8 @@ export default function GameShell({
   // Tăng mỗi lần cú phản ứng / pháo giấy bung, để animation chạy lại.
   const [beat, setBeat] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Câu đã ra trong lượt chơi này — tránh lặp câu (vd "khúc xương" 3 lần/10 câu).
+  const seen = useRef(new Set<string>());
 
   useEffect(() => () => {
     stopSpeaking();
@@ -115,9 +123,27 @@ export default function GameShell({
     setBeat((b) => b + 1);
   }
 
+  /**
+   * Sinh câu mới chưa ra trong lượt này. Kho câu nhỏ (một cặp chính tả chỉ có
+   * 7–9 từ) thì hết câu mới vẫn cho lặp, còn hơn là đứng.
+   */
+  function fresh(levelId: string, prev: GameRound | null): GameRound {
+    let r = make(levelId, prev);
+    for (let i = 0; i < 40; i++) {
+      const id = `${r.say}|${r.answer}|${r.reveal ?? ""}`;
+      if (!seen.current.has(id)) {
+        seen.current.add(id);
+        return r;
+      }
+      r = make(levelId, prev);
+    }
+    return r;
+  }
+
   function start(levelId: string) {
     if (timer.current) clearTimeout(timer.current);
-    const first = make(levelId, null);
+    seen.current.clear();
+    const first = fresh(levelId, null);
     setLevel(levelId);
     setRound(first);
     setIndex(0);
@@ -136,21 +162,25 @@ export default function GameShell({
       if (!wrong.includes(key)) setWrong([...wrong, key]);
       setShakeKey(key);
       react("sad", "Thử lại nhé!");
-      say(["Chưa đúng, bé thử lại nhé.", round.say]);
+      say(promptOnce ? ["Chưa đúng, bé thử lại nhé."] : ["Chưa đúng, bé thử lại nhé.", round.say]);
       return;
     }
 
     const earned = wrong.length === 0 ? 1 : 0;
     const total = stars + earned;
     const last = index + 1 >= ROUNDS;
-    const next = last ? null : make(level, round);
+    const next = last ? null : fresh(level, round);
     const praise = pick(PRAISE);
 
     setCorrectKey(key);
     setStars(total);
     react("happy", praise);
     const reveal = round.reveal ? [round.reveal] : [];
-    say(last ? [praise, ...reveal, `Bé được ${total} ngôi sao!`] : [praise, ...reveal, next!.say]);
+    say(
+      last
+        ? [praise, ...reveal, `Bé được ${total} ngôi sao!`]
+        : [praise, ...reveal, ...(promptOnce ? [] : [next!.say])]
+    );
 
     // Giữ ô đúng sáng lên một nhịp cho bé thấy (và cho táo kịp rơi) rồi mới
     // sang câu mới.
