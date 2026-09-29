@@ -110,6 +110,12 @@ export default async function HomePage() {
                 Xem kho đề kiểm tra →
               </Link>
             </div>
+            <p className="mt-3 text-center text-sm text-slate-500 sm:text-left">
+              Lần đầu dùng?{" "}
+              <Link href="/huong-dan" className="font-semibold text-blue-700 hover:underline">
+                Xem hướng dẫn 2 phút
+              </Link>
+            </p>
           </div>
 
           <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
@@ -177,6 +183,7 @@ export default async function HomePage() {
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
             <Link href="/de-thi" className="hover:text-blue-700">Kho đề</Link>
             <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi</Link>
+            <Link href="/huong-dan" className="hover:text-blue-700">Hướng dẫn</Link>
             <Link href="/progress" className="hover:text-blue-700">Tiến độ học tập</Link>
             <Link href="/import" className="hover:text-blue-700">Dành cho người soạn đề</Link>
           </nav>

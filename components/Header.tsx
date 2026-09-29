@@ -13,6 +13,7 @@ const NAV = [
   { label: "Lớp 1–5", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
   { label: "Trò chơi", href: "/lop/1/tro-choi" },
+  { label: "Hướng dẫn", href: "/huong-dan" },
 ];
 
 function isActivePath(path: string, href: string) {
