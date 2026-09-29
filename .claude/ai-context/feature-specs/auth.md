@@ -19,10 +19,12 @@ Tài khoản là **không bắt buộc**: chỉ dùng cho tiến độ học t�
 - **Mặc định sau đăng nhập về `/`**, không phải `/import`.
 - **Giới hạn gửi thư:** SMTP mặc định của Supabase chỉ gửi vài email mỗi giờ cho cả project. Lỗi `over_email_send_rate_limit` đã có câu báo riêng. Khi có nhiều người dùng, gắn SMTP riêng (Resend, Brevo…).
 
+- **504 / 500 lúc đăng ký**: auth-js gộp 502/503/504 với mất mạng vào `AuthRetryableFetchError`. `authErrorMessage` tách riêng theo `status` (0 = mạng, ≥500 = Supabase, thường do gửi email xác nhận lỗi). Trang hiện "Mã lỗi: HTTP 504 · …" nhỏ bên dưới để đối chiếu với Supabase → Logs → Auth.
+
 ## Cấu hình trên Supabase Dashboard (Authentication)
 
 1. **URL Configuration**
-   - **Site URL** = tên miền thật (trùng `NEXT_PUBLIC_SITE_URL`).
+   - **Site URL** = tên miền thật (trùng `NEXT_PUBLIC_SITE_URL`), **không có dấu `/` ở cuối**; nếu có, `{{ .SiteURL }}/auth/callback` trong mẫu email sẽ thành `//auth/callback`.
    - **Redirect URLs** thêm `https://<tên-miền>/auth/callback` (và `http://localhost:3000/auth/callback` cho dev).
    - Thiếu mục này thì Supabase bỏ qua `emailRedirectTo`, và link trong email trỏ về Site URL (thường là localhost).
 2. **(Tuỳ chọn) Email Templates**: để link mở được trên mọi máy, đổi link trong mẫu:

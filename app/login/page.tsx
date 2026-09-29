@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LogoMark from "@/components/LogoMark";
 import { createClient } from "@/lib/supabase/client";
-import { authErrorMessage } from "@/lib/authErrors";
+import type { AuthError } from "@supabase/supabase-js";
+import { authErrorDetail, authErrorMessage } from "@/lib/authErrors";
 import { safeNext } from "@/lib/safeRedirect";
 
 type Tab = "login" | "register" | "forgot";
@@ -28,6 +29,7 @@ function LoginForm() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorDetail, setErrorDetail] = useState("");
   const [success, setSuccess] = useState("");
   // Hiện nút "Gửi lại email xác nhận" khi đăng nhập bị chặn vì chưa xác nhận.
   const [canResend, setCanResend] = useState(false);
@@ -35,9 +37,16 @@ function LoginForm() {
   function switchTab(t: Tab) {
     setTab(t);
     setError("");
+    setErrorDetail("");
     setSuccess("");
     setCanResend(false);
     setConfirm("");
+  }
+
+  function fail(err: AuthError) {
+    console.error("[login]", err.status, err.code, err.message);
+    setError(authErrorMessage(err));
+    setErrorDetail(authErrorDetail(err));
   }
 
   /** Link trong email quay về /auth/callback rồi mới tới `next`. */
@@ -48,6 +57,7 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setErrorDetail("");
     setSuccess("");
     setCanResend(false);
 
@@ -66,12 +76,12 @@ function LoginForm() {
         });
         // Không nói email có tồn tại hay không (Supabase cũng không báo), để
         // người lạ không dò được ai đã có tài khoản.
-        if (error) setError(authErrorMessage(error));
+        if (error) fail(error);
         else setSuccess("Nếu email này đã đăng ký, bạn sẽ nhận được link đặt lại mật khẩu trong vài phút. Nhớ xem cả mục Spam/Quảng cáo.");
       } else if (tab === "login") {
         const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
-          setError(authErrorMessage(error));
+          fail(error);
           setCanResend(error.code === "email_not_confirmed");
         } else {
           router.push(redirect);
@@ -85,7 +95,7 @@ function LoginForm() {
           options: { emailRedirectTo: callbackUrl(redirect) },
         });
         if (error) {
-          setError(authErrorMessage(error));
+          fail(error);
         } else if (data.session) {
           // Dự án tắt "Confirm email": đăng ký xong là đăng nhập luôn.
           router.push(redirect);
@@ -102,8 +112,10 @@ function LoginForm() {
           setConfirm("");
         }
       }
-    } catch {
+    } catch (e) {
+      console.error("[login]", e);
       setError("Không kết nối được máy chủ. Bạn kiểm tra mạng rồi thử lại nhé.");
+      setErrorDetail(e instanceof Error ? e.message : "");
     }
     setLoading(false);
   }
@@ -118,7 +130,7 @@ function LoginForm() {
     });
     setLoading(false);
     setCanResend(false);
-    if (error) setError(authErrorMessage(error));
+    if (error) fail(error);
     else setSuccess("Đã gửi lại email xác nhận. Mở hộp thư (cả mục Spam) và bấm link nhé.");
   }
 
@@ -242,6 +254,7 @@ function LoginForm() {
           {error && (
             <div role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
+              {errorDetail && <span className="mt-1 block text-xs text-red-400">Mã lỗi: {errorDetail}</span>}
               {canResend && (
                 <button
                   type="button"

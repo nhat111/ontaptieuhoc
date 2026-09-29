@@ -10,9 +10,14 @@ import type { AuthError } from "@supabase/supabase-js";
  */
 export function authErrorMessage(error: AuthError | null | undefined): string {
   if (!error) return "";
-  // Mất mạng / không tới được Supabase: auth-js báo status 0.
-  if (error.status === 0 || error.name === "AuthRetryableFetchError") {
+  // auth-js gộp CẢ mất mạng (status 0) LẪN 502/503/504 của Supabase vào
+  // AuthRetryableFetchError. Tách ra: 5xx gần như luôn là Supabase gửi email
+  // xác nhận thất bại/quá giờ (SMTP mặc định), không phải mạng của người dùng.
+  if (error.status === 0 || (!error.status && error.name === "AuthRetryableFetchError")) {
     return "Không kết nối được máy chủ. Bạn kiểm tra mạng rồi thử lại nhé.";
+  }
+  if (error.status && error.status >= 500) {
+    return "Máy chủ đăng nhập đang gặp lỗi (thường là gửi email xác nhận không được). Bạn thử lại sau ít phút nhé.";
   }
   switch (error.code) {
     case "invalid_credentials":
@@ -42,4 +47,17 @@ export function authErrorMessage(error: AuthError | null | undefined): string {
     default:
       return "Có lỗi xảy ra, bạn thử lại sau nhé.";
   }
+}
+
+/**
+ * Mã lỗi kỹ thuật hiện nhỏ dưới câu báo, để người quản trị đối chiếu với
+ * Supabase → Logs → Auth. Câu tiếng Việt ở trên cố ý nói chung chung.
+ */
+export function authErrorDetail(error: AuthError | null | undefined): string {
+  if (!error) return "";
+  // message có khi là "{}" (phản hồi 5xx không phải JSON) — bỏ đi cho gọn.
+  const msg = !error.code && error.message && error.message !== "{}" ? error.message : "";
+  return [error.status ? `HTTP ${error.status}` : "", error.code ?? "", msg]
+    .filter(Boolean)
+    .join(" · ");
 }
