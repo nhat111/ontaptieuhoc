@@ -40,6 +40,8 @@ export default function SpellingGame({ backHref }: { backHref: string }) {
       intro="Nhìn hình, chọn chữ đúng điền vào chỗ trống. Chọn đúng sẽ được nghe đọc cả từ."
       levels={LEVELS}
       make={make}
+      // Câu hỏi giống nhau mọi câu: chỉ đọc một lần ở đầu.
+      promptOnce
       optionCols={2}
       backHref={backHref}
     />
