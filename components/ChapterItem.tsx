@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import LessonItem, { Lesson } from "./LessonItem";
+import { gradeTheme } from "@/lib/gradeTheme";
 
 export type Chapter = {
   id: number;
@@ -13,11 +14,14 @@ export default function ChapterItem({
   chapter,
   defaultOpen = false,
   viewType = "lesson",
+  grade,
 }: {
   chapter: Chapter;
   defaultOpen?: boolean;
   viewType?: "lesson" | "exam";
+  grade?: number;
 }) {
+  const theme = gradeTheme(grade);
   const [open, setOpen] = useState(defaultOpen);
 
   const { completed, progress } = useMemo(() => {
@@ -39,7 +43,7 @@ export default function ChapterItem({
           </p>
           <div className="mt-2 h-1.5 bg-gray-100 rounded-full w-48 max-w-full">
             <div
-              className="h-1.5 bg-blue-500 rounded-full transition-all"
+              className={`h-1.5 ${theme.solid} rounded-full transition-all`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -62,6 +66,7 @@ export default function ChapterItem({
               lesson={lesson}
               isLast={i === chapter.lessons.length - 1}
               viewType={viewType}
+              grade={grade}
             />
           ))}
         </div>

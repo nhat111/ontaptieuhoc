@@ -1,5 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
+import { gradeTheme } from "@/lib/gradeTheme";
 
 interface Props {
   subjects: string[];
@@ -18,6 +19,7 @@ export default function SubjectTabs({ subjects, activeSubject, grade }: Props) {
   };
 
   if (subjects.length === 0) return null;
+  const theme = gradeTheme(Number(grade));
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -27,7 +29,7 @@ export default function SubjectTabs({ subjects, activeSubject, grade }: Props) {
           onClick={() => handleClick(subject)}
           className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all ${
             subject === activeSubject
-              ? "bg-blue-600 text-white shadow-sm"
+              ? `${theme.solid} text-white shadow-sm`
               : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
           }`}
         >

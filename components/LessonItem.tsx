@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { gradeTheme } from "@/lib/gradeTheme";
 
 export type Lesson = {
   id: number;
@@ -30,12 +31,17 @@ export default function LessonItem({
   lesson,
   isLast,
   viewType = "lesson",
+  grade,
 }: {
   lesson: Lesson;
   isLast: boolean;
   viewType?: "lesson" | "exam";
+  /** Tô số thứ tự và viền theo màu của lớp (lib/gradeTheme.ts). */
+  grade?: number;
 }) {
   const badge = (viewType === "exam" ? examBadge : lessonBadge)[lesson.status];
+  const theme = gradeTheme(grade);
+  const circle = lesson.status === "active" ? `${theme.solid} text-white shadow-sm` : circleStyle[lesson.status];
 
   // Tách số ra khỏi index_label ("Bài 6" → "6", "Đề 3" → "3")
   const indexNum = lesson.index?.match(/\d+/)?.[0] ?? lesson.index;
@@ -47,7 +53,7 @@ export default function LessonItem({
       {/* Timeline */}
       <div className="flex flex-col items-center">
         <div
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 z-10 ${circleStyle[lesson.status]}`}
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 z-10 ${circle}`}
         >
           {lesson.status === "locked" ? "🔒" : indexNum}
         </div>
@@ -61,7 +67,7 @@ export default function LessonItem({
             className={`flex items-center justify-between rounded-xl border px-4 py-3 pr-10 shadow-sm transition-all group ${
               lesson.status === "locked"
                 ? "bg-gray-50 border-gray-100 hover:border-gray-200 hover:bg-gray-100"
-                : "bg-white border-gray-100 hover:border-blue-200 hover:shadow-md"
+                : `bg-white border-gray-100 ${theme.hoverBorder} hover:shadow-md hover:-translate-y-0.5`
             }`}
           >
             <div>

@@ -6,6 +6,7 @@ import ChapterItem from "@/components/ChapterItem";
 import Sidebar from "@/components/Sidebar";
 import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
+import { gradeTheme } from "@/lib/gradeTheme";
 
 export async function generateMetadata({
   params,
@@ -65,6 +66,7 @@ export default async function GradePage({
   const { subject: subjectParam, view } = await searchParams;
   const activeView = view === "exam" ? "exam" : "baitap";
   const gradeNum = parseInt(grade);
+  const theme = gradeTheme(gradeNum);
 
   // Môn học lấy từ lib/subjects.ts — không query DB nữa.
   const subjects = getSubjects(gradeNum);
@@ -102,15 +104,21 @@ export default async function GradePage({
           <span className="text-gray-600 font-medium">{activeSubject ?? "Toán"}</span>
         </div>
 
-        {/* Page title */}
-        <h1 className="text-2xl font-extrabold text-gray-800">
-          {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject ?? "Toán"} lớp {grade}
-        </h1>
-        <p className="text-gray-500 text-sm mt-1 mb-4">
-          {activeView === "exam"
-            ? "Đề kiểm tra theo chương · Luyện thi cuối kỳ"
-            : "Bộ bài tập bám sát sách giáo khoa · Luyện tập từng chương, từng bài"}
-        </p>
+        {/* Tiêu đề trong dải màu của lớp */}
+        <div className={`mb-5 flex items-center gap-4 rounded-3xl border ${theme.border} ${theme.soft} px-5 py-5`}>
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs font-bold uppercase tracking-wide ${theme.text}`}>Lớp {grade}</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
+              {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject ?? "Toán"}
+            </h1>
+            <p className="text-gray-600 text-sm mt-1">
+              {activeView === "exam"
+                ? "Đề kiểm tra theo chương · Luyện thi cuối kỳ"
+                : "Bám sát sách giáo khoa · Luyện từng chương, từng bài"}
+            </p>
+          </div>
+          <span className="text-5xl sm:text-6xl drop-shadow-sm" aria-hidden>{theme.emoji}</span>
+        </div>
 
         {(gradeNum === 1 || gradeNum === 2) && (
           <Link
@@ -134,7 +142,7 @@ export default async function GradePage({
             href={`/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}`}
             className={`text-sm font-bold px-5 py-2 rounded-full shadow-sm transition-colors ${
               activeView === "baitap"
-                ? "bg-blue-600 text-white"
+                ? `${theme.solid} text-white`
                 : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
             }`}
           >
@@ -144,7 +152,7 @@ export default async function GradePage({
             href={`/lop/${grade}?${subjectParam ? `subject=${encodeURIComponent(subjectParam)}&` : ""}view=exam`}
             className={`text-sm font-semibold px-5 py-2 rounded-full transition-colors ${
               activeView === "exam"
-                ? "bg-blue-600 text-white shadow-sm"
+                ? `${theme.solid} text-white shadow-sm`
                 : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
             }`}
           >
@@ -180,6 +188,7 @@ export default async function GradePage({
                   chapter={chapter}
                   defaultOpen={i === 0}
                   viewType={activeView === "exam" ? "exam" : "lesson"}
+                  grade={gradeNum}
                 />
               ))
             )}
