@@ -512,6 +512,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             >
               ❓ Hướng dẫn soạn đề
             </Link>
+            <Link href="/import/gop-y" className="text-sm font-semibold text-gray-500 hover:text-blue-600 px-2 py-2.5">
+              📬 Góp ý đã nhận
+            </Link>
             <button
               onClick={() => setPasteOpen(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all"

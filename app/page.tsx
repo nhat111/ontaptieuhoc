@@ -2,79 +2,11 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 import TryQuestion from "@/components/home/TryQuestion";
-import { getSubjects } from "@/lib/subjects";
+import { GRADES, getSubjects } from "@/lib/subjects";
 import { getGradeStats } from "@/lib/db";
 
 // Số bài/đề đếm từ DB; làm mới mỗi 5 phút là đủ, không cần truy vấn mỗi lượt xem.
 export const revalidate = 300;
-
-const grades = [
-  {
-    grade: 1,
-    emoji: "🌱",
-    color: {
-      bg: "bg-rose-50",
-      badge: "bg-rose-100",
-      text: "text-rose-600",
-      border: "border-rose-200",
-      hover: "text-rose-500 group-hover:text-rose-700",
-      accent: "from-rose-400 to-rose-600",
-      ring: "ring-rose-200",
-    },
-  },
-  {
-    grade: 2,
-    emoji: "🌿",
-    color: {
-      bg: "bg-orange-50",
-      badge: "bg-orange-100",
-      text: "text-orange-600",
-      border: "border-orange-200",
-      hover: "text-orange-500 group-hover:text-orange-700",
-      accent: "from-orange-400 to-orange-600",
-      ring: "ring-orange-200",
-    },
-  },
-  {
-    grade: 3,
-    emoji: "🌳",
-    color: {
-      bg: "bg-emerald-50",
-      badge: "bg-emerald-100",
-      text: "text-emerald-600",
-      border: "border-emerald-200",
-      hover: "text-emerald-500 group-hover:text-emerald-700",
-      accent: "from-emerald-400 to-emerald-600",
-      ring: "ring-emerald-200",
-    },
-  },
-  {
-    grade: 4,
-    emoji: "🌟",
-    color: {
-      bg: "bg-blue-50",
-      badge: "bg-blue-100",
-      text: "text-blue-600",
-      border: "border-blue-200",
-      hover: "text-blue-500 group-hover:text-blue-700",
-      accent: "from-blue-400 to-blue-600",
-      ring: "ring-blue-200",
-    },
-  },
-  {
-    grade: 5,
-    emoji: "🏆",
-    color: {
-      bg: "bg-violet-50",
-      badge: "bg-violet-100",
-      text: "text-violet-600",
-      border: "border-violet-200",
-      hover: "text-violet-500 group-hover:text-violet-700",
-      accent: "from-violet-400 to-violet-600",
-      ring: "ring-violet-200",
-    },
-  },
-];
 
 export default async function HomePage() {
   const stats = await getGradeStats();
@@ -148,10 +80,10 @@ export default async function HomePage() {
           <p className="mt-1 text-sm text-slate-500 sm:text-base">Mỗi lớp có bài tập theo từng chương và đề kiểm tra.</p>
         </div>
 
-        {/* 2 cols mobile · 3 cols tablet · 5 cols desktop */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {grades.map((g) => (
-            <GradeCard key={g.grade} {...g} subjects={[...getSubjects(g.grade)]} stats={stats[g.grade]} />
+        {/* Điện thoại: danh sách dọc · màn rộng: 5 thẻ đứng */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
+          {GRADES.map((g) => (
+            <GradeCard key={g} grade={g} subjects={[...getSubjects(g)]} stats={stats[g]} />
           ))}
         </div>
       </section>
@@ -184,6 +116,7 @@ export default async function HomePage() {
             <Link href="/de-thi" className="hover:text-blue-700">Kho đề</Link>
             <Link href="/lop/1/tro-choi" className="hover:text-blue-700">Trò chơi</Link>
             <Link href="/huong-dan" className="hover:text-blue-700">Hướng dẫn</Link>
+            <Link href="/gop-y" className="hover:text-blue-700">Góp ý &amp; liên hệ</Link>
             <Link href="/progress" className="hover:text-blue-700">Tiến độ học tập</Link>
             <Link href="/import" className="hover:text-blue-700">Dành cho người soạn đề</Link>
           </nav>
