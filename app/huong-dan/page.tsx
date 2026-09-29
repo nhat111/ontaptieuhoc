@@ -86,7 +86,7 @@ const STEPS: GuideStep[] = [
     points: [
       <>Không đăng nhập vẫn làm bài, nghe đọc, tải đề và chơi trò chơi bình thường.</>,
       <>Đăng nhập thì kết quả mỗi lần làm bài được lưu lại — xem ở mục <b>Tiến độ học tập</b> trong menu tài khoản.</>,
-      <>Người đã đăng nhập còn có tên trong <b>Bảng xếp hạng</b> của lớp (tên được che bớt, vd “ngo***”).</>,
+      <>Người đã đăng nhập còn có tên trong <b>Bảng xếp hạng</b> của lớp (tên được che bớt, vd “ngo***01”). Mỗi bài tính lần làm tốt nhất, tối đa 100 điểm, nên làm càng nhiều bài càng nhiều điểm; làm lại một bài chỉ nâng điểm bài đó.</>,
     ],
     cta: { href: "/login", label: "Đăng nhập / Đăng ký" },
   },

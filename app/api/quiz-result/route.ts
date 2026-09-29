@@ -3,10 +3,23 @@ import { createSessionClient } from '@/lib/supabase/server-client'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const { lessonId, score, total } = await req.json()
+  let body: { lessonId?: unknown; score?: unknown; total?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Yêu cầu không hợp lệ.' }, { status: 400 })
+  }
+  const lessonId = Number(body.lessonId)
+  const score = Number(body.score)
+  const total = Number(body.total)
 
-  if (!lessonId || score == null || !total) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  // Điểm đi vào bảng xếp hạng: chặn số lạ (điểm âm, vượt số câu, số thập phân).
+  if (
+    !Number.isInteger(lessonId) || lessonId <= 0 ||
+    !Number.isInteger(total) || total <= 0 || total > 500 ||
+    !Number.isInteger(score) || score < 0 || score > total
+  ) {
+    return NextResponse.json({ error: 'Dữ liệu điểm không hợp lệ.' }, { status: 400 })
   }
 
   const sessionClient = await createSessionClient()

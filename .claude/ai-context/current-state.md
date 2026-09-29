@@ -6,7 +6,7 @@ _Last synced with codebase: May 2026_
 
 ### Browse & quiz
 - Home: thẻ lớp 1–5, link `/de-thi`
-- `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10, email mask `abc***`)
+- `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10 theo tổng điểm, mỗi bài lấy lần tốt nhất; email mask `abc***yz`)
 - `/de-thi`: list động `lessons` với `type='exam'`
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
 - **Tải đề để in**: nút Word (.doc) / PDF / +Đáp án ở màn hình đầu, **mở cho mọi người** — mục đích là để phụ huynh in cho bé làm trên giấy
