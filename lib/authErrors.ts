@@ -1,4 +1,15 @@
-import type { AuthError } from "@supabase/supabase-js";
+/**
+ * Đủ cho cả AuthError của supabase-js lẫn lỗi mà /api/auth/email trả về dạng
+ * JSON (không còn là instance của AuthError).
+ */
+export type AuthErrorLike = {
+  status?: number;
+  code?: string;
+  name?: string;
+  message?: string;
+  /** Thời gian chờ Supabase (ms) — chỉ có khi đi qua /api/auth/email. */
+  ms?: number;
+};
 
 /**
  * Đổi lỗi Supabase Auth sang câu tiếng Việt dễ hiểu.
@@ -8,7 +19,7 @@ import type { AuthError } from "@supabase/supabase-js";
  * không đúng" — kể cả khi chỉ là chưa bấm link xác nhận email, nên người dùng
  * gõ đúng mật khẩu vẫn tưởng mình gõ sai.
  */
-export function authErrorMessage(error: AuthError | null | undefined): string {
+export function authErrorMessage(error: AuthErrorLike | null | undefined): string {
   if (!error) return "";
   // auth-js gộp CẢ mất mạng (status 0) LẪN 502/503/504 của Supabase vào
   // AuthRetryableFetchError. Tách ra: 5xx gần như luôn là Supabase gửi email
@@ -53,11 +64,12 @@ export function authErrorMessage(error: AuthError | null | undefined): string {
  * Mã lỗi kỹ thuật hiện nhỏ dưới câu báo, để người quản trị đối chiếu với
  * Supabase → Logs → Auth. Câu tiếng Việt ở trên cố ý nói chung chung.
  */
-export function authErrorDetail(error: AuthError | null | undefined): string {
+export function authErrorDetail(error: AuthErrorLike | null | undefined): string {
   if (!error) return "";
   // message có khi là "{}" (phản hồi 5xx không phải JSON) — bỏ đi cho gọn.
   const msg = !error.code && error.message && error.message !== "{}" ? error.message : "";
-  return [error.status ? `HTTP ${error.status}` : "", error.code ?? "", msg]
+  const wait = error.ms && error.ms >= 1000 ? `sau ${Math.round(error.ms / 1000)} giây` : "";
+  return [error.status ? `HTTP ${error.status}` : "", error.code ?? "", msg, wait]
     .filter(Boolean)
     .join(" · ");
 }

@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LogoMark from "@/components/LogoMark";
 import { createClient } from "@/lib/supabase/client";
-import type { AuthError } from "@supabase/supabase-js";
-import { authErrorDetail, authErrorMessage } from "@/lib/authErrors";
+import { authErrorDetail, authErrorMessage, type AuthErrorLike } from "@/lib/authErrors";
 import { safeNext } from "@/lib/safeRedirect";
 
 type Tab = "login" | "register" | "forgot";
@@ -43,15 +42,28 @@ function LoginForm() {
     setConfirm("");
   }
 
-  function fail(err: AuthError) {
+  function fail(err: AuthErrorLike) {
     console.error("[login]", err.status, err.code, err.message);
     setError(authErrorMessage(err));
     setErrorDetail(authErrorDetail(err));
   }
 
-  /** Link trong email quay về /auth/callback rồi mới tới `next`. */
-  function callbackUrl(next: string) {
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+  /**
+   * Đăng ký / quên mật khẩu / gửi lại xác nhận đi qua server (/api/auth/email),
+   * không gọi thẳng Supabase từ trình duyệt — xem lý do ở route đó.
+   */
+  async function emailAction(
+    action: "signup" | "recover" | "resend",
+    extra: { password?: string } = {}
+  ): Promise<{ ok: true; result: "sent" | "session" | "exists" } | { ok: false; error: AuthErrorLike }> {
+    const res = await fetch("/api/auth/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, email: email.trim(), next: redirect, ...extra }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!data) return { ok: false, error: { status: res.status, message: `Máy chủ web trả ${res.status}` } };
+    return data;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,18 +80,15 @@ function LoginForm() {
     }
 
     setLoading(true);
-    const sb = createClient();
     try {
       if (tab === "forgot") {
-        const { error } = await sb.auth.resetPasswordForEmail(cleanEmail, {
-          redirectTo: callbackUrl("/reset-password"),
-        });
+        const r = await emailAction("recover");
         // Không nói email có tồn tại hay không (Supabase cũng không báo), để
         // người lạ không dò được ai đã có tài khoản.
-        if (error) fail(error);
+        if (!r.ok) fail(r.error);
         else setSuccess("Nếu email này đã đăng ký, bạn sẽ nhận được link đặt lại mật khẩu trong vài phút. Nhớ xem cả mục Spam/Quảng cáo.");
       } else if (tab === "login") {
-        const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+        const { error } = await createClient().auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
           fail(error);
           setCanResend(error.code === "email_not_confirmed");
@@ -89,19 +98,15 @@ function LoginForm() {
           return; // giữ trạng thái "đang xử lý" tới khi chuyển trang
         }
       } else {
-        const { data, error } = await sb.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: { emailRedirectTo: callbackUrl(redirect) },
-        });
-        if (error) {
-          fail(error);
-        } else if (data.session) {
+        const r = await emailAction("signup", { password });
+        if (!r.ok) {
+          fail(r.error);
+        } else if (r.result === "session") {
           // Dự án tắt "Confirm email": đăng ký xong là đăng nhập luôn.
           router.push(redirect);
           router.refresh();
           return;
-        } else if (data.user && data.user.identities?.length === 0) {
+        } else if (r.result === "exists") {
           // Email đã có tài khoản: Supabase KHÔNG báo lỗi (để chống dò email) mà
           // trả về user rỗng và không gửi thư. Trước đây trang vẫn báo "kiểm tra
           // email", người dùng đợi mãi không thấy thư.
@@ -123,14 +128,15 @@ function LoginForm() {
   async function resendConfirm() {
     setLoading(true);
     setError("");
-    const { error } = await createClient().auth.resend({
-      type: "signup",
-      email: email.trim(),
-      options: { emailRedirectTo: callbackUrl(redirect) },
-    });
+    let r: Awaited<ReturnType<typeof emailAction>>;
+    try {
+      r = await emailAction("resend");
+    } catch (e) {
+      r = { ok: false, error: { status: 0, message: e instanceof Error ? e.message : "" } };
+    }
     setLoading(false);
     setCanResend(false);
-    if (error) fail(error);
+    if (!r.ok) fail(r.error);
     else setSuccess("Đã gửi lại email xác nhận. Mở hộp thư (cả mục Spam) và bấm link nhé.");
   }
 
