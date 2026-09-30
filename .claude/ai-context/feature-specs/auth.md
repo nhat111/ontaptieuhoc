@@ -5,12 +5,15 @@ Tài khoản là **không bắt buộc**: chỉ dùng cho tiến độ học t�
 ## File
 
 - `app/login/page.tsx`: 3 tab Đăng nhập / Đăng ký / Quên mật khẩu.
+- `app/api/auth/email/route.ts`: đăng ký, quên mật khẩu và gửi lại xác nhận chạy ở server.
 - `app/auth/callback/route.ts`: đích của mọi link trong email.
 - `app/reset-password/page.tsx`: đặt mật khẩu mới.
 - `lib/authErrors.ts → authErrorMessage`: dịch lỗi theo `error.code`, không theo `message`.
 - `lib/safeRedirect.ts → safeNext`: chỉ nhận đường dẫn nội bộ cho `?redirect=` / `?next=`, để tránh open redirect.
 
 ## Các bẫy đã gặp
+
+- **"Failed to fetch" khi đăng ký / quên mật khẩu, dù thư vẫn tới.** Đây là các lệnh có gửi email; gọi thẳng Supabase từ trình duyệt thì Supabase trả phản hồi mà trình duyệt không đọc được (không có CORS). Giờ các lệnh này đi qua `POST /api/auth/email` ở server, và lỗi thật được ghi trong Vercel → Logs. Chỉ đăng nhập còn gọi Supabase từ trình duyệt.
 
 - **Email đã đăng ký:** `signUp` KHÔNG trả lỗi. Supabase trả `user.identities = []` và không gửi thư (chống dò email). Phải kiểm tra trường hợp này, nếu không trang sẽ báo "kiểm tra email" mà thư không bao giờ tới.
 - **Chưa xác nhận email:** lỗi `email_not_confirmed`. Trang hiện nút "Gửi lại email xác nhận" (`auth.resend`).
