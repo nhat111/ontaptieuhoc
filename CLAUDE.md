@@ -198,7 +198,9 @@ Bài luyện tập Toán lớp 1, 2, 5 sinh bằng code — **không gọi AI ha
 - Mỗi câu chỉ có **một** chỗ trống (quiz có một ô nhập); kết quả dạng "_ giờ _ phút" là trắc nghiệm, đáp án nhiễu không bao giờ bằng giá trị đáp án đúng.
 - Mặt đồng hồ là SVG data URI trong `explanation.images` — không cần Storage.
 
-`npx tsx scripts/gen-math-check.ts` chạy mỗi dạng 3000 lần, tính lại đáp án độc lập và chấm thử bằng chính `scoreAnswer`. **Chạy lại sau mọi lần sửa generator.** `npx tsx scripts/gen-math-import.ts [--dry-run] [--grades 1,5] [--seed v2 --replace]` ghi vào chương "Luyện tập theo chủ đề" của từng lớp (`source_id` `gen_toan_lop_N`, bài `gen_<id>`) — idempotent, `--replace` chỉ thay câu của bài `gen_*`. Đổi `id` của một bài trong `MATH_LESSONS` sau khi đã import sẽ tạo bài mới, bài cũ thành mồ côi.
+`npx tsx scripts/gen-math-check.ts` chạy mỗi dạng 3000 lần, tính lại đáp án độc lập và chấm thử bằng chính `scoreAnswer`. **Chạy lại sau mọi lần sửa generator.**
+
+Đưa lên DB bằng **SQL, không cần service key**: `npx tsx scripts/gen-math-sql.ts [--seed v2]` xuất `supabase/toan-tu-sinh.sql` (file này được commit sẵn, seed `v1`) → dán vào Supabase SQL Editor → Run. Mỗi lớp 1, 2, 5 có chương "Luyện tập theo chủ đề" (`source_id` `gen_toan_lop_N`, bài `gen_<id>`); file chạy lại an toàn, bài đã có câu hỏi thì bỏ qua. Gỡ: `DELETE FROM chapters WHERE source_id LIKE 'gen_toan_lop_%';` (cascade, không đụng bài nhập tay/NXBGD). Đổi `id` của một bài trong `MATH_LESSONS` sau khi đã import sẽ tạo bài mới, bài cũ thành mồ côi. **Sửa generator thì sinh lại file SQL rồi commit kèm**, đừng sửa tay file SQL.
 
 ## Conventions
 

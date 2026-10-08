@@ -1,7 +1,7 @@
 // lib/mathGen/index.ts
 // Bộ sinh đề Toán lớp 1, 2, 5 — không gọi AI, không gọi dịch vụ ngoài.
 // Mỗi chủ đề là một "bài luyện tập" 10 câu; `buildLessonQuestions` trả về các dòng
-// sẵn sàng INSERT vào bảng `questions` (xem scripts/gen-math-import.ts).
+// sẵn sàng INSERT vào bảng `questions` (xem scripts/gen-math-sql.ts).
 //
 // Mã hoá correct_answer phải khớp lib/quizData.ts → scoreAnswer:
 //   mcq     → nội dung đáp án đúng (phải nằm trong options)
