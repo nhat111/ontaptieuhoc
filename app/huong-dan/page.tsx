@@ -41,6 +41,7 @@ const STEPS: GuideStep[] = [
     emoji: "🔊",
     title: "Nghe đọc đề (cho bé chưa đọc thạo)",
     points: [
+      <>Có ở các bài <b>lớp 1, lớp 2</b> và mọi bài <b>Tiếng Anh</b>. Từ lớp 3, bài Toán và Tiếng Việt không có nút nghe vì bé đã tự đọc được.</>,
       <>Mỗi câu có nút <b>Nghe</b> — máy đọc câu hỏi và các đáp án.</>,
       <>Nút <b>Nghe cả bài</b> ở đầu trang đọc lần lượt từng câu và tự cuộn tới câu đang đọc.</>,
       <>Chỉnh tốc độ <b>Chậm / Vừa / Nhanh</b> ngay cạnh nút. Mặc định là <b>Vừa</b> — đã chậm hơn giọng máy bình thường để bé nghe kịp.</>,

@@ -9,6 +9,7 @@ import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
 import { Mascot } from "@/components/games/Fx";
 import { gradeTheme } from "@/lib/gradeTheme";
+import { canAttachVoice, readAloudEnabled } from "@/lib/readAloud";
 import {
   getShuffleOptions,
   getShuffleQuestions,
@@ -152,8 +153,11 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
     () => false
   );
 
+  // Đọc to chỉ dành cho lớp 1–2 và đề Tiếng Anh (xem lib/readAloud.ts).
+  const readAloud = readAloudEnabled(lesson.grade, lesson.subjectName, hasAudioFiles);
+  const showAttachVoice = canAttachVoice(lesson.subjectName);
   // File audio phát được cả trên máy không có speechSynthesis.
-  const canListen = speechOk || hasAudioFiles;
+  const canListen = readAloud && (speechOk || hasAudioFiles);
 
   // Dùng chung cho màn hình đầu và thanh điều khiển lúc đang làm bài.
   const listenStatus = (
@@ -162,7 +166,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         <span className="text-orange-600">{audioNote}</span>
       ) : hasAudioFiles ? (
         <span className="text-gray-400">Đọc bằng giọng đã gắn sẵn cho đề này.</span>
-      ) : (
+      ) : showAttachVoice ? (
         <span className="text-gray-400">
           Đọc bằng giọng máy của thiết bị.{" "}
           <a href={`/import/giong-doc/${lessonId}`} className="text-blue-500 underline">
@@ -170,6 +174,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
           </a>{" "}
           để nghe hay hơn.
         </span>
+      ) : (
+        <span className="text-gray-400">Đọc bằng giọng máy của thiết bị.</span>
       )}
     </div>
   );
@@ -419,6 +425,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                 </svg>
                 Sửa đề
               </a>
+              {showAttachVoice && (
               <a
                 href={`/import/giong-doc/${lessonId}`}
                 className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
@@ -429,6 +436,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
                 </svg>
                 Gắn giọng đọc
               </a>
+              )}
             </div>
             </div>
           </div>
@@ -551,6 +559,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               index={i}
               selectedAnswer={answers[i]}
               onSelect={(answer) => handleSelect(i, answer)}
+              speak={readAloud}
             />
           ))}
         </div>
