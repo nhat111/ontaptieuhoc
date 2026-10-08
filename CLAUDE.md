@@ -189,6 +189,19 @@ Node scripts (not part of Next.js runtime) to bulk-load content from NXBGD API i
 
 Run with `node --env-file=.env.local scripts/...`. See `.claude/ai-context/scripts/nxbgd-import.md`.
 
+### Toán tự sinh (`lib/mathGen/`, `scripts/gen-math-*.ts`)
+
+Bài luyện tập Toán lớp 1, 2, 5 sinh bằng code — **không gọi AI hay API ngoài**; đáp án do máy tính tính (số thập phân dùng kiểu `Dec` nguyên + số chữ số thập phân, không float). `lib/mathGen/lop{1,2,5}.ts` chứa các dạng bài, `lib/mathGen/index.ts` có `MATH_LESSONS` (mỗi chủ đề = 1 bài 10 câu) và `toQuestionRow` chuyển câu thô sang dòng `questions`:
+
+- Trắc nghiệm, đúng/sai → `mcq`; sắp xếp → `mcq` "Dãy nào sắp xếp đúng?" (quiz không có kéo-thả).
+- Điền số → `numeric` **chỉ khi < 1000**; số có dấu chấm ngăn nghìn (`5.000`) hoặc phân số → `short` với mọi cách viết (`5.000|5000|5 000`), vì `scoreAnswer` numeric đọc `5.000` thành 5.
+- Mỗi câu chỉ có **một** chỗ trống (quiz có một ô nhập); kết quả dạng "_ giờ _ phút" là trắc nghiệm, đáp án nhiễu không bao giờ bằng giá trị đáp án đúng.
+- Mặt đồng hồ là SVG data URI trong `explanation.images` — không cần Storage.
+
+`npx tsx scripts/gen-math-check.ts` chạy mỗi dạng 3000 lần, tính lại đáp án độc lập và chấm thử bằng chính `scoreAnswer`. **Chạy lại sau mọi lần sửa generator.**
+
+Đưa lên DB bằng **SQL, không cần service key**: `npx tsx scripts/gen-math-sql.ts [--seed v2]` xuất `supabase/toan-tu-sinh.sql` (file này được commit sẵn, seed `v1`) → dán vào Supabase SQL Editor → Run. Mỗi lớp 1, 2, 5 có chương "Luyện tập theo chủ đề" (`source_id` `gen_toan_lop_N`, bài `gen_<id>`); file chạy lại an toàn, bài đã có câu hỏi thì bỏ qua. Gỡ: `DELETE FROM chapters WHERE source_id LIKE 'gen_toan_lop_%';` (cascade, không đụng bài nhập tay/NXBGD). Đổi `id` của một bài trong `MATH_LESSONS` sau khi đã import sẽ tạo bài mới, bài cũ thành mồ côi. **Sửa generator thì sinh lại file SQL rồi commit kèm**, đừng sửa tay file SQL.
+
 ## Conventions
 
 - All files use 2-space indent.
