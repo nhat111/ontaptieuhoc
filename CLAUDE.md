@@ -189,6 +189,17 @@ Node scripts (not part of Next.js runtime) to bulk-load content from NXBGD API i
 
 Run with `node --env-file=.env.local scripts/...`. See `.claude/ai-context/scripts/nxbgd-import.md`.
 
+### Toán tự sinh (`lib/mathGen/`, `scripts/gen-math-*.ts`)
+
+Bài luyện tập Toán lớp 1, 2, 5 sinh bằng code — **không gọi AI hay API ngoài**; đáp án do máy tính tính (số thập phân dùng kiểu `Dec` nguyên + số chữ số thập phân, không float). `lib/mathGen/lop{1,2,5}.ts` chứa các dạng bài, `lib/mathGen/index.ts` có `MATH_LESSONS` (mỗi chủ đề = 1 bài 10 câu) và `toQuestionRow` chuyển câu thô sang dòng `questions`:
+
+- Trắc nghiệm, đúng/sai → `mcq`; sắp xếp → `mcq` "Dãy nào sắp xếp đúng?" (quiz không có kéo-thả).
+- Điền số → `numeric` **chỉ khi < 1000**; số có dấu chấm ngăn nghìn (`5.000`) hoặc phân số → `short` với mọi cách viết (`5.000|5000|5 000`), vì `scoreAnswer` numeric đọc `5.000` thành 5.
+- Mỗi câu chỉ có **một** chỗ trống (quiz có một ô nhập); kết quả dạng "_ giờ _ phút" là trắc nghiệm, đáp án nhiễu không bao giờ bằng giá trị đáp án đúng.
+- Mặt đồng hồ là SVG data URI trong `explanation.images` — không cần Storage.
+
+`npx tsx scripts/gen-math-check.ts` chạy mỗi dạng 3000 lần, tính lại đáp án độc lập và chấm thử bằng chính `scoreAnswer`. **Chạy lại sau mọi lần sửa generator.** `npx tsx scripts/gen-math-import.ts [--dry-run] [--grades 1,5] [--seed v2 --replace]` ghi vào chương "Luyện tập theo chủ đề" của từng lớp (`source_id` `gen_toan_lop_N`, bài `gen_<id>`) — idempotent, `--replace` chỉ thay câu của bài `gen_*`. Đổi `id` của một bài trong `MATH_LESSONS` sau khi đã import sẽ tạo bài mới, bài cũ thành mồ côi.
+
 ## Conventions
 
 - All files use 2-space indent.
