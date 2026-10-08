@@ -93,7 +93,8 @@ const STEPS: GuideStep[] = [
     emoji: "🎙️",
     title: "Gắn giọng đọc (không bắt buộc)",
     points: [
-      <>Mặc định bé nghe bằng giọng máy của điện thoại. Muốn bé nghe giọng người thật: ở màn đầu của bài, bấm <b>Gắn giọng đọc</b>.</>,
+      <>Mặc định bé nghe bằng giọng máy của điện thoại. Muốn bé nghe giọng người thật: ở màn đầu của bài <b>Tiếng Anh</b>, bấm <b>Gắn giọng đọc</b>.</>,
+      <>Nút nghe chỉ hiện ở bài lớp 1, lớp 2 và bài Tiếng Anh. Bài môn khác từ lớp 3 trở lên không có nút nghe — trừ khi đã gắn giọng đọc cho bài đó.</>,
       <>Thu âm từng câu, đặt tên file có <b>số thứ tự câu</b>, vd <Code>wav_1.wav</Code>, <Code>wav_2.wav</Code> (nhận WAV, MP3, OGG, M4A). Chọn cả loạt file một lần — máy tự ghép theo số trong tên. Nghe thử từng câu rồi bấm <b>Lưu giọng đọc</b>.</>,
       <>Giọng đọc cho <b>trò chơi lớp 1</b> thì thu ngay trên web ở trang <b>Thu giọng đọc cho trò chơi</b> (cuối trang Trò chơi).</>,
     ],

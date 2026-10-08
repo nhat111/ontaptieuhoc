@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import ResultSummary from "@/components/result/ResultSummary";
 import ResultItem from "@/components/result/ResultItem";
 import { createClient } from "@/lib/supabase/client";
+import { readAloudEnabled } from "@/lib/readAloud";
 
 export default function ResultPage() {
   const router = useRouter();
@@ -33,6 +34,8 @@ export default function ResultPage() {
 
   const { questions, answers, lessonId, lessonTitle, grade, subjectName } = result;
   const title = lessonTitle ?? `Bài ${lessonId}`;
+  // Cùng quy tắc với trang làm bài: lớp 1–2, đề Tiếng Anh, hoặc đề đã gắn giọng.
+  const readAloud = readAloudEnabled(grade, subjectName, questions.some((q) => !!q.audioUrl));
 
   // Grade and subject come from the lesson, not from lessonId. Older payloads
   // (a result stashed before this field existed) simply omit those crumbs.
@@ -91,7 +94,7 @@ export default function ResultPage() {
         <h2 className="text-base font-bold text-gray-700 mb-3">Chi tiết từng câu</h2>
         <div className="space-y-3 mb-8">
           {questions.map((q, i) => (
-            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} lessonId={lessonId} />
+            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} lessonId={lessonId} speak={readAloud} />
           ))}
         </div>
 

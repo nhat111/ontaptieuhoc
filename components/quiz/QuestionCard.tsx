@@ -9,6 +9,8 @@ interface QuestionCardProps {
   index: number;
   selectedAnswer: string | null;
   onSelect: (answer: string) => void;
+  /** Hiện nút Nghe (lớp 1–2, đề Tiếng Anh — xem lib/readAloud.ts). Mặc định có. */
+  speak?: boolean;
 }
 
 const TYPE_BADGE: Record<Question["type"], string> = {
@@ -18,7 +20,7 @@ const TYPE_BADGE: Record<Question["type"], string> = {
   numeric: "Trả lời số",
 };
 
-export default function QuestionCard({ question, index, selectedAnswer, onSelect }: QuestionCardProps) {
+export default function QuestionCard({ question, index, selectedAnswer, onSelect, speak = true }: QuestionCardProps) {
   // For "multi", selectedAnswer is JSON-stringified string[] of chosen option texts.
   let multiSelected: Set<string> = new Set();
   if (question.type === "multi" && selectedAnswer) {
@@ -54,14 +56,16 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
         <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-600">
           {TYPE_BADGE[question.type]}
         </span>
-        <span className="ml-auto">
-          {/* Đọc câu hỏi + đáp án cho bé nghe (đề tiếng Anh, hoặc bé lớp 1-2 chưa đọc thạo). */}
-          <SpeakButton
-            segments={questionSegments(question.question, question.options)}
-            audioUrl={question.audioUrl}
-            label="Nghe"
-          />
-        </span>
+        {speak && (
+          <span className="ml-auto">
+            {/* Đọc câu hỏi + đáp án cho bé nghe (đề tiếng Anh, hoặc bé lớp 1-2 chưa đọc thạo). */}
+            <SpeakButton
+              segments={questionSegments(question.question, question.options)}
+              audioUrl={question.audioUrl}
+              label="Nghe"
+            />
+          </span>
+        )}
       </div>
 
       {imagesBefore.length > 0 && (

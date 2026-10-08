@@ -16,6 +16,8 @@ interface ResultItemProps {
   index: number;
   /** Bài đang xem kết quả — gửi kèm khi báo lỗi câu. */
   lessonId?: number;
+  /** Hiện nút nghe lại câu (lớp 1–2, đề Tiếng Anh — xem lib/readAloud.ts). Mặc định có. */
+  speak?: boolean;
 }
 
 function parseList(json: string): string[] {
@@ -27,7 +29,7 @@ function parseList(json: string): string[] {
   }
 }
 
-export default function ResultItem({ question, userAnswer, index, lessonId }: ResultItemProps) {
+export default function ResultItem({ question, userAnswer, index, lessonId, speak = true }: ResultItemProps) {
   const isSkipped = userAnswer === null || userAnswer === "" || userAnswer === "[]";
   const isCorrect = !isSkipped && scoreAnswer(question, userAnswer);
   const status = STATUS[isSkipped ? "skipped" : isCorrect ? "correct" : "incorrect"];
@@ -68,10 +70,12 @@ export default function ResultItem({ question, userAnswer, index, lessonId }: Re
           </p>
         </div>
         {/* Nghe lại câu vừa làm — hữu ích nhất với câu sai ở đề tiếng Anh. */}
-        <SpeakButton
-          segments={questionSegments(question.question, question.options)}
-          className="flex-shrink-0"
-        />
+        {speak && (
+          <SpeakButton
+            segments={questionSegments(question.question, question.options)}
+            className="flex-shrink-0"
+          />
+        )}
       </div>
 
       {imagesAfter.length > 0 && (
