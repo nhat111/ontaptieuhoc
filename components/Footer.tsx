@@ -13,6 +13,7 @@ const GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/de-thi", label: "Kho đề thi" },
       { href: "/lop/1/tro-choi", label: "Trò chơi lớp 1, lớp 2" },
+      { href: "/phieu-bai-tap", label: "Phiếu bài tập Toán in được" },
       { href: "/progress", label: "Tiến độ học tập" },
     ],
   },

@@ -167,5 +167,44 @@ export function buildLessonQuestions(spec: MathLessonSpec, seed = "v1"): GenQues
   return rows;
 }
 
+/* ───────────── Phiếu bài tập (nhiều chủ đề, số câu tuỳ chọn) ───────────── */
+
+/** Chia `total` thành các phần tỉ lệ với `weights` (phương pháp dư lớn nhất), tổng đúng bằng `total`. */
+function apportion(total: number, weights: number[]): number[] {
+  const sum = weights.reduce((s, w) => s + w, 0);
+  const raw = weights.map((w) => (total * w) / sum);
+  const out = raw.map(Math.floor);
+  const order = raw.map((v, i) => [v - Math.floor(v), i] as const).sort((a, b) => b[0] - a[0]);
+  const left = total - out.reduce((s, x) => s + x, 0);
+  for (let k = 0; k < left; k++) out[order[k % order.length][1]]++;
+  return out;
+}
+
+/**
+ * Sinh câu hỏi cho một phiếu bài tập: chia đều `total` câu cho các chủ đề, trong
+ * mỗi chủ đề giữ tỉ lệ các dạng bài như `mix`. Cùng `seed` → cùng phiếu.
+ * Không có câu trùng nội dung trong phiếu (trừ khi một dạng bài cạn hết biến thể).
+ */
+export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, seed: string): GenQuestionRow[] {
+  if (specs.length === 0 || total <= 0) return [];
+  const r = mulberry32(seedFrom(`phieu|${specs.map((s) => s.id).join(",")}|${total}|${seed}`));
+  const seen = new Set<string>();
+  const key = (q: GenQuestionRow) => q.content + "\u0000" + q.options.join("\u0000");
+  const rows: GenQuestionRow[] = [];
+  const perSpec = apportion(total, specs.map(() => 1));
+  specs.forEach((spec, si) => {
+    const counts = apportion(perSpec[si], spec.mix.map(([, n]) => n));
+    spec.mix.forEach(([gen], gi) => {
+      for (let i = 0; i < counts[gi]; i++) {
+        let row = toQuestionRow(gen(r), r);
+        for (let t = 0; t < 30 && seen.has(key(row)); t++) row = toQuestionRow(gen(r), r);
+        seen.add(key(row));
+        rows.push(row);
+      }
+    });
+  });
+  return rows;
+}
+
 export { LOP1, LOP2, LOP3, LOP5 };
 export type { Draft, Generator };

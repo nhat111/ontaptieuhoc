@@ -14,6 +14,7 @@ const NAV = [
   { label: "Lớp 1–5", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
   { label: "Trò chơi", href: "/lop/1/tro-choi" },
+  { label: "Phiếu bài tập", href: "/phieu-bai-tap" },
   { label: "Hướng dẫn", href: "/huong-dan" },
 ];
 
@@ -68,14 +69,14 @@ export default function Header() {
         </Link>
 
         {/* Nav */}
-        <nav className="hidden md:flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 p-1 text-sm font-medium">
+        <nav className="hidden lg:flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 p-1 text-sm font-medium">
           {NAV.map(({ label, href }) => {
             const active = isActivePath(path, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`rounded-full px-3 py-1.5 transition-all ${
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 transition-all ${
                   active
                     ? "bg-white text-blue-700 font-semibold shadow-sm ring-1 ring-slate-200"
                     : "text-slate-600 hover:bg-white hover:text-blue-700"
@@ -94,7 +95,7 @@ export default function Header() {
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Mở menu"
             aria-expanded={mobileOpen}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               {mobileOpen ? (
@@ -174,7 +175,7 @@ export default function Header() {
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white">
+        <div className="lg:hidden border-t border-slate-100 bg-white">
           <nav className="max-w-6xl mx-auto px-4 py-2 flex flex-col">
             {NAV.map(({ label, href }) => {
               const active = isActivePath(path, href);
