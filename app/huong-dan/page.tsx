@@ -95,11 +95,11 @@ const STEPS: GuideStep[] = [
   {
     id: "hoat-dong-ai",
     emoji: "🤖",
-    title: "Phiếu hoạt động AI cho thầy cô (lớp 4)",
+    title: "Phiếu hoạt động AI cho thầy cô (lớp 4, lớp 5)",
     points: [
-      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Hoạt động AI</b>: 12 phiếu cho 12 tiết AI cốt lõi của lớp 4, theo Quyết định 2422/QĐ-BGDĐT.</>,
+      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Hoạt động AI</b> rồi chọn lớp: mỗi lớp 12 phiếu cho 12 tiết AI cốt lõi, theo Quyết định 2422/QĐ-BGDĐT.</>,
       <>Mỗi phiếu là một tiết, làm trên giấy, không cần máy tính. Chọn tiết cần in (hoặc cả 12 tiết), tick <b>Kèm trang dành cho thầy cô</b> nếu cần mục tiêu, tiến trình 35 phút và đáp án.</>,
-      <>Bấm <b>In / lưu PDF</b>. Các lớp khác đang soạn.</>,
+      <>Bấm <b>In / lưu PDF</b>. Hiện có lớp 4 và lớp 5, các lớp khác đang soạn. Riêng tiết 10 lớp 5 (công cụ học máy trực quan) cần ít nhất một máy tính để thầy cô làm mẫu.</>,
     ],
     cta: { href: "/phieu-bai-tap?loai=ai", label: "Xem phiếu hoạt động AI" },
   },
