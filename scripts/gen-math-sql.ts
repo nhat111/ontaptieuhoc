@@ -23,7 +23,7 @@ const seed = i >= 0 ? process.argv[i + 1] : "v1";
 /** Chuỗi SQL an toàn: nhân đôi dấu nháy đơn. */
 const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
 
-const grades: MathGrade[] = [1, 2, 5];
+const grades: MathGrade[] = [1, 2, 3, 5];
 const out: string[] = [
   `-- Bài luyện tập Toán tự sinh — lớp ${grades.join(", ")} (seed "${seed}")`,
   `-- Sinh bởi scripts/gen-math-sql.ts từ lib/mathGen. ĐỪNG sửa tay: sửa generator rồi sinh lại.`,

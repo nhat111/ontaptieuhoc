@@ -9,7 +9,7 @@
 // Chạy: npx tsx scripts/gen-math-check.ts
 
 import { mulberry32 } from "../lib/mathGen/core";
-import { LOP1, LOP2, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
+import { LOP1, LOP2, LOP3, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
 import { scoreAnswer, type Question } from "../lib/quizData";
 
 const RUNS = 3000;
@@ -42,6 +42,14 @@ function checkMath(ex: Draft): string | null {
       const [a, b] = [num(m[1]), num(m[2])];
       if ((a > b ? ">" : a < b ? "<" : "=") !== correct.text) return `so sánh sai: ${q} → ${correct.text}`;
     }
+    m = q.match(new RegExp(`^Chọn dấu thích hợp: ${N} × ${N} ___ ${N} × ${N}$`));
+    if (m) {
+      const [a, b] = [num(m[1]) * num(m[2]), num(m[3]) * num(m[4])];
+      if ((a > b ? ">" : a < b ? "<" : "=") !== correct.text) return `so sánh tích sai: ${q} → ${correct.text}`;
+    }
+    m = q.match(new RegExp(`^Số nào nhân với ${N} thì được ${N}\\?$`));
+    if (m && num(correct.text) * num(m[1]) !== num(m[2])) return `tìm thừa số sai: ${q} → ${correct.text}`;
+    if (m && texts.some((t) => t !== correct.text && num(t) * num(m![1]) === num(m![2]))) return "nhiễu cũng đúng";
     m = q.match(/^Số liền (sau|trước) của (\d+)/);
     if (m && num(correct.text) !== Number(m[2]) + (m[1] === "sau" ? 1 : -1)) return "liền trước/sau sai";
     m = q.match(/^Có mấy .*?\?\s+(.+)$/u);
@@ -73,6 +81,18 @@ function checkMath(ex: Draft): string | null {
       const want = calc(num(m[1]), m[2], num(m[3]));
       if (!close(want, num(ans))) return `tính sai: ${q} → ${ans} (đúng: ${want})`;
     }
+    m = q.match(new RegExp(`^${N} × ${N} ([+\\-]) ${N} = ___$`));
+    if (m && calc(num(m[1]) * num(m[2]), m[3], num(m[4])) !== num(ans)) return `biểu thức sai: ${q} → ${ans}`;
+    m = q.match(/xếp thành (\d+) hàng, mỗi hàng (\d+) bạn\. Sau đó có thêm (\d+) bạn/);
+    if (m && +m[1] * +m[2] + +m[3] !== num(ans)) return `lời văn 2 bước sai: ${q}`;
+    m = q.match(/có (\d+) hộp, mỗi hộp (\d+) .+? cho bạn (\d+) /);
+    if (m && +m[1] * +m[2] - +m[3] !== num(ans)) return `lời văn 2 bước (còn lại) sai: ${q}`;
+    m = q.match(/^Mỗi \S+ có (\d+) .+?\. Hỏi (\d+) /);
+    if (m && +m[1] * +m[2] !== num(ans)) return `lời văn nhân sai: ${q}`;
+    m = q.match(/^Mỗi tuần lễ có 7 ngày\. Hỏi (\d+) tuần/);
+    if (m && 7 * +m[1] !== num(ans)) return "tuần lễ sai";
+    m = q.match(/^Có (\d+) .+?(?:chia đều cho|mỗi \S+) (\d+) /);
+    if (m && +m[1] / +m[2] !== num(ans)) return `lời văn chia sai: ${q}`;
     m = q.match(new RegExp(`^___ \\+ ${N} = ${N}$`));
     if (m && num(ans) + num(m[1]) !== num(m[2])) return "tìm số hạng sai";
     m = q.match(new RegExp(`^${N} ([+\\-×]) ___ = ${N}$`));
@@ -192,7 +212,7 @@ function checkRow(ex: Draft, seed: number): string | null {
 
 let failures = 0, total = 0;
 const examples: string[] = [];
-for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP5 }) as [string, Record<string, Generator>][]) {
+for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP3, LOP5 }) as [string, Record<string, Generator>][]) {
   for (const [name, gen] of Object.entries(gens)) {
     let bad = 0;
     for (let s = 0; s < RUNS; s++) {

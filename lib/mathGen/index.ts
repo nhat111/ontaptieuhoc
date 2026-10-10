@@ -1,5 +1,5 @@
 // lib/mathGen/index.ts
-// Bộ sinh đề Toán lớp 1, 2, 5 — không gọi AI, không gọi dịch vụ ngoài.
+// Bộ sinh đề Toán lớp 1, 2, 3, 5 — không gọi AI, không gọi dịch vụ ngoài.
 // Mỗi chủ đề là một "bài luyện tập" 10 câu; `buildLessonQuestions` trả về các dòng
 // sẵn sàng INSERT vào bảng `questions` (xem scripts/gen-math-sql.ts).
 //
@@ -12,9 +12,10 @@ import type { QType } from "../quizData";
 import { type Draft, type Generator, type Rng, mulberry32, seedFrom, shuffle, variants } from "./core";
 import { LOP1 } from "./lop1";
 import { LOP2 } from "./lop2";
+import { LOP3 } from "./lop3";
 import { LOP5 } from "./lop5";
 
-export type MathGrade = 1 | 2 | 5;
+export type MathGrade = 1 | 2 | 3 | 5;
 
 export interface MathLessonSpec {
   /** Khoá ổn định, dùng làm lessons.source_id = "gen_" + id. Đừng đổi khi đã import. */
@@ -52,6 +53,11 @@ export const MATH_LESSONS: MathLessonSpec[] = [
     mix: [[LOP2.donViDo2, 4], [LOP2.tienVN, 3], [LOP2.duongGapKhuc, 3]] }),
   L({ id: "toan-2-thoi-gian", grade: 2, title: "Xem đồng hồ, ngày – tháng",
     mix: [[LOP2.xemGio, 5], [LOP2.ngayTrongTuan, 2], [LOP2.ngayThang, 3]] }),
+
+  /* ─────────── LỚP 3 ─────────── */
+  L({ id: "toan-3-nhan-chia-6-7", grade: 3, title: "Bảng nhân, bảng chia 6 và 7",
+    mix: [[LOP3.bangNhanChia67, 3], [LOP3.timThuaSo67, 1], [LOP3.bieuThuc67, 1], [LOP3.soSanhTich67, 1],
+      [LOP3.dungSai3, 1], [LOP3.loiVan67, 2], [LOP3.loiVanHaiBuoc67, 1]] }),
 
   /* ─────────── LỚP 5 ─────────── */
   L({ id: "toan-5-phan-so-hon-so", grade: 5, title: "Phân số thập phân và hỗn số",
@@ -161,5 +167,44 @@ export function buildLessonQuestions(spec: MathLessonSpec, seed = "v1"): GenQues
   return rows;
 }
 
-export { LOP1, LOP2, LOP5 };
+/* ───────────── Phiếu bài tập (nhiều chủ đề, số câu tuỳ chọn) ───────────── */
+
+/** Chia `total` thành các phần tỉ lệ với `weights` (phương pháp dư lớn nhất), tổng đúng bằng `total`. */
+function apportion(total: number, weights: number[]): number[] {
+  const sum = weights.reduce((s, w) => s + w, 0);
+  const raw = weights.map((w) => (total * w) / sum);
+  const out = raw.map(Math.floor);
+  const order = raw.map((v, i) => [v - Math.floor(v), i] as const).sort((a, b) => b[0] - a[0]);
+  const left = total - out.reduce((s, x) => s + x, 0);
+  for (let k = 0; k < left; k++) out[order[k % order.length][1]]++;
+  return out;
+}
+
+/**
+ * Sinh câu hỏi cho một phiếu bài tập: chia đều `total` câu cho các chủ đề, trong
+ * mỗi chủ đề giữ tỉ lệ các dạng bài như `mix`. Cùng `seed` → cùng phiếu.
+ * Không có câu trùng nội dung trong phiếu (trừ khi một dạng bài cạn hết biến thể).
+ */
+export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, seed: string): GenQuestionRow[] {
+  if (specs.length === 0 || total <= 0) return [];
+  const r = mulberry32(seedFrom(`phieu|${specs.map((s) => s.id).join(",")}|${total}|${seed}`));
+  const seen = new Set<string>();
+  const key = (q: GenQuestionRow) => q.content + "\u0000" + q.options.join("\u0000");
+  const rows: GenQuestionRow[] = [];
+  const perSpec = apportion(total, specs.map(() => 1));
+  specs.forEach((spec, si) => {
+    const counts = apportion(perSpec[si], spec.mix.map(([, n]) => n));
+    spec.mix.forEach(([gen], gi) => {
+      for (let i = 0; i < counts[gi]; i++) {
+        let row = toQuestionRow(gen(r), r);
+        for (let t = 0; t < 30 && seen.has(key(row)); t++) row = toQuestionRow(gen(r), r);
+        seen.add(key(row));
+        rows.push(row);
+      }
+    });
+  });
+  return rows;
+}
+
+export { LOP1, LOP2, LOP3, LOP5 };
 export type { Draft, Generator };

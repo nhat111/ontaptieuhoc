@@ -1,4 +1,4 @@
--- Bài luyện tập Toán tự sinh — lớp 1, 2, 5 (seed "v1")
+-- Bài luyện tập Toán tự sinh — lớp 1, 2, 3, 5 (seed "v1")
 -- Sinh bởi scripts/gen-math-sql.ts từ lib/mathGen. ĐỪNG sửa tay: sửa generator rồi sinh lại.
 --
 -- Cách dùng: Supabase → SQL Editor → dán toàn bộ file → Run.
@@ -268,6 +268,37 @@ FROM lessons l, (VALUES
   ('Ngày 9 tháng này là thứ Tư. Hỏi ngày 16 tháng này là thứ mấy?', 'mcq', '["Thứ Hai","Thứ Năm","Thứ Tư","Chủ nhật"]', 'Thứ Tư', '{"solution":"Từ ngày 9 đến ngày 16 là 7 ngày, đúng 1 tuần, nên vẫn là thứ Tư."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-2-thoi-gian'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- ═══════════════ LỚP 3 ═══════════════
+INSERT INTO subjects (grade, name, order_index)
+SELECT 3, 'Toán', 99
+WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE grade = 3 AND name = 'Toán');
+
+INSERT INTO chapters (title, subject_id, order_index, source_id)
+SELECT 'Luyện tập theo chủ đề', (SELECT id FROM subjects WHERE grade = 3 AND name = 'Toán' ORDER BY id LIMIT 1), 1000, 'gen_toan_lop_3'
+WHERE NOT EXISTS (SELECT 1 FROM chapters WHERE source_id = 'gen_toan_lop_3');
+
+-- Bảng nhân, bảng chia 6 và 7
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Bảng nhân, bảng chia 6 và 7', '01', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 1, 15, 'gen_toan-3-nhan-chia-6-7', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-nhan-chia-6-7');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('6 : 6 = ___', 'numeric', '[]', '1', '{"solution":"Vì 6 × 1 = 6 nên 6 : 6 = 1."}', 1),
+  ('6 × 10 = ___', 'numeric', '[]', '60', '{"solution":"Theo bảng nhân 6: 6 × 10 = 60."}', 2),
+  ('7 × 6 = ___', 'numeric', '[]', '42', '{"solution":"Theo bảng nhân 7: 7 × 6 = 42."}', 3),
+  ('Số nào nhân với 6 thì được 60?', 'mcq', '["11","9","10","12"]', '10', '{"solution":"Lấy 60 : 6 = 10. Thử lại: 10 × 6 = 60."}', 4),
+  ('6 × 5 - 14 = ___', 'numeric', '[]', '16', '{"solution":"Nhân trước, trừ sau: 6 × 5 = 30; 30 - 14 = 16."}', 5),
+  ('Chọn dấu thích hợp: 6 × 8 ___ 8 × 7', 'mcq', '[">","<","="]', '<', '{"solution":"6 × 8 = 48, 8 × 7 = 56. Vì 48 < 56 nên 6 × 8 < 8 × 7."}', 6),
+  ('7 × 9 = 70. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 7 × 9 = 63."}', 7),
+  ('Mỗi đĩa có 7 bông hoa. Hỏi 6 đĩa như thế có tất cả bao nhiêu bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '42', '{"solution":"6 đĩa, mỗi đĩa 7 bông hoa: 7 × 6 = 42 (bông hoa)."}', 8),
+  ('Có 42 quả táo, xếp vào các đĩa, mỗi đĩa 7 quả táo. Hỏi xếp được mấy đĩa? Trả lời: ___ đĩa.', 'numeric', '[]', '6', '{"solution":"Mỗi đĩa 7 quả táo → phép chia: 42 : 7 = 6 (đĩa)."}', 9),
+  ('Linh có 7 hộp, mỗi hộp 6 con tem. Linh cho bạn 36 con tem. Hỏi Linh còn lại bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '6', '{"solution":"Linh có: 6 × 7 = 42 (con tem). Còn lại: 42 - 36 = 6 (con tem)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-nhan-chia-6-7'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
 
 -- ═══════════════ LỚP 5 ═══════════════
