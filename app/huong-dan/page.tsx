@@ -81,6 +81,18 @@ const STEPS: GuideStep[] = [
     cta: { href: "/phieu-bai-tap", label: "Tạo phiếu bài tập" },
   },
   {
+    id: "phieu-hang-ngay",
+    emoji: "✏️",
+    title: "Phiếu luyện hằng ngày lớp 1 (Toán, Tiếng Việt)",
+    points: [
+      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Phiếu luyện hằng ngày</b>.</>,
+      <><b>Toán</b>: chọn phạm vi 5, 10 hoặc 100 rồi chọn các bài — sơ đồ tách – gộp số, điền dấu &gt; &lt; =, tính, điền số còn thiếu, viết số theo thứ tự, dãy số.</>,
+      <><b>Tiếng Việt</b>: điền c/k, ch/tr, s/x, l/n, g/gh, ng/ngh, h/th/kh, v/d/gi vào chỗ chấm.</>,
+      <>Chọn số phiếu (1, 5 hoặc 10 — mỗi phiếu khác nhau, một trang A4), bấm <b>Tạo phiếu</b> rồi <b>Tải Word (.doc)</b> hoặc <b>In / lưu PDF</b>. Đáp án điền sẵn ở các trang cuối.</>,
+    ],
+    cta: { href: "/phieu-bai-tap?loai=hang-ngay", label: "Tạo phiếu luyện hằng ngày" },
+  },
+  {
     id: "tro-choi",
     emoji: "🎮",
     title: "Trò chơi cho bé lớp 1, lớp 2",
