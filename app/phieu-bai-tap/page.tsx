@@ -19,9 +19,9 @@ const META = {
     url: "/phieu-bai-tap?loai=hang-ngay",
   },
   ai: {
-    title: "Phiếu hoạt động AI lớp 4 – 12 tiết theo Quyết định 2422",
+    title: "Phiếu hoạt động AI lớp 4, lớp 5 – 12 tiết theo Quyết định 2422",
     description:
-      "12 phiếu hoạt động giáo dục trí tuệ nhân tạo lớp 4 theo khung Quyết định 2422/QĐ-BGDĐT: làm trên giấy, không cần máy, kèm trang giáo viên có tiến trình và đáp án. In PDF miễn phí.",
+      "Phiếu hoạt động giáo dục trí tuệ nhân tạo lớp 4, lớp 5 (12 tiết mỗi lớp) theo khung Quyết định 2422/QĐ-BGDĐT: làm trên giấy, không cần máy, kèm trang giáo viên có tiến trình và đáp án. In PDF miễn phí.",
     url: "/phieu-bai-tap?loai=ai",
   },
 } as const;
@@ -42,7 +42,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 const TABS = [
   { key: "chu-de", label: "Phiếu theo chủ đề", sub: "Toán lớp 1–5, trắc nghiệm + tự luận" },
   { key: "hang-ngay", label: "Phiếu luyện hằng ngày", sub: "Toán, Tiếng Việt lớp 1" },
-  { key: "ai", label: "Hoạt động AI", sub: "12 tiết lớp 4 · QĐ 2422" },
+  { key: "ai", label: "Hoạt động AI", sub: "Lớp 4, 5 · QĐ 2422" },
 ] as const;
 
 export default async function WorksheetPage({ searchParams }: { searchParams: Promise<{ loai?: string }> }) {
