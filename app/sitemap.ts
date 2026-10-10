@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/de-thi`, lastModified, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/phieu-bai-tap`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/phieu-bai-tap?loai=hang-ngay`, lastModified, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/phieu-bai-tap?loai=ai`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/huong-dan`, lastModified, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/huong-dan/soan-de`, lastModified, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/gop-y`, lastModified, changeFrequency: "yearly", priority: 0.3 },
