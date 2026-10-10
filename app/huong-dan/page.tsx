@@ -93,6 +93,17 @@ const STEPS: GuideStep[] = [
     cta: { href: "/phieu-bai-tap?loai=hang-ngay", label: "Tạo phiếu luyện hằng ngày" },
   },
   {
+    id: "hoat-dong-ai",
+    emoji: "🤖",
+    title: "Phiếu hoạt động AI cho thầy cô (lớp 4)",
+    points: [
+      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Hoạt động AI</b>: 12 phiếu cho 12 tiết AI cốt lõi của lớp 4, theo Quyết định 2422/QĐ-BGDĐT.</>,
+      <>Mỗi phiếu là một tiết, làm trên giấy, không cần máy tính. Chọn tiết cần in (hoặc cả 12 tiết), tick <b>Kèm trang dành cho thầy cô</b> nếu cần mục tiêu, tiến trình 35 phút và đáp án.</>,
+      <>Bấm <b>In / lưu PDF</b>. Các lớp khác đang soạn.</>,
+    ],
+    cta: { href: "/phieu-bai-tap?loai=ai", label: "Xem phiếu hoạt động AI" },
+  },
+  {
     id: "tro-choi",
     emoji: "🎮",
     title: "Trò chơi cho bé lớp 1, lớp 2",
