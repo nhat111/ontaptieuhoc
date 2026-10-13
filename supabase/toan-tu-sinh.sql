@@ -1,4 +1,4 @@
--- Bài luyện tập Toán tự sinh — lớp 1, 2, 3, 5 (seed "v1")
+-- Bài luyện tập Toán tự sinh — lớp 1, 2, 3, 4, 5 (seed "v1")
 -- Sinh bởi scripts/gen-math-sql.ts từ lib/mathGen. ĐỪNG sửa tay: sửa generator rồi sinh lại.
 --
 -- Cách dùng: Supabase → SQL Editor → dán toàn bộ file → Run.
@@ -299,6 +299,147 @@ FROM lessons l, (VALUES
   ('Linh có 7 hộp, mỗi hộp 6 con tem. Linh cho bạn 36 con tem. Hỏi Linh còn lại bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '6', '{"solution":"Linh có: 6 × 7 = 42 (con tem). Còn lại: 42 - 36 = 6 (con tem)."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-3-nhan-chia-6-7'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- ═══════════════ LỚP 4 ═══════════════
+INSERT INTO subjects (grade, name, order_index)
+SELECT 4, 'Toán', 99
+WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE grade = 4 AND name = 'Toán');
+
+INSERT INTO chapters (title, subject_id, order_index, source_id)
+SELECT 'Luyện tập theo chủ đề', (SELECT id FROM subjects WHERE grade = 4 AND name = 'Toán' ORDER BY id LIMIT 1), 1000, 'gen_toan_lop_4'
+WHERE NOT EXISTS (SELECT 1 FROM chapters WHERE source_id = 'gen_toan_lop_4');
+
+-- Số có nhiều chữ số: hàng và lớp, so sánh, làm tròn
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Số có nhiều chữ số: hàng và lớp, so sánh, làm tròn', '01', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 1, 15, 'gen_toan-4-so-nhieu-chu-so', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-so-nhieu-chu-so');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Trong số 1.740.986, chữ số 8 thuộc hàng nào?', 'mcq', '["hàng trăm","hàng nghìn","hàng chục","hàng đơn vị"]', 'hàng chục', '{"solution":"Đếm từ phải sang trái: đơn vị, chục, trăm, nghìn, chục nghìn, trăm nghìn, triệu, chục triệu, trăm triệu. Chữ số 8 ở hàng chục."}', 1),
+  ('Trong số 4.329.805, chữ số 8 thuộc hàng nào?', 'mcq', '["hàng nghìn","hàng chục nghìn","hàng trăm nghìn","hàng trăm"]', 'hàng trăm', '{"solution":"Đếm từ phải sang trái: đơn vị, chục, trăm, nghìn, chục nghìn, trăm nghìn, triệu, chục triệu, trăm triệu. Chữ số 8 ở hàng trăm."}', 2),
+  ('Trong số 876.142.503, chữ số 7 thuộc hàng nào?', 'mcq', '["hàng trăm nghìn","hàng triệu","hàng trăm triệu","hàng chục triệu"]', 'hàng chục triệu', '{"solution":"Đếm từ phải sang trái: đơn vị, chục, trăm, nghìn, chục nghìn, trăm nghìn, triệu, chục triệu, trăm triệu. Chữ số 7 ở hàng chục triệu."}', 3),
+  ('Giá trị của chữ số 7 trong số 7.184.932 là ___', 'short', '[]', '7.000.000|7000000|7 000 000', '{"solution":"Chữ số 7 ở hàng triệu nên có giá trị là 7.000.000."}', 4),
+  ('Giá trị của chữ số 8 trong số 8.064.517 là ___', 'short', '[]', '8.000.000|8000000|8 000 000', '{"solution":"Chữ số 8 ở hàng triệu nên có giá trị là 8.000.000."}', 5),
+  ('Chọn dấu thích hợp: 36.905.530 ___ 33.905.530', 'mcq', '[">","<","="]', '>', '{"solution":"Hai số có cùng 8 chữ số. So sánh từng hàng từ trái sang phải, gặp hàng đầu tiên khác nhau thì số nào có chữ số lớn hơn là số lớn hơn: 36.905.530 > 33.905.530."}', 6),
+  ('Chọn dấu thích hợp: 1.757.734 ___ 1.750.734', 'mcq', '[">","<","="]', '>', '{"solution":"Hai số có cùng 7 chữ số. So sánh từng hàng từ trái sang phải, gặp hàng đầu tiên khác nhau thì số nào có chữ số lớn hơn là số lớn hơn: 1.757.734 > 1.750.734."}', 7),
+  ('Dãy số nào được sắp xếp theo thứ tự từ bé đến lớn?', 'mcq', '["367.459; 367.754; 367.823; 367.825","367.825; 367.823; 367.754; 367.459","367.459; 367.754; 367.825; 367.823","367.754; 367.459; 367.823; 367.825"]', '367.459; 367.754; 367.823; 367.825', '{"solution":"Các số có chung các chữ số ở hàng cao, nên so sánh từ hàng trăm trở xuống. Thứ tự đúng: 367.459 < 367.754 < 367.823 < 367.825."}', 8),
+  ('Làm tròn số 3.973.735 đến hàng chục nghìn thì được số nào?', 'mcq', '["3.974.000","3.970.000","3.960.000","3.980.000"]', '3.970.000', '{"solution":"Xét chữ số ngay bên phải hàng chục nghìn là 3. Vì 3 < 5 nên làm tròn xuống: 3.973.735 ≈ 3.970.000."}', 9),
+  ('Làm tròn số 95.789 đến hàng nghìn thì được số nào?', 'mcq', '["94.000","96.000","95.800","97.000"]', '96.000', '{"solution":"Xét chữ số ngay bên phải hàng nghìn là 7. Vì 7 ≥ 5 nên làm tròn lên: 95.789 ≈ 96.000."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-so-nhieu-chu-so'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Cộng, trừ các số có nhiều chữ số
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Cộng, trừ các số có nhiều chữ số', '02', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 2, 15, 'gen_toan-4-cong-tru', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-cong-tru');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('652.310 - 477.167 = ___', 'short', '[]', '175.143|175143|175 143', '{"solution":"Đặt tính thẳng hàng rồi trừ từ phải sang trái (nhớ sang hàng bên trái nếu có): 652.310 - 477.167 = 175.143."}', 1),
+  ('77.622 - 4.892 = ___', 'short', '[]', '72.730|72730|72 730', '{"solution":"Đặt tính thẳng hàng rồi trừ từ phải sang trái (nhớ sang hàng bên trái nếu có): 77.622 - 4.892 = 72.730."}', 2),
+  ('359.663 + 4.628 = ___', 'short', '[]', '364.291|364291|364 291', '{"solution":"Đặt tính thẳng hàng rồi cộng từ phải sang trái (nhớ sang hàng bên trái nếu có): 359.663 + 4.628 = 364.291."}', 3),
+  ('556.527 + 76.699 = ___', 'short', '[]', '633.226|633226|633 226', '{"solution":"Đặt tính thẳng hàng rồi cộng từ phải sang trái (nhớ sang hàng bên trái nếu có): 556.527 + 76.699 = 633.226."}', 4),
+  ('2.554 + ___ = 41.139', 'short', '[]', '38.585|38585|38 585', '{"solution":"Muốn tìm số hạng chưa biết, lấy tổng trừ số hạng đã biết: 41.139 - 2.554 = 38.585."}', 5),
+  ('50.150 + ___ = 135.659', 'short', '[]', '85.509|85509|85 509', '{"solution":"Muốn tìm số hạng chưa biết, lấy tổng trừ số hạng đã biết: 135.659 - 50.150 = 85.509."}', 6),
+  ('Tính bằng cách thuận tiện: 2.370 + 5.563 + 130 = ___', 'short', '[]', '8.063|8063|8 063', '{"solution":"Đổi chỗ và nhóm hai số có tổng tròn: (2.370 + 130) + 5.563 = 2.500 + 5.563 = 8.063."}', 7),
+  ('14.571 + 45.946 = 59.517. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 14.571 + 45.946 = 60.517. Kết quả đã cho lệch 1.000, thường do quên nhớ hoặc nhớ thừa khi cộng."}', 8),
+  ('Một cửa hàng tháng thứ nhất bán được 7.120 kg gạo, tháng thứ hai bán được nhiều hơn tháng thứ nhất 490 kg gạo. Hỏi cả hai tháng bán được bao nhiêu kg gạo? Trả lời: ___ kg gạo.', 'short', '[]', '14.730|14730|14 730', '{"solution":"Tháng thứ hai: 7.120 + 490 = 7.610 (kg gạo). Cả hai tháng: 7.120 + 7.610 = 14.730 (kg gạo)."}', 9),
+  ('Một xưởng may tháng thứ nhất làm được 6.970 sản phẩm, tháng thứ hai làm được nhiều hơn tháng thứ nhất 860 sản phẩm. Hỏi cả hai tháng làm được bao nhiêu sản phẩm? Trả lời: ___ sản phẩm.', 'short', '[]', '14.800|14800|14 800', '{"solution":"Tháng thứ hai: 6.970 + 860 = 7.830 (sản phẩm). Cả hai tháng: 6.970 + 7.830 = 14.800 (sản phẩm)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-cong-tru'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Nhân, chia với số có một, hai chữ số
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Nhân, chia với số có một, hai chữ số', '03', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 3, 15, 'gen_toan-4-nhan-chia', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-nhan-chia');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('1.563 × 2 = ___', 'short', '[]', '3.126|3126|3 126', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 1.563 × 2 = 3.126."}', 1),
+  ('84.213 × 6 = ___', 'short', '[]', '505.278|505278|505 278', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 84.213 × 6 = 505.278."}', 2),
+  ('394 × 41 = ___', 'short', '[]', '16.154|16154|16 154', '{"solution":"394 × 1 = 394 (tích riêng thứ nhất); 394 × 4 = 1.576 (tích riêng thứ hai, viết lùi sang trái một cột). Cộng lại: 394 + 15.760 = 16.154."}', 3),
+  ('363.380 : 4 = ___', 'short', '[]', '90.845|90845|90 845', '{"solution":"Chia lần lượt từ trái sang phải. Thử lại: 90.845 × 4 = 363.380, nên 363.380 : 4 = 90.845."}', 4),
+  ('76.050 : 2 = ___', 'short', '[]', '38.025|38025|38 025', '{"solution":"Chia lần lượt từ trái sang phải. Thử lại: 38.025 × 2 = 76.050, nên 76.050 : 2 = 38.025."}', 5),
+  ('53.358 : 8 = 6.669 (dư ___)', 'numeric', '[]', '6', '{"solution":"6.669 × 8 = 53.352; 53.358 - 53.352 = 6. Số dư 6 bé hơn số chia 8."}', 6),
+  ('649 × 1.000 = ___', 'short', '[]', '649.000|649000|649 000', '{"solution":"Nhân với 1.000 chỉ cần viết thêm 3 chữ số 0 vào bên phải: 649 × 1.000 = 649.000."}', 7),
+  ('800 × 10 = ___', 'short', '[]', '8.000|8000|8 000', '{"solution":"Nhân với 10 chỉ cần viết thêm 1 chữ số 0 vào bên phải: 800 × 10 = 8.000."}', 8),
+  ('Người ta xếp 4.176 quyển vở vào các chồng, mỗi chồng 48 quyển vở. Hỏi xếp được bao nhiêu chồng? Trả lời: ___ chồng.', 'numeric', '[]', '87', '{"solution":"Mỗi chồng 48 quyển vở → phép chia: 4.176 : 48 = 87 (chồng)."}', 9),
+  ('Mỗi két có 46 chai nước. Hỏi 233 két như thế có tất cả bao nhiêu chai nước? Trả lời: ___ chai nước.', 'short', '[]', '10.718|10718|10 718', '{"solution":"233 két, mỗi két 46 chai nước: 46 × 233 = 10.718 (chai nước)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-nhan-chia'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Trung bình cộng; tìm hai số khi biết tổng và hiệu
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Trung bình cộng; tìm hai số khi biết tổng và hiệu', '04', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 4, 15, 'gen_toan-4-tbc-tong-hieu', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-tbc-tong-hieu');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Số trung bình cộng của 396; 294; 302 và 28 là ___', 'numeric', '[]', '255', '{"solution":"Tổng các số: 396 + 294 + 302 + 28 = 1.020. Có 4 số nên trung bình cộng là 1.020 : 4 = 255."}', 1),
+  ('Số trung bình cộng của 83; 50 và 26 là ___', 'numeric', '[]', '53', '{"solution":"Tổng các số: 83 + 50 + 26 = 159. Có 3 số nên trung bình cộng là 159 : 3 = 53."}', 2),
+  ('Số trung bình cộng của 182; 74 và 104 là ___', 'numeric', '[]', '120', '{"solution":"Tổng các số: 182 + 74 + 104 = 360. Có 3 số nên trung bình cộng là 360 : 3 = 120."}', 3),
+  ('Số trung bình cộng của 94 và 310 là ___', 'numeric', '[]', '202', '{"solution":"Tổng các số: 94 + 310 = 404. Có 2 số nên trung bình cộng là 404 : 2 = 202."}', 4),
+  ('Số trung bình cộng của 36; 246; 211 và 499 là ___', 'numeric', '[]', '248', '{"solution":"Tổng các số: 36 + 246 + 211 + 499 = 992. Có 4 số nên trung bình cộng là 992 : 4 = 248."}', 5),
+  ('Tổng số tuổi của mẹ và con là 51 tuổi. Mẹ hơn con 27 tuổi. Hỏi con bao nhiêu tuổi? Trả lời: ___ tuổi.', 'numeric', '[]', '12', '{"solution":"Tuổi con (số bé) = (51 - 27) : 2 = 12 (tuổi)."}', 6),
+  ('Tổng của hai số là 752, hiệu của hai số là 10. Số bé là ___', 'numeric', '[]', '371', '{"solution":"Số bé = (tổng - hiệu) : 2 = (752 - 10) : 2 = 371."}', 7),
+  ('Tổng của hai số là 1.574, hiệu của hai số là 96. Số lớn là ___', 'numeric', '[]', '835', '{"solution":"Số lớn = (tổng + hiệu) : 2 = (1.574 + 96) : 2 = 835."}', 8),
+  ('Hai lớp 4A và 4B trồng được 267 cây. Lớp 4A trồng được nhiều hơn lớp 4B 159 cây. Hỏi lớp 4B trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '54', '{"solution":"Lớp 4B trồng được ít hơn (số bé). Số bé = (tổng - hiệu) : 2 = (267 - 159) : 2 = 54."}', 9),
+  ('Hai lớp 4A và 4C trồng được 921 cây. Lớp 4A trồng được nhiều hơn lớp 4C 281 cây. Hỏi lớp 4A trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '601', '{"solution":"Lớp 4A trồng được nhiều hơn (số lớn). Số lớn = (tổng + hiệu) : 2 = (921 + 281) : 2 = 601."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-tbc-tong-hieu'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Phân số: rút gọn, so sánh, cộng, trừ, nhân, chia
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Phân số: rút gọn, so sánh, cộng, trừ, nhân, chia', '05', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 5, 15, 'gen_toan-4-phan-so', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-phan-so');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Rút gọn phân số 4/6 thành phân số tối giản: 4/6 = ___', 'short', '[]', '2/3|2 / 3', '{"solution":"Chia cả tử số và mẫu số cho 2: 4 : 2 = 2; 6 : 2 = 3. Phân số 2/3 không rút gọn được nữa."}', 1),
+  ('Rút gọn phân số 5/10 thành phân số tối giản: 5/10 = ___', 'short', '[]', '1/2|1 / 2', '{"solution":"Chia cả tử số và mẫu số cho 5: 5 : 5 = 1; 10 : 5 = 2. Phân số 1/2 không rút gọn được nữa."}', 2),
+  ('Phân số nào bằng phân số 2/3?', 'mcq', '["8/9","12/18","14/18","12/21"]', '12/18', '{"solution":"Nhân cả tử số và mẫu số của 2/3 với 6: 2 × 6 = 12; 3 × 6 = 18. Vậy 2/3 = 12/18."}', 3),
+  ('Chọn dấu thích hợp: 8/15 ___ 8/11', 'mcq', '[">","<","="]', '<', '{"solution":"Hai phân số cùng tử số: phân số nào có mẫu số bé hơn thì lớn hơn. Vậy 8/15 < 8/11."}', 4),
+  ('Chọn dấu thích hợp: 1/4 ___ 1/2', 'mcq', '[">","<","="]', '<', '{"solution":"Hai phân số cùng tử số: phân số nào có mẫu số bé hơn thì lớn hơn. Vậy 1/4 < 1/2."}', 5),
+  ('5/7 + 2/7 = ? (viết kết quả ở dạng tối giản)', 'mcq', '["8/7","3/7","1/2","1"]', '1', '{"solution":"Cộng hai tử số, giữ nguyên mẫu số: 7/7, rút gọn được 1."}', 6),
+  ('1/9 + 8/9 = ? (viết kết quả ở dạng tối giản)', 'mcq', '["3/2","1","1/2","10/9"]', '1', '{"solution":"Cộng hai tử số, giữ nguyên mẫu số: 9/9, rút gọn được 1."}', 7),
+  ('5/9 - 1/9 = ? (viết kết quả ở dạng tối giản)', 'mcq', '["1/3","1/2","2/5","4/9"]', '4/9', '{"solution":"Trừ hai tử số, giữ nguyên mẫu số: 4/9."}', 8),
+  ('1/2 : 1/3 = ? (viết kết quả ở dạng tối giản)', 'mcq', '["1","1/6","3/2","2"]', '3/2', '{"solution":"Chia cho một phân số là nhân với phân số đảo ngược: 1/2 × 3/1 = 3/2."}', 9),
+  ('5/6 × 1/4 = ? (viết kết quả ở dạng tối giản)', 'mcq', '["5/6","1/4","5/24","24/5"]', '5/24', '{"solution":"Nhân tử số với tử số, mẫu số với mẫu số: 5 × 1 = 5; 6 × 4 = 24. Được 5/24."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-phan-so'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Yến, tạ, tấn; mét vuông; giây, thế kỉ
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Yến, tạ, tấn; mét vuông; giây, thế kỉ', '06', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_4'), 'active', 6, 15, 'gen_toan-4-don-vi-do', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-4-don-vi-do');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('29 yến = ___ kg', 'numeric', '[]', '290', '{"solution":"1 yến = 10 kg, nên 29 yến = 29 × 10 = 290 kg."}', 1),
+  ('7 tạ 18 kg = ___ kg', 'numeric', '[]', '718', '{"solution":"7 tạ = 700 kg; 700 + 18 = 718 (kg)."}', 2),
+  ('4 tạ 57 kg = ___ kg', 'numeric', '[]', '457', '{"solution":"4 tạ = 400 kg; 400 + 57 = 457 (kg)."}', 3),
+  ('1 tạ 49 kg = ___ kg', 'numeric', '[]', '149', '{"solution":"1 tạ = 100 kg; 100 + 49 = 149 (kg)."}', 4),
+  ('8 cm² 48 mm² = ___ mm²', 'numeric', '[]', '848', '{"solution":"8 cm² = 800 mm²; 800 + 48 = 848 (mm²)."}', 5),
+  ('3.200 dm² = ___ m²', 'numeric', '[]', '32', '{"solution":"1 m² = 100 dm², nên 3.200 dm² = 3.200 : 100 = 32 m²."}', 6),
+  ('8.600 dm² = ___ m²', 'numeric', '[]', '86', '{"solution":"1 m² = 100 dm², nên 8.600 dm² = 8.600 : 100 = 86 m²."}', 7),
+  ('3 thế kỉ = ___ năm', 'numeric', '[]', '300', '{"solution":"1 thế kỉ = 100 năm, nên 3 thế kỉ = 3 × 100 = 300 năm."}', 8),
+  ('Năm 1945 (năm nước Việt Nam Dân chủ Cộng hoà ra đời) thuộc thế kỉ nào?', 'mcq', '["XIX","XX","XVIII","XXII"]', 'XX', '{"solution":"Từ năm 1901 đến năm 2000 là thế kỉ XX (thế kỉ thứ 20). Năm 1945 nằm trong khoảng đó."}', 9),
+  ('3 phút 39 giây = ___ giây', 'numeric', '[]', '219', '{"solution":"3 phút = 180 giây; 180 + 39 = 219 (giây)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-4-don-vi-do'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
 
 -- ═══════════════ LỚP 5 ═══════════════

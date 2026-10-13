@@ -1,5 +1,5 @@
 // lib/mathGen/index.ts
-// Bộ sinh đề Toán lớp 1, 2, 3, 5 — không gọi AI, không gọi dịch vụ ngoài.
+// Bộ sinh đề Toán lớp 1–5 — không gọi AI, không gọi dịch vụ ngoài.
 // Mỗi chủ đề là một "bài luyện tập" 10 câu; `buildLessonQuestions` trả về các dòng
 // sẵn sàng INSERT vào bảng `questions` (xem scripts/gen-math-sql.ts).
 //
@@ -13,9 +13,10 @@ import { type Draft, type Generator, type Rng, mulberry32, seedFrom, shuffle, va
 import { LOP1 } from "./lop1";
 import { LOP2 } from "./lop2";
 import { LOP3 } from "./lop3";
+import { LOP4 } from "./lop4";
 import { LOP5 } from "./lop5";
 
-export type MathGrade = 1 | 2 | 3 | 5;
+export type MathGrade = 1 | 2 | 3 | 4 | 5;
 
 export interface MathLessonSpec {
   /** Khoá ổn định, dùng làm lessons.source_id = "gen_" + id. Đừng đổi khi đã import. */
@@ -58,6 +59,20 @@ export const MATH_LESSONS: MathLessonSpec[] = [
   L({ id: "toan-3-nhan-chia-6-7", grade: 3, title: "Bảng nhân, bảng chia 6 và 7",
     mix: [[LOP3.bangNhanChia67, 3], [LOP3.timThuaSo67, 1], [LOP3.bieuThuc67, 1], [LOP3.soSanhTich67, 1],
       [LOP3.dungSai3, 1], [LOP3.loiVan67, 2], [LOP3.loiVanHaiBuoc67, 1]] }),
+
+  /* ─────────── LỚP 4 ─────────── */
+  L({ id: "toan-4-so-nhieu-chu-so", grade: 4, title: "Số có nhiều chữ số: hàng và lớp, so sánh, làm tròn",
+    mix: [[LOP4.hangLop, 3], [LOP4.giaTriChuSo, 2], [LOP4.soSanhSoLon, 2], [LOP4.sapXepSoLon, 1], [LOP4.lamTron, 2]] }),
+  L({ id: "toan-4-cong-tru", grade: 4, title: "Cộng, trừ các số có nhiều chữ số",
+    mix: [[LOP4.congTruSoLon, 4], [LOP4.timThanhPhan4, 2], [LOP4.tinhThuanTien, 1], [LOP4.dungSai4, 1], [LOP4.loiVanCongTru4, 2]] }),
+  L({ id: "toan-4-nhan-chia", grade: 4, title: "Nhân, chia với số có một, hai chữ số",
+    mix: [[LOP4.nhanSoLon, 3], [LOP4.chiaSoLon, 3], [LOP4.nhanChia10, 2], [LOP4.loiVanNhanChia4, 2]] }),
+  L({ id: "toan-4-tbc-tong-hieu", grade: 4, title: "Trung bình cộng; tìm hai số khi biết tổng và hiệu",
+    mix: [[LOP4.trungBinhCong, 5], [LOP4.tongHieu, 5]] }),
+  L({ id: "toan-4-phan-so", grade: 4, title: "Phân số: rút gọn, so sánh, cộng, trừ, nhân, chia",
+    mix: [[LOP4.rutGonPhanSo, 2], [LOP4.phanSoBangNhau, 1], [LOP4.soSanhPhanSo, 2], [LOP4.congTruPhanSo, 3], [LOP4.nhanChiaPhanSo, 2]] }),
+  L({ id: "toan-4-don-vi-do", grade: 4, title: "Yến, tạ, tấn; mét vuông; giây, thế kỉ",
+    mix: [[LOP4.doiKhoiLuong, 4], [LOP4.doiDienTich, 3], [LOP4.thoiGian4, 3]] }),
 
   /* ─────────── LỚP 5 ─────────── */
   L({ id: "toan-5-phan-so-hon-so", grade: 5, title: "Phân số thập phân và hỗn số",
@@ -206,5 +221,5 @@ export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, 
   return rows;
 }
 
-export { LOP1, LOP2, LOP3, LOP5 };
+export { LOP1, LOP2, LOP3, LOP4, LOP5 };
 export type { Draft, Generator };
