@@ -301,6 +301,160 @@ FROM lessons l, (VALUES
 WHERE l.source_id = 'gen_toan-3-nhan-chia-6-7'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
 
+-- Bảng nhân, bảng chia 3 và 4
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Bảng nhân, bảng chia 3 và 4', '02', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 2, 15, 'gen_toan-3-bang-nhan-chia-3-4', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-bang-nhan-chia-3-4');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('4 × ___ = 16', 'numeric', '[]', '4', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 16 : 4 = 4."}', 1),
+  ('4 × 4 = ___', 'numeric', '[]', '16', '{"solution":"Đổi chỗ các thừa số thì tích không đổi: 4 × 4 = 4 × 4 = 16."}', 2),
+  ('24 : 3 = ___', 'numeric', '[]', '8', '{"solution":"Vì 3 × 8 = 24 nên 24 : 3 = 8."}', 3),
+  ('30 : 3 = ___', 'numeric', '[]', '10', '{"solution":"Vì 3 × 10 = 30 nên 30 : 3 = 10."}', 4),
+  ('Số nào nhân với 4 thì được 20?', 'mcq', '["5","4","3","6"]', '5', '{"solution":"Lấy 20 : 4 = 5. Thử lại: 5 × 4 = 20."}', 5),
+  ('Số nào nhân với 3 thì được 15?', 'mcq', '["6","3","5","4"]', '5', '{"solution":"Lấy 15 : 3 = 5. Thử lại: 5 × 3 = 15."}', 6),
+  ('4 × 5 = 25. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 4 × 5 = 20."}', 7),
+  ('Mỗi túi có 4 con tem. Hỏi 2 túi như thế có tất cả bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '8', '{"solution":"2 túi, mỗi túi 4 con tem: 4 × 2 = 8 (con tem)."}', 8),
+  ('Có 8 viên bi chia đều cho 4 bạn. Hỏi mỗi bạn được mấy viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '2', '{"solution":"Chia đều cho 4 bạn → phép chia: 8 : 4 = 2 (viên bi)."}', 9),
+  ('Mỗi hộp có 4 quả cam. Hỏi 9 hộp như thế có tất cả bao nhiêu quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '36', '{"solution":"9 hộp, mỗi hộp 4 quả cam: 4 × 9 = 36 (quả cam)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-bang-nhan-chia-3-4'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Bảng nhân, bảng chia 8 và 9
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Bảng nhân, bảng chia 8 và 9', '03', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 3, 15, 'gen_toan-3-bang-nhan-chia-8-9', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-bang-nhan-chia-8-9');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('8 × ___ = 72', 'numeric', '[]', '9', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 72 : 8 = 9."}', 1),
+  ('9 × ___ = 81', 'numeric', '[]', '9', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 81 : 9 = 9."}', 2),
+  ('7 × 9 = ___', 'numeric', '[]', '63', '{"solution":"Đổi chỗ các thừa số thì tích không đổi: 7 × 9 = 9 × 7 = 63."}', 3),
+  ('8 × 1 = ___', 'numeric', '[]', '8', '{"solution":"Theo bảng nhân 8: 8 × 1 = 8."}', 4),
+  ('Số nào nhân với 9 thì được 18?', 'mcq', '["2","1","4","3"]', '2', '{"solution":"Lấy 18 : 9 = 2. Thử lại: 2 × 9 = 18."}', 5),
+  ('Số nào nhân với 9 thì được 63?', 'mcq', '["8","9","7","5"]', '7', '{"solution":"Lấy 63 : 9 = 7. Thử lại: 7 × 9 = 63."}', 6),
+  ('8 × 3 = 21. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 8 × 3 = 24."}', 7),
+  ('Có 27 bông hoa chia đều cho 9 bạn. Hỏi mỗi bạn được mấy bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '3', '{"solution":"Chia đều cho 9 bạn → phép chia: 27 : 9 = 3 (bông hoa)."}', 8),
+  ('Mỗi túi có 9 chiếc bút chì. Hỏi 10 túi như thế có tất cả bao nhiêu chiếc bút chì? Trả lời: ___ chiếc bút chì.', 'numeric', '[]', '90', '{"solution":"10 túi, mỗi túi 9 chiếc bút chì: 9 × 10 = 90 (chiếc bút chì)."}', 9),
+  ('Mỗi rổ có 9 viên bi. Hỏi 10 rổ như thế có tất cả bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '90', '{"solution":"10 rổ, mỗi rổ 9 viên bi: 9 × 10 = 90 (viên bi)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-bang-nhan-chia-8-9'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Gấp, giảm một số lần; tìm thành phần phép nhân, phép chia
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Gấp, giảm một số lần; tìm thành phần phép nhân, phép chia', '04', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 4, 15, 'gen_toan-3-gap-giam', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-gap-giam');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Giảm 77 đi 7 lần được ___', 'numeric', '[]', '11', '{"solution":"Muốn giảm một số đi nhiều lần, ta chia số đó cho số lần: 77 : 7 = 11."}', 1),
+  ('Gấp 5 lên 4 lần được số nào?', 'mcq', '["16","19","25","20"]', '20', '{"solution":"Gấp lên 4 lần là nhân với 4: 5 × 4 = 20. (Thêm 4 đơn vị mới là cộng: 5 + 4 = 9.)"}', 2),
+  ('Gấp 8 lên 9 lần được ___', 'numeric', '[]', '72', '{"solution":"Muốn gấp một số lên nhiều lần, ta nhân số đó với số lần: 8 × 9 = 72."}', 3),
+  ('Gấp 10 lên 3 lần được số nào?', 'mcq', '["27","29","30","13"]', '30', '{"solution":"Gấp lên 3 lần là nhân với 3: 10 × 3 = 30. (Thêm 3 đơn vị mới là cộng: 10 + 3 = 13.)"}', 4),
+  ('Hoa có 4 con tem. Số con tem của Minh gấp 6 lần số con tem của Hoa. Hỏi Minh có bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '24', '{"solution":"Minh có: 4 × 6 = 24 (con tem)."}', 5),
+  ('Linh có 6 quyển vở. Số quyển vở của An gấp 6 lần số quyển vở của Linh. Hỏi An có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '36', '{"solution":"An có: 6 × 6 = 36 (quyển vở)."}', 6),
+  ('Hoa có 14 viên bi. Số viên bi của Nam gấp 5 lần số viên bi của Hoa. Hỏi Nam có bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '70', '{"solution":"Nam có: 14 × 5 = 70 (viên bi)."}', 7),
+  ('___ × 3 = 6', 'numeric', '[]', '2', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 6 : 3 = 2."}', 8),
+  ('___ × 8 = 32', 'numeric', '[]', '4', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 32 : 8 = 4."}', 9),
+  ('16 : ___ = 8', 'numeric', '[]', '2', '{"solution":"Muốn tìm số chia, lấy số bị chia chia cho thương: 16 : 8 = 2."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-gap-giam'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Nhân, chia với số có một chữ số; biểu thức; một phần mấy
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Nhân, chia với số có một chữ số; biểu thức; một phần mấy', '05', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 5, 15, 'gen_toan-3-nhan-chia-mot-chu-so', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-nhan-chia-mot-chu-so');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('677 : 5 = 135 (dư ___)', 'numeric', '[]', '2', '{"solution":"135 × 5 = 675; 677 - 675 = 2. Số dư 2 bé hơn số chia 5."}', 1),
+  ('307 : 6 = 51 (dư ___)', 'numeric', '[]', '1', '{"solution":"51 × 6 = 306; 307 - 306 = 1. Số dư 1 bé hơn số chia 6."}', 2),
+  ('950 : 4 = 237 (dư ___)', 'numeric', '[]', '2', '{"solution":"237 × 4 = 948; 950 - 948 = 2. Số dư 2 bé hơn số chia 4."}', 3),
+  ('916 : 4 = ___', 'numeric', '[]', '229', '{"solution":"Chia lần lượt từ trái sang phải. Thử lại: 229 × 4 = 916."}', 4),
+  ('396 × 2 = ___', 'numeric', '[]', '792', '{"solution":"Đặt tính rồi nhân từ hàng đơn vị, nhớ sang hàng bên trái: 396 × 2 = 792."}', 5),
+  ('Tính giá trị biểu thức: 40 + 2 × 5 = ___', 'numeric', '[]', '50', '{"solution":"Nhân, chia trước; cộng, trừ sau: 2 × 5 = 10; 40 + 10 = 50."}', 6),
+  ('Tính giá trị biểu thức: 4 × (11 - 2) = ___', 'numeric', '[]', '36', '{"solution":"Tính trong ngoặc trước: 11 - 2 = 9; rồi 4 × 9 = 36."}', 7),
+  ('Tính giá trị biểu thức: 8 × (25 - 20) = ___', 'numeric', '[]', '40', '{"solution":"Tính trong ngoặc trước: 25 - 20 = 5; rồi 8 × 5 = 40."}', 8),
+  ('1/7 của 63 l là ___ l.', 'numeric', '[]', '9', '{"solution":"Muốn tìm 1/7 của một số, ta chia số đó cho 7: 63 : 7 = 9 l."}', 9),
+  ('1/8 của 56 quả cam là ___ quả cam.', 'numeric', '[]', '7', '{"solution":"Muốn tìm 1/8 của một số, ta chia số đó cho 8: 56 : 8 = 7 quả cam."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-nhan-chia-mot-chu-so'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Các số trong phạm vi 100.000; làm tròn số; chữ số La Mã
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Các số trong phạm vi 100.000; làm tròn số; chữ số La Mã', '06', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 6, 15, 'gen_toan-3-so-den-100000', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-so-den-100000');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Số liền sau của số 76.424 là ___', 'short', '[]', '76.425|76425|76 425', '{"solution":"Số liền sau hơn số đã cho 1 đơn vị: 76.424 + 1 = 76.425."}', 1),
+  ('Viết số gồm 2 chục nghìn, 8 nghìn, 3 trăm, 6 chục và 7 đơn vị: ___', 'short', '[]', '28.367|28367|28 367', '{"solution":"Viết lần lượt các chữ số từ hàng chục nghìn đến hàng đơn vị: 28367 → 28.367."}', 2),
+  ('Giá trị của chữ số 7 trong số 74.238 là ___', 'short', '[]', '70.000|70000|70 000', '{"solution":"Chữ số 7 ở hàng chục nghìn nên có giá trị là 70.000."}', 3),
+  ('Chọn dấu thích hợp: 11.226 ___ 11.426', 'mcq', '[">","<","="]', '<', '{"solution":"Hai số cùng có 5 chữ số. So sánh từ hàng chục nghìn sang phải, gặp hàng đầu tiên khác nhau: 11.226 < 11.426."}', 4),
+  ('Chọn dấu thích hợp: 34.711 ___ 36.711', 'mcq', '[">","<","="]', '<', '{"solution":"Hai số cùng có 5 chữ số. So sánh từ hàng chục nghìn sang phải, gặp hàng đầu tiên khác nhau: 34.711 < 36.711."}', 5),
+  ('Dãy số nào được sắp xếp theo thứ tự từ lớn đến bé?', 'mcq', '["40.953; 40.774; 40.147; 40.366","40.953; 40.774; 40.366; 40.147","40.147; 40.366; 40.774; 40.953","40.774; 40.953; 40.366; 40.147"]', '40.953; 40.774; 40.366; 40.147', '{"solution":"Thứ tự đúng: 40.953 > 40.774 > 40.366 > 40.147."}', 6),
+  ('Làm tròn số 785 đến hàng chục thì được số nào?', 'mcq', '["800","770","810","790"]', '790', '{"solution":"Chữ số ngay bên phải hàng chục là 5. Vì 5 ≥ 5 nên làm tròn lên: 785 ≈ 790."}', 7),
+  ('Làm tròn số 29.543 đến hàng chục nghìn thì được số nào?', 'mcq', '["10.000","50.000","30.000","40.000"]', '30.000', '{"solution":"Chữ số ngay bên phải hàng chục nghìn là 9. Vì 9 ≥ 5 nên làm tròn lên: 29.543 ≈ 30.000."}', 8),
+  ('Số 13 viết bằng chữ số La Mã là:', 'mcq', '["XIII","VIII","XV","XII"]', 'XIII', '{"solution":"I = 1, V = 5, X = 10. Số 13 viết là XIII."}', 9),
+  ('Số La Mã IX đọc là số nào?', 'mcq', '["8","11","6","9"]', '9', '{"solution":"I = 1, V = 5, X = 10. Chữ số ghi bên phải chữ số lớn hơn thì cộng thêm, ghi bên trái thì trừ đi: IX = 9."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-so-den-100000'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Cộng, trừ, nhân, chia trong phạm vi 100.000
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Cộng, trừ, nhân, chia trong phạm vi 100.000', '07', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 7, 15, 'gen_toan-3-phep-tinh-100000', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-phep-tinh-100000');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('12.505 × 4 = ___', 'short', '[]', '50.020|50020|50 020', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 12.505 × 4 = 50.020."}', 1),
+  ('40.850 + 10.529 = ___', 'short', '[]', '51.379|51379|51 379', '{"solution":"Đặt tính thẳng cột rồi cộng từ phải sang trái, nhớ sang hàng bên trái: 40.850 + 10.529 = 51.379."}', 2),
+  ('8.363 × 3 = ___', 'short', '[]', '25.089|25089|25 089', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 8.363 × 3 = 25.089."}', 3),
+  ('51.223 + 2.345 = ___', 'short', '[]', '53.568|53568|53 568', '{"solution":"Đặt tính thẳng cột rồi cộng từ phải sang trái, nhớ sang hàng bên trái: 51.223 + 2.345 = 53.568."}', 4),
+  ('73.437 : 7 = ___', 'short', '[]', '10.491|10491|10 491', '{"solution":"Chia lần lượt từ trái sang phải. Thử lại: 10.491 × 7 = 73.437."}', 5),
+  ('47.729 × 2 = ___', 'short', '[]', '95.458|95458|95 458', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 47.729 × 2 = 95.458."}', 6),
+  ('48.007 : 3 = 16.002 (dư ___)', 'numeric', '[]', '1', '{"solution":"16.002 × 3 = 48.006; 48.007 - 48.006 = 1."}', 7),
+  ('76.896 : 7 = 10.985 (dư ___)', 'numeric', '[]', '1', '{"solution":"10.985 × 7 = 76.895; 76.896 - 76.895 = 1."}', 8),
+  ('Mai có 50.000 đồng, mua một chiếc mũ giá 35.500 đồng. Hỏi Mai còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '14.500|14500|14 500', '{"solution":"Số tiền còn lại: 50.000 - 35.500 = 14.500 (đồng)."}', 9),
+  ('Lan có 50.000 đồng, mua một chiếc mũ giá 42.500 đồng. Hỏi Lan còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '7.500|7500|7 500', '{"solution":"Số tiền còn lại: 50.000 - 42.500 = 7.500 (đồng)."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-phep-tinh-100000'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
+-- Chu vi, diện tích; mi-li-mét, gam, mi-li-lít; tháng – năm
+INSERT INTO lessons (title, index_label, chapter_id, status, order_index, duration_minutes, source_id, type)
+SELECT 'Chu vi, diện tích; mi-li-mét, gam, mi-li-lít; tháng – năm', '08', (SELECT id FROM chapters WHERE source_id = 'gen_toan_lop_3'), 'active', 8, 15, 'gen_toan-3-hinh-do-luong', 'lesson'
+WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-3-hinh-do-luong');
+
+INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
+SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
+FROM lessons l, (VALUES
+  ('Hình vuông có cạnh 11 cm. Diện tích hình vuông là ___ cm².', 'numeric', '[]', '121', '{"solution":"Diện tích hình vuông = cạnh × cạnh = 11 × 11 = 121 (cm²)."}', 1),
+  ('Hình chữ nhật có chiều dài 13 cm, chiều rộng 9 cm. Diện tích hình chữ nhật là ___ cm².', 'numeric', '[]', '117', '{"solution":"Diện tích hình chữ nhật = chiều dài × chiều rộng = 13 × 9 = 117 (cm²)."}', 2),
+  ('Hình vuông có cạnh 4 cm. Chu vi hình vuông là ___ cm.', 'numeric', '[]', '16', '{"solution":"Chu vi hình vuông = cạnh × 4 = 4 × 4 = 16 (cm)."}', 3),
+  ('Hình chữ nhật có chiều dài 25 cm, chiều rộng 8 cm. Chu vi hình chữ nhật là ___ cm.', 'numeric', '[]', '66', '{"solution":"Chu vi hình chữ nhật = (chiều dài + chiều rộng) × 2 = (25 + 8) × 2 = 66 (cm)."}', 4),
+  ('6 km = ___ m', 'short', '[]', '6.000|6000|6 000', '{"solution":"1 km = 1.000 m, nên 6 km = 6 × 1.000 = 6.000 m."}', 5),
+  ('8 m 54 cm = ___ cm', 'numeric', '[]', '854', '{"solution":"1 m = 100 cm, nên 8 m = 800 cm; 800 + 54 = 854 (cm)."}', 6),
+  ('7 km 978 m = ___ m', 'short', '[]', '7.978|7978|7 978', '{"solution":"1 km = 1.000 m, nên 7 km = 7.000 m; 7.000 + 978 = 7.978 (m)."}', 7),
+  ('8 l = ___ ml', 'short', '[]', '8.000|8000|8 000', '{"solution":"1 l = 1.000 ml, nên 8 l = 8 × 1.000 = 8.000 ml."}', 8),
+  ('Tháng 11 có bao nhiêu ngày?', 'mcq', '["28 ngày","30 ngày","31 ngày"]', '30 ngày', '{"solution":"Các tháng có 31 ngày: 1, 3, 5, 7, 8, 10, 12. Các tháng có 30 ngày: 4, 6, 9, 11. Tháng 2 có 28 hoặc 29 ngày. Vậy tháng 11 có 30 ngày."}', 9),
+  ('Tháng 8 có bao nhiêu ngày?', 'mcq', '["28 ngày","30 ngày","31 ngày"]', '31 ngày', '{"solution":"Các tháng có 31 ngày: 1, 3, 5, 7, 8, 10, 12. Các tháng có 30 ngày: 4, 6, 9, 11. Tháng 2 có 28 hoặc 29 ngày. Vậy tháng 8 có 31 ngày."}', 10)
+) AS v(content, type, options, correct_answer, explanation, ord)
+WHERE l.source_id = 'gen_toan-3-hinh-do-luong'
+  AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
+
 -- ═══════════════ LỚP 4 ═══════════════
 INSERT INTO subjects (grade, name, order_index)
 SELECT 4, 'Toán', 99
