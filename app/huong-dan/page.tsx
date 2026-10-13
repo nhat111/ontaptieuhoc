@@ -74,7 +74,7 @@ const STEPS: GuideStep[] = [
     emoji: "📝",
     title: "Tạo phiếu bài tập Toán theo chủ đề",
     points: [
-      <>Vào <b>Phiếu bài tập</b>, chọn lớp (hiện có lớp 1, 2, 3, 5), một hoặc nhiều chủ đề, số câu và số đề khác nhau.</>,
+      <>Vào <b>Phiếu bài tập</b>, chọn lớp (từ lớp 1 đến lớp 5), một hoặc nhiều chủ đề, số câu và số đề khác nhau.</>,
       <>Bấm <b>Tạo phiếu</b> để xem trước, rồi <b>Tải Word (.doc)</b> hoặc <b>In / lưu PDF</b>. Bấm <b>Đổi bộ câu khác</b> để ra bộ câu mới.</>,
       <>Mỗi đề in trên một trang riêng, có chỗ ghi họ tên; đáp án (kèm lời giải nếu chọn) nằm ở trang cuối.</>,
     ],

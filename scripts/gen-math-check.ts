@@ -9,7 +9,7 @@
 // Chạy: npx tsx scripts/gen-math-check.ts
 
 import { mulberry32 } from "../lib/mathGen/core";
-import { LOP1, LOP2, LOP3, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
+import { LOP1, LOP2, LOP3, LOP4, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
 import { scoreAnswer, type Question } from "../lib/quizData";
 
 const RUNS = 3000;
@@ -100,7 +100,7 @@ function checkMath(ex: Draft): string | null {
     m = q.match(new RegExp(`^${N} (\\S+) = ___ (\\S+)$`));
     if (m && UNITS[m[2]] && UNITS[m[3]] && !close((num(m[1]) * UNITS[m[2]]) / UNITS[m[3]], num(ans))) return `đổi đơn vị sai: ${q} → ${ans}`;
     m = q.match(new RegExp(`^${N} (\\S+) ${N} (\\S+) = ___ (\\S+)$`));
-    if (m && UNITS[m[2]] && UNITS[m[4]] && !close(num(m[1]) + (num(m[3]) * UNITS[m[4]]) / UNITS[m[2]], num(ans))) return `đổi đơn vị hỗn hợp sai: ${q}`;
+    if (m && UNITS[m[2]] && UNITS[m[4]] && UNITS[m[5]] && !close((num(m[1]) * UNITS[m[2]] + num(m[3]) * UNITS[m[4]]) / UNITS[m[5]], num(ans))) return `đổi đơn vị hỗn hợp sai: ${q}`;
     m = q.match(new RegExp(`vận tốc ${N} km/giờ trong (.+?)\\. Quãng`));
     if (m) {
       const t = m[2].match(/(?:(\d+) giờ)? ?(?:(\d+) phút)?/)!;
@@ -170,6 +170,9 @@ function checkMath(ex: Draft): string | null {
     }
   }
 
+  const l4 = checkLop4(ex);
+  if (l4) return l4;
+
   if (ex.type === "ordering") {
     const vals = ex.correctOrder.map((id) => num(ex.items.find((i) => i.id === id)!.content));
     const asc = q.includes("bé đến lớn");
@@ -183,6 +186,132 @@ function checkMath(ex: Draft): string | null {
     if (p && close(num(p[1]) * 100, num(p[2])) !== ex.answer) return "đúng/sai % sai";
     const c = q.match(new RegExp(`^${N} ([<>]) ${N}\\.`));
     if (c && (c[2] === ">" ? num(c[1]) > num(c[3]) : num(c[1]) < num(c[3])) !== ex.answer) return "đúng/sai so sánh sai";
+  }
+  return null;
+}
+
+/* ───── Lớp 4: số nhiều chữ số, tổng – hiệu, trung bình cộng, phân số, đơn vị đo ───── */
+
+const HANG4 = ["hàng đơn vị", "hàng chục", "hàng trăm", "hàng nghìn", "hàng chục nghìn", "hàng trăm nghìn",
+  "hàng triệu", "hàng chục triệu", "hàng trăm triệu"];
+const LOP4N = ["lớp đơn vị", "lớp nghìn", "lớp triệu"];
+const gcdN = (a: number, b: number): number => (b === 0 ? a : gcdN(b, a % b));
+const F = String.raw`(\d+)\/(\d+)`;
+/** "3/4" → giá trị; "2" → 2; null nếu không phải phân số. */
+const frac = (s: string): [number, number] | null => {
+  const m = s.trim().match(/^(\d+)(?:\/(\d+))?$/);
+  return m ? [+m[1], m[2] ? +m[2] : 1] : null;
+};
+const fracEq = (a: [number, number], b: [number, number]) => a[0] * b[1] === b[0] * a[1];
+const isSimplest = (f: [number, number]) => gcdN(f[0], f[1]) === 1;
+/** Đánh giá biểu thức chỉ có số, + - × : và ngoặc (số theo kiểu Việt Nam). */
+function evalExpr(s: string): number {
+  const js = s.replace(/\d[\d.]*/g, (t) => String(num(t))).replace(/×/g, "*").replace(/:/g, "/");
+  if (!/^[\d\s+\-*/()]+$/.test(js)) throw new Error("biểu thức lạ: " + s);
+  return Function(`"use strict"; return (${js});`)() as number;
+}
+/** Vị trí (0 = đơn vị) của chữ số d trong n; -1 nếu không có hoặc xuất hiện nhiều lần. */
+function digitPos(n: number, d: number): number {
+  const s = String(n);
+  if (s.indexOf(String(d)) !== s.lastIndexOf(String(d))) return -1;
+  const i = s.indexOf(String(d));
+  return i < 0 ? -1 : s.length - 1 - i;
+}
+
+function checkLop4(ex: Draft): string | null {
+  const q = ex.question;
+  if (ex.type === "multiple_choice") {
+    const texts = ex.options.map((o) => o.text);
+    const correct = ex.options.find((o) => o.id === ex.answer)!.text;
+    let m = q.match(new RegExp(`^Trong số (\\d[\\d.]*), chữ số (\\d) thuộc (hàng|lớp) nào\\?$`));
+    if (m) {
+      const pos = digitPos(num(m[1]), +m[2]);
+      if (pos < 0) return `chữ số không duy nhất: ${q}`;
+      if (correct !== (m[3] === "hàng" ? HANG4[pos] : LOP4N[Math.floor(pos / 3)])) return `hàng/lớp sai: ${q} → ${correct}`;
+    }
+    m = q.match(new RegExp(`^Làm tròn số ${N} đến (hàng (?:chục |trăm )?nghìn) thì được số nào\\?$`));
+    if (m) {
+      const p = { "hàng nghìn": 3, "hàng chục nghìn": 4, "hàng trăm nghìn": 5 }[m[2]]!;
+      const want = Math.round(num(m[1]) / 10 ** p) * 10 ** p;
+      if (num(correct) !== want) return `làm tròn sai: ${q} → ${correct}`;
+    }
+    m = q.match(new RegExp(`^Chọn dấu thích hợp: ${F} ___ ${F}$`));
+    if (m) {
+      const [a, b] = [+m[1] / +m[2], +m[3] / +m[4]];
+      if ((+m[1] * +m[4] > +m[3] * +m[2] ? ">" : +m[1] * +m[4] < +m[3] * +m[2] ? "<" : "=") !== correct) return `so sánh phân số sai: ${q} (${a} vs ${b})`;
+    }
+    m = q.match(new RegExp(`^${F} ([+\\-×:]) ${F} = \\? \\(viết kết quả ở dạng tối giản\\)$`));
+    if (m) {
+      const [a, b, op, c, d] = [+m[1], +m[2], m[3], +m[4], +m[5]];
+      const want: [number, number] = op === "+" ? [a * d + c * b, b * d] : op === "-" ? [a * d - c * b, b * d]
+        : op === "×" ? [a * c, b * d] : [a * d, b * c];
+      const got = frac(correct);
+      if (!got || !fracEq(got, want) || !isSimplest(got)) return `phép tính phân số sai: ${q} → ${correct}`;
+      const vals = texts.map(frac);
+      if (vals.some((v) => !v)) return "lựa chọn không phải phân số";
+      for (let i = 0; i < vals.length; i++) for (let j = i + 1; j < vals.length; j++)
+        if (fracEq(vals[i]!, vals[j]!)) return `hai lựa chọn bằng nhau: ${texts[i]} = ${texts[j]}`;
+    }
+    m = q.match(new RegExp(`^Phân số nào bằng phân số ${F}\\?$`));
+    if (m) {
+      const base: [number, number] = [+m[1], +m[2]];
+      const ok = texts.filter((t) => fracEq(frac(t)!, base));
+      if (ok.length !== 1 || ok[0] !== correct) return `phân số bằng nhau sai: ${q}`;
+    }
+    m = q.match(/^Năm (\d+).* thuộc thế kỉ nào\?$/);
+    if (m) {
+      const roman = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV",
+        "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII"];
+      if (correct !== roman[Math.ceil(+m[1] / 100)]) return `thế kỉ sai: ${q} → ${correct}`;
+    }
+  }
+  if (ex.type === "fill_blank") {
+    const ans = ex.answers[0];
+    let m = q.match(new RegExp(`^Giá trị của chữ số (\\d) trong số ${N} là ___$`));
+    if (m) {
+      const pos = digitPos(num(m[2]), +m[1]);
+      if (pos < 0 || num(ans) !== +m[1] * 10 ** pos) return `giá trị chữ số sai: ${q} → ${ans}`;
+    }
+    m = q.match(new RegExp(`^___ ([+\\-]) ${N} = ${N}$`));
+    if (m && (m[1] === "+" ? num(ans) + num(m[2]) : num(ans) - num(m[2])) !== num(m[3])) return `tìm thành phần sai: ${q}`;
+    m = q.match(/^Tính bằng cách thuận tiện: (.+) = ___$/);
+    if (m && evalExpr(m[1]) !== num(ans)) return `tính thuận tiện sai: ${q}`;
+    m = q.match(new RegExp(`^${N} : ${N} = ${N} \\(dư ___\\)$`));
+    if (m) {
+      const [a, k, qq] = [num(m[1]), num(m[2]), num(m[3])];
+      if (Math.floor(a / k) !== qq || a % k !== num(ans) || num(ans) === 0) return `chia có dư sai: ${q}`;
+    }
+    m = q.match(new RegExp(`tháng thứ nhất \\S+ \\S+ ${N} .+?, tháng thứ hai .+? (ít|nhiều) hơn tháng thứ nhất ${N} `));
+    if (m) {
+      const [a, d] = [num(m[1]), num(m[3])];
+      if (2 * a + (m[2] === "nhiều" ? d : -d) !== num(ans)) return `lời văn cộng trừ sai: ${q}`;
+    }
+    m = q.match(new RegExp(`^Người ta xếp ${N} .+?, mỗi \\S+ ${N} `));
+    if (m && num(m[1]) / num(m[2]) !== num(ans)) return `lời văn chia sai: ${q}`;
+    m = q.match(/^Số trung bình cộng của (.+) là ___$/);
+    if (m) {
+      const xs = m[1].split(/; | và /).map(num);
+      if (!close(xs.reduce((s, x) => s + x, 0) / xs.length, num(ans))) return `TBC sai: ${q}`;
+    }
+    m = q.match(new RegExp(`lần lượt ${N} kg, ${N} kg và ${N} kg gạo`));
+    if (m && !close((num(m[1]) + num(m[2]) + num(m[3])) / 3, num(ans))) return "TBC lời văn sai";
+    m = q.match(new RegExp(`^Trung bình cộng của hai số là ${N}\\. Một số là ${N}\\. Số kia`));
+    if (m && num(m[1]) * 2 - num(m[2]) !== num(ans)) return "TBC ngược sai";
+    m = q.match(new RegExp(`^Tổng của hai số là ${N}, hiệu của hai số là ${N}\\. Số (lớn|bé)`));
+    if (m && (m[3] === "lớn" ? num(m[1]) + num(m[2]) : num(m[1]) - num(m[2])) / 2 !== num(ans)) return `tổng hiệu sai: ${q}`;
+    m = q.match(new RegExp(`trồng được ${N} cây\\. Lớp (\\S+) trồng được nhiều hơn lớp (\\S+) ${N} cây\\. Hỏi lớp (\\S+)`));
+    if (m && (m[5] === m[2] ? num(m[1]) + num(m[4]) : num(m[1]) - num(m[4])) / 2 !== num(ans)) return `tổng hiệu (cây) sai: ${q}`;
+    m = q.match(/^Tổng số tuổi của mẹ và con là (\d+) tuổi\. Mẹ hơn con (\d+) tuổi\. Hỏi (mẹ|con)/);
+    if (m && (m[3] === "mẹ" ? +m[1] + +m[2] : +m[1] - +m[2]) / 2 !== num(ans)) return "tổng hiệu (tuổi) sai";
+    m = q.match(new RegExp(`^Rút gọn phân số ${F} thành phân số tối giản`));
+    if (m) {
+      const got = frac(ans);
+      if (!got || !isSimplest(got) || !fracEq(got, [+m[1], +m[2]]) || got[1] === 1) return `rút gọn sai: ${q} → ${ans}`;
+    }
+    m = q.match(/^(\d+) phút(?: (\d+) giây)? = ___ giây$/);
+    if (m && +m[1] * 60 + Number(m[2] ?? 0) !== num(ans)) return "đổi phút → giây sai";
+    m = q.match(/^(\d+) thế kỉ = ___ năm$/);
+    if (m && +m[1] * 100 !== num(ans)) return "đổi thế kỉ sai";
   }
   return null;
 }
@@ -212,7 +341,7 @@ function checkRow(ex: Draft, seed: number): string | null {
 
 let failures = 0, total = 0;
 const examples: string[] = [];
-for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP3, LOP5 }) as [string, Record<string, Generator>][]) {
+for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP3, LOP4, LOP5 }) as [string, Record<string, Generator>][]) {
   for (const [name, gen] of Object.entries(gens)) {
     let bad = 0;
     for (let s = 0; s < RUNS; s++) {
