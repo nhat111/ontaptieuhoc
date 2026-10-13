@@ -24,6 +24,7 @@ const UNITS: Record<string, number> = {
   "tấn": 1e6, "tạ": 1e5, "yến": 1e4, kg: 1e3, hg: 100, dag: 10, g: 1,
   "km²": 1e6, ha: 1e4, "dam²": 100, "m²": 1, "dm²": 1e-2, "cm²": 1e-4, "mm²": 1e-6,
   "m³": 1, "dm³": 1e-3, "cm³": 1e-6,
+  l: 1, ml: 1e-3,
 };
 
 /** Kiểm tra toán học trên câu thô. Trả về mô tả lỗi hoặc null. */
@@ -170,7 +171,7 @@ function checkMath(ex: Draft): string | null {
     }
   }
 
-  const l4 = checkLop4(ex);
+  const l4 = checkLop4(ex) ?? checkLop3(ex);
   if (l4) return l4;
 
   if (ex.type === "ordering") {
@@ -312,6 +313,90 @@ function checkLop4(ex: Draft): string | null {
     if (m && +m[1] * 60 + Number(m[2] ?? 0) !== num(ans)) return "đổi phút → giây sai";
     m = q.match(/^(\d+) thế kỉ = ___ năm$/);
     if (m && +m[1] * 100 !== num(ans)) return "đổi thế kỉ sai";
+  }
+  return null;
+}
+
+/* ───── Lớp 3: gấp/giảm, thành phần nhân chia, biểu thức, số đến 100.000, La Mã, hình, đo lường ───── */
+
+const ROMAN3 = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+  "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"];
+/** Đọc số La Mã độc lập với bảng trên (quy tắc trừ: chữ nhỏ đứng trước chữ lớn). */
+function fromRoman(s: string): number {
+  const v: Record<string, number> = { I: 1, V: 5, X: 10 };
+  let total = 0;
+  for (let i = 0; i < s.length; i++) total += v[s[i]] < (v[s[i + 1]] ?? 0) ? -v[s[i]] : v[s[i]];
+  return total;
+}
+const MONTH_DAYS: Record<number, number> = { 1: 31, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31 };
+const ROUND_P: Record<string, number> = { "hàng chục": 1, "hàng trăm": 2, "hàng nghìn": 3, "hàng chục nghìn": 4, "hàng trăm nghìn": 5 };
+
+function checkLop3(ex: Draft): string | null {
+  const q = ex.question;
+  if (ex.type === "multiple_choice") {
+    const texts = ex.options.map((o) => o.text);
+    const correct = ex.options.find((o) => o.id === ex.answer)!.text;
+    let m = q.match(new RegExp(`^Làm tròn số ${N} đến (hàng [^ ]+(?: nghìn)?) thì được số nào\\?$`));
+    if (m && ROUND_P[m[2]] !== undefined) {
+      const p = ROUND_P[m[2]];
+      if (num(correct) !== Math.round(num(m[1]) / 10 ** p) * 10 ** p) return `làm tròn sai: ${q} → ${correct}`;
+    }
+    m = q.match(/^Gấp (\d+) lên (\d+) lần được số nào\?$/);
+    if (m && num(correct) !== +m[1] * +m[2]) return `gấp lên sai: ${q}`;
+    m = q.match(/^Số La Mã ([IVX]+) đọc là số nào\?$/);
+    if (m && num(correct) !== fromRoman(m[1])) return `đọc La Mã sai: ${q} → ${correct}`;
+    m = q.match(/^Số (\d+) viết bằng chữ số La Mã là:$/);
+    if (m) {
+      if (fromRoman(correct) !== +m[1]) return `viết La Mã sai: ${q} → ${correct}`;
+      if (texts.some((t) => !ROMAN3.includes(t))) return `lựa chọn không phải số La Mã chuẩn: ${texts.join(", ")}`;
+    }
+    m = q.match(/^Tháng (\d+) có bao nhiêu ngày\?$/);
+    if (m && correct !== `${MONTH_DAYS[+m[1]]} ngày`) return `số ngày trong tháng sai: ${q} → ${correct}`;
+  }
+  if (ex.type === "fill_blank") {
+    const ans = num(ex.answers[0]);
+    let m = q.match(/^Gấp (\d+) lên (\d+) lần được ___$/);
+    if (m && ans !== +m[1] * +m[2]) return `gấp lên sai: ${q}`;
+    m = q.match(/^Giảm (\d+) đi (\d+) lần được ___$/);
+    if (m && ans * +m[2] !== +m[1]) return `giảm đi sai: ${q}`;
+    m = q.match(/^Số (\d+) gấp số (\d+) bao nhiêu lần\?/);
+    if (m && ans * +m[2] !== +m[1]) return `gấp mấy lần sai: ${q}`;
+    m = q.match(/ có (\d+) .+?\. Số .+? gấp (\d+) lần số /);
+    if (m && ans !== +m[1] * +m[2]) return `lời văn gấp sai: ${q}`;
+    m = q.match(/ có (\d+) .+?\. Số .+? giảm đi (\d+) lần\./);
+    if (m && ans * +m[2] !== +m[1]) return `lời văn giảm sai: ${q}`;
+    m = q.match(/^___ × (\d+) = (\d+)$/);
+    if (m && ans * +m[1] !== +m[2]) return `tìm thừa số sai: ${q}`;
+    m = q.match(/^___ : (\d+) = (\d+)$/);
+    if (m && ans / +m[1] !== +m[2]) return `tìm số bị chia sai: ${q}`;
+    m = q.match(/^(\d+) : ___ = (\d+)$/);
+    if (m && +m[1] / ans !== +m[2]) return `tìm số chia sai: ${q}`;
+    m = q.match(/^Tính giá trị biểu thức: (.+) = ___$/);
+    if (m && evalExpr(m[1]) !== ans) return `biểu thức sai: ${q} → ${ans}`;
+    m = q.match(/^1\/(\d+) của (\d+) /);
+    if (m && ans * +m[1] !== +m[2]) return `một phần mấy sai: ${q}`;
+    m = q.match(/^Viết số gồm (.+): ___$/);
+    if (m) {
+      const place: Record<string, number> = { "chục nghìn": 1e4, "nghìn": 1e3, "trăm": 100, "chục": 10, "đơn vị": 1 };
+      let total = 0;
+      for (const part of m[1].split(/, | và /)) {
+        const p = part.match(/^(\d) (chục nghìn|nghìn|trăm|chục|đơn vị)$/);
+        if (!p) return `không đọc được "${part}"`;
+        total += +p[1] * place[p[2]];
+      }
+      if (total !== ans) return `viết số sai: ${q} → ${ans}`;
+    }
+    m = q.match(new RegExp(`^Số liền (sau|trước) của số ${N} là ___$`));
+    if (m && ans !== num(m[2]) + (m[1] === "sau" ? 1 : -1)) return `liền trước/sau sai: ${q}`;
+    m = q.match(/^Hình vuông có cạnh (\d+) cm\. (Chu vi|Diện tích)/);
+    if (m && ans !== (m[2] === "Chu vi" ? +m[1] * 4 : (+m[1]) ** 2)) return `hình vuông sai: ${q}`;
+    m = q.match(/^Hình chữ nhật có chiều dài (\d+) cm, chiều rộng (\d+) cm\. (Chu vi|Diện tích)/);
+    if (m) {
+      if (+m[1] <= +m[2]) return "chiều dài phải lớn hơn chiều rộng";
+      if (ans !== (m[3] === "Chu vi" ? (+m[1] + +m[2]) * 2 : +m[1] * +m[2])) return `hình chữ nhật sai: ${q}`;
+    }
+    m = q.match(new RegExp(`có ${N} đồng, mua .+? giá ${N} đồng\\. Hỏi`));
+    if (m && ans !== num(m[1]) - num(m[2])) return `tiền còn lại sai: ${q}`;
   }
   return null;
 }
