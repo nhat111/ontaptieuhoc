@@ -97,9 +97,9 @@ export default async function GradePage({
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
-          <a href="/" className="hover:text-blue-600 transition-colors">Trang chủ</a>
+          <Link href="/" className="hover:text-blue-600 transition-colors">Trang chủ</Link>
           <span>›</span>
-          <a href={`/lop/${grade}`} className="hover:text-blue-600 transition-colors">Lớp {grade}</a>
+          <Link href={`/lop/${grade}`} className="hover:text-blue-600 transition-colors">Lớp {grade}</Link>
           <span>›</span>
           <span className="text-gray-600 font-medium">{activeSubject ?? "Toán"}</span>
         </div>

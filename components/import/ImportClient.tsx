@@ -211,6 +211,8 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       if (raw) {
         const d = JSON.parse(raw) as Draft;
         if (d.questions?.length) {
+          // Bản nháp nằm trong localStorage (chỉ có ở trình duyệt) nên phải khôi phục sau khi mount.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setGrade(d.grade ?? 1);
           setLessonTitle(d.lessonTitle ?? "");
           setIndexLabel(d.indexLabel ?? "01");
@@ -228,11 +230,13 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       }
     } catch {/* ignore */}
     hydrated.current = true;
-  }, [editMode]);
+  }, [editMode, draftKey]);
 
   // ── Fetch chapters khi lớp/môn thay đổi ───────────────────────────────────
   useEffect(() => {
     if (subject === null) {
+      // Xoá danh sách chương cũ ngay khi đổi lớp/môn, trước khi fetch danh sách mới.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChapters([]);
       setChapterId(null);
       return;
@@ -413,6 +417,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       if (!res.ok) { setError(data.error ?? "Lỗi không xác định."); return; }
 
       if (gotoNext && editMode && data.nextLessonId) {
+        // Tải lại hẳn trang: router.push sang [id] khác có thể giữ nguyên state
+        // của ImportClient (khởi tạo từ initialData của bài cũ).
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = `/import/edit/${data.nextLessonId}`;
         return;
       }

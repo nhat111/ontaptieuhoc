@@ -43,7 +43,13 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { setMobileOpen(false); }, [path]);
+  // Đóng menu mobile khi đổi trang: chỉnh state ngay lúc render thay vì trong
+  // effect, để không phải render thêm một lượt với menu còn mở.
+  const [lastPath, setLastPath] = useState(path);
+  if (path !== lastPath) {
+    setLastPath(path);
+    setMobileOpen(false);
+  }
 
   async function handleLogout() {
     const sb = createClient();

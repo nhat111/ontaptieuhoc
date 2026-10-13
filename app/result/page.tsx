@@ -17,6 +17,8 @@ export default function ResultPage() {
   useEffect(() => {
     const raw = sessionStorage.getItem("quizResult");
     if (!raw) { router.push("/"); return; }
+    // sessionStorage chỉ có ở trình duyệt, nên phải đọc sau khi mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResult(JSON.parse(raw));
 
     createClient().auth.getUser().then(({ data }) => {
