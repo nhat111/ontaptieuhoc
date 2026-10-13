@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
@@ -181,7 +182,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
   );
 
   const answersRef = useRef(answers);
-  answersRef.current = answers;
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   const submit = (finalAnswers: (string | null)[]) => {
     const score = finalAnswers.filter((a, i) => scoreAnswer(questions[i], a)).length;
@@ -273,11 +274,11 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-10">
           <nav className="flex flex-wrap items-center gap-1 text-xs mb-6">
-            <a href="/" className="text-blue-500 hover:underline">Trang chủ</a>
+            <Link href="/" className="text-blue-500 hover:underline">Trang chủ</Link>
             <span className="text-gray-400">›</span>
             {lesson.grade && (
               <>
-                <a href={`/lop/${lesson.grade}`} className="text-blue-500 hover:underline">Lớp {lesson.grade}</a>
+                <Link href={`/lop/${lesson.grade}`} className="text-blue-500 hover:underline">Lớp {lesson.grade}</Link>
                 <span className="text-gray-400">›</span>
               </>
             )}
@@ -454,7 +455,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
           <nav className="flex flex-wrap items-center gap-1 text-xs mb-5">
             <span className="flex items-center gap-1">
-              <a href="/" className="text-blue-500 hover:underline">Trang chủ</a>
+              <Link href="/" className="text-blue-500 hover:underline">Trang chủ</Link>
               <span className="text-gray-400">›</span>
             </span>
             {lesson.grade && (
