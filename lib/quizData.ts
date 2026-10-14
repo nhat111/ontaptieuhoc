@@ -81,6 +81,15 @@ export function formatTime(seconds: number) {
   return `${m}:${s}`;
 }
 
+/**
+ * Chuẩn hoá chữ gõ vào trước khi so: dựng sẵn (NFC), gộp khoảng trắng, chữ thường.
+ * Unikey / bàn phím một số máy gõ tiếng Việt kiểu tổ hợp (NFD): "Hà" là "a" + dấu
+ * huyền rời — nhìn giống hệt nhưng so chuỗi thì khác, bé gõ đúng mà bị chấm sai.
+ */
+function normalizeTyped(s: string): string {
+  return s.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 // Per-type scoring. `answer` is what the quiz UI stores in answers[i]:
 //   mcq:     selected option text
 //   multi:   JSON.stringify(string[]) of selected option texts
@@ -97,6 +106,8 @@ export function scoreAnswer(q: Question, answer: string | null): boolean {
         const want = JSON.parse(q.correctAnswer) as string[];
         if (!Array.isArray(got) || !Array.isArray(want)) return false;
         if (got.length !== want.length) return false;
+        // ["A", "A"] không được tính là đủ ["A", "B"].
+        if (new Set(got).size !== got.length) return false;
         const set = new Set(want);
         return got.every((x) => set.has(x));
       } catch {
@@ -104,8 +115,8 @@ export function scoreAnswer(q: Question, answer: string | null): boolean {
       }
     }
     case "short": {
-      const accepted = q.correctAnswer.split("|").map((s) => s.trim().toLowerCase());
-      return accepted.includes(answer.trim().toLowerCase());
+      const accepted = q.correctAnswer.split("|").map(normalizeTyped);
+      return accepted.includes(normalizeTyped(answer));
     }
     case "numeric": {
       const a = parseFloat(answer.replace(",", "."));

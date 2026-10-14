@@ -68,9 +68,12 @@ export function parseExamText(text: string): DraftQuestion[] {
       // No options → free-text/numeric answer
       // Some questions still write "Đáp án: B" as a typed letter answer with no options;
       // we treat that as short to preserve the literal text.
-      const numericLike = /^-?[\d.,\s]+$/.test(raw) && !Number.isNaN(parseFloat(raw.replace(",", ".")));
+      // "1.250" trong đề Việt Nam là một nghìn hai trăm năm mươi; lưu numeric thì
+      // scoreAnswer đọc thành 1,25. Lưu short với mọi cách viết (như đề Toán tự sinh).
+      const thousands = /^\d{1,3}(?:\.\d{3})+$/.test(raw);
+      const numericLike = !thousands && /^-?[\d.,\s]+$/.test(raw) && !Number.isNaN(parseFloat(raw.replace(",", ".")));
       type = numericLike ? "numeric" : "short";
-      correctAnswer = raw;
+      correctAnswer = thousands ? [raw, raw.replace(/\./g, ""), raw.replace(/\./g, " ")].join("|") : raw;
     } else {
       type = "short";
       correctAnswer = null;

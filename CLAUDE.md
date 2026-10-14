@@ -16,10 +16,13 @@ Stack: **Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind 
 npm run dev      # next dev (localhost:3000)
 npm run build    # next build
 npm run start    # next start (after build)
-npm run lint     # next lint
+npm run lint     # eslint
+npm run typecheck  # tsc --noEmit
+npm test         # unit tests: tests/*.test.ts (node:test via tsx, no test framework)
+npm run check    # lint + typecheck + test + every scripts/*-check.ts (scripts/run-checks.mjs)
 ```
 
-No test suite is configured. There is no script for type-checking; `tsc --noEmit` works if you need it (`noEmit: true` is already set in `tsconfig.json`).
+**Run `npm run check` before calling a change done.** Unit tests cover the code where a mistake fails silently: `scoreAnswer` per question type (incl. NFD input from Unikey "Unicode tổ hợp", spacing, duplicate multi picks), `parseExamText` (type inference, `1.250` thousands → `short`), `splitOptions`, `cleanOcrText`, `safeNext` (open-redirect, incl. tab/newline), audio filename → question index, `readAloudEnabled`. A new content generator gets a `scripts/<name>-check.ts` and `run-checks.mjs` picks it up by name.
 
 ## Environment
 
@@ -79,7 +82,7 @@ The `subjects` table still exists because `chapters.subject_id` is a FK to it, b
 `questions.type` (added later — `ALTER TABLE questions ADD COLUMN type TEXT NOT NULL DEFAULT 'mcq';` if upgrading) is one of `'mcq' | 'multi' | 'short' | 'numeric'`. `options` is variable length 2–6 for `mcq`/`multi`, `[]` for `short`/`numeric`. `correct_answer` encoding is **per-type** — get this wrong and scoring breaks silently:
 - `mcq`: the literal text of the correct option (must match one of `options`).
 - `multi`: `JSON.stringify(string[])` of all correct option texts.
-- `short`: pipe-delimited accepted answers (`"Hà Nội|Ha Noi|hà nội"`), compared case-insensitive after `trim()`.
+- `short`: pipe-delimited accepted answers (`"Hà Nội|Ha Noi|hà nội"`), compared after NFC normalisation, whitespace collapsing and lower-casing (both sides).
 - `numeric`: number as string. `,` and `.` are both accepted as decimal separators; compared with `Math.abs(a-b) < 1e-9`.
 
 Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` slot for `multi` is itself a `JSON.stringify(string[])` of selected option texts; for short/numeric it's the raw user input. QuizClient normalizes `""` and `"[]"` back to `null` so the palette and unanswered count stay correct.

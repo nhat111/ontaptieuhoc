@@ -11,5 +11,7 @@ export function safeNext(value: string | null | undefined, fallback = "/"): stri
   if (!value.startsWith("/")) return fallback;
   // "//host" và "/\host" đều bị trình duyệt hiểu là sang tên miền khác.
   if (value.startsWith("//") || value.startsWith("/\\")) return fallback;
+  // Trình duyệt bỏ tab / xuống dòng trong URL: "/\t/trang-gia.com" thành "//trang-gia.com".
+  if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;
   return value;
 }
