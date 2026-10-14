@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn sử dụng",
   description:
-    "Hướng dẫn phụ huynh dùng Ôn Tập Tiểu Học: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–2.",
+    "Hướng dẫn phụ huynh dùng Ôn Tập Tiểu Học: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–3.",
   alternates: { canonical: "/huong-dan" },
 };
 
@@ -107,11 +107,12 @@ const STEPS: GuideStep[] = [
   {
     id: "tro-choi",
     emoji: "🎮",
-    title: "Trò chơi cho bé lớp 1, lớp 2",
+    title: "Trò chơi cho bé lớp 1, 2, 3",
     points: [
       <>Lớp 1: đếm hình, hái táo, nghe âm chọn chữ, nhìn hình chọn chữ, chọn dấu thanh.</>,
       <>Lớp 2: xem đồng hồ, tính nhẩm trong phạm vi 100, điền chữ chính tả, phân loại từ.</>,
-      <>Mỗi lượt 10 câu, khoảng 2–3 phút. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐.</>,
+      <>Lớp 3: đua xe bảng nhân, bắn bóng bay, chỉnh đồng hồ (kéo kim), lật thẻ từ trái nghĩa – cùng nghĩa. Mỗi trò lưu kỷ lục trên máy để bé phá; đua xe thắng thì được huy chương cho từng bảng nhân.</>,
+      <>Lớp 1, 2 và trò chỉnh đồng hồ: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Bật / 🔇 Tắt</b> ở góc phải tắt tiếng hiệu ứng của các trò lớp 3.</>,
     ],
     cta: { href: "/lop/1/tro-choi", label: "Vào khu trò chơi" },
   },

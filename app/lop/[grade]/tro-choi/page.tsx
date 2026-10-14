@@ -9,6 +9,7 @@ type Game = { href: string; emoji: string; title: string; subject: string; desc:
 const DESCRIPTIONS: Record<string, string> = {
   "1": "Vừa học vừa chơi cho bé lớp 1: đếm hình, hái táo làm quen phép cộng trừ, nghe chọn chữ, nhìn hình chọn chữ, chọn dấu thanh. Miễn phí, không cần đăng nhập.",
   "2": "Trò chơi ôn tập lớp 2: xem đồng hồ, cộng trừ có nhớ trong phạm vi 100, bảng nhân chia 2 và 5, chính tả ch/tr s/x g/gh c/k l/n, từ chỉ sự vật hoạt động đặc điểm. Miễn phí.",
+  "3": "Trò chơi lớp 3: đua xe bảng nhân, bắn bóng bay bảng nhân, kéo kim chỉnh đồng hồ đến từng phút, lật thẻ ghép từ trái nghĩa – cùng nghĩa. Có kỷ lục và huy chương. Miễn phí.",
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ grade: string }> }): Promise<Metadata> {
@@ -96,7 +97,42 @@ const GAMES_2: Game[] = [
   },
 ];
 
-const GAMES_BY_GRADE: Record<string, Game[]> = { "1": GAMES_1, "2": GAMES_2 };
+const GAMES_3: Game[] = [
+  {
+    href: "dua-xe",
+    emoji: "🏎️",
+    title: "Đua xe bảng nhân",
+    subject: "Toán",
+    desc: "Đua với Rùa, Thỏ, Tên lửa. Đúng liền 4 câu được NITRO, thắng nhận huy chương!",
+    color: "from-red-400 to-orange-500",
+  },
+  {
+    href: "ban-bong",
+    emoji: "🎈",
+    title: "Bắn bóng bay",
+    subject: "Toán",
+    desc: "Bóng bay lên liên tục — chạm đúng kết quả bảng nhân trước khi bóng bay mất.",
+    color: "from-sky-400 to-cyan-500",
+  },
+  {
+    href: "chinh-dong-ho",
+    emoji: "⏰",
+    title: "Chỉnh đồng hồ",
+    subject: "Toán",
+    desc: "Kéo kim cho đúng giờ: từng phút, giờ kém, sau 25 phút là mấy giờ?",
+    color: "from-amber-400 to-yellow-500",
+  },
+  {
+    href: "lat-the",
+    emoji: "🃏",
+    title: "Lật thẻ từ",
+    subject: "Tiếng Việt",
+    desc: "Lật thẻ ghép cặp từ trái nghĩa, cùng nghĩa. Ít lượt nhất là kỷ lục!",
+    color: "from-indigo-400 to-violet-500",
+  },
+];
+
+const GAMES_BY_GRADE: Record<string, Game[]> = { "1": GAMES_1, "2": GAMES_2, "3": GAMES_3 };
 
 export default async function GamesPage({ params }: { params: Promise<{ grade: string }> }) {
   const { grade } = await params;
@@ -130,7 +166,11 @@ export default async function GamesPage({ params }: { params: Promise<{ grade: s
             </Link>
           ))}
         </div>
-        <p className="text-gray-500 text-sm mt-1 mb-4">Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bật loa để nghe đọc nhé.</p>
+        <p className="text-gray-500 text-sm mt-1 mb-4">
+          {grade === "3"
+            ? "Mỗi ván 1–2 phút, có kỷ lục để phá. Bật loa để nghe hiệu ứng nhé."
+            : "Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bật loa để nghe đọc nhé."}
+        </p>
         <StarTotal />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
