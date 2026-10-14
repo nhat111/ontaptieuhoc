@@ -2,34 +2,47 @@
 
 import { useState } from "react";
 import {
-  MATH_RANGES, SPELL_GROUPS, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellLabel,
-  type DailySubject, type MathRange,
+  MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
+  type DailyGrade, type DailySubject, type MathRange,
 } from "@/lib/dailySheet";
 
 const COUNTS = [1, 5, 10];
-const DEFAULT_MATH = ["bond", "compare", "calc", "order"];
-const DEFAULT_SPELL = ["c-k", "l-n", "ch-tr", "s-x"];
+const DEFAULT_MATH: Record<DailyGrade, string[]> = {
+  1: ["bond", "compare", "calc", "order"],
+  2: ["qua10", "conho", "nhanchia", "sosanh1000"],
+};
+const DEFAULT_SPELL: Record<DailyGrade, string[]> = {
+  1: ["c-k", "l-n", "ch-tr", "s-x"],
+  2: ["r-d-gi", "ao-au", "ai-ay", "an-ang"],
+};
 const newSeed = () => Math.random().toString(36).slice(2, 8);
 
 export default function DailySheetClient() {
+  const [grade, setGrade] = useState<DailyGrade>(1);
   const [subject, setSubject] = useState<DailySubject>("toan");
   const [range, setRange] = useState<MathRange>(10);
-  const [mathIds, setMathIds] = useState<string[]>(DEFAULT_MATH);
-  const [spellIds, setSpellIds] = useState<string[]>(DEFAULT_SPELL);
+  const [mathIds, setMathIds] = useState<string[]>(DEFAULT_MATH[1]);
+  const [spellIds, setSpellIds] = useState<string[]>(DEFAULT_SPELL[1]);
   const [count, setCount] = useState(1);
   const [withAnswers, setWithAnswers] = useState(true);
   // Chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
 
   const available = subject === "toan"
-    ? mathBlocksFor(range).map((b) => ({ id: b.id, label: b.label }))
-    : SPELL_GROUPS.map((g) => ({ id: g.id, label: `Điền ${spellLabel(g)}` }));
+    ? mathBlocksFor(range, grade).map((b) => ({ id: b.id, label: b.label }))
+    : spellGroupsFor(grade).map((g) => ({ id: g.id, label: `Điền ${g.part === "van" ? "vần " : ""}${spellLabel(g)}` }));
   const chosen = (subject === "toan" ? mathIds : spellIds).filter((id) => available.some((a) => a.id === id));
 
   // Sinh rất nhanh (vài trăm số) nên tính lại mỗi lần render, khỏi cần useMemo.
-  const sheets = seed && chosen.length ? buildDailySheets({ subject, range, blockIds: chosen, count, seed }) : [];
+  const sheets = seed && chosen.length ? buildDailySheets({ grade, subject, range, blockIds: chosen, count, seed }) : [];
 
-  const title = subject === "toan" ? "Phiếu luyện Toán lớp 1" : "Phiếu luyện Tiếng Việt lớp 1";
+  const title = `Phiếu luyện ${subject === "toan" ? "Toán" : "Tiếng Việt"} lớp ${grade}`;
+
+  function pickGrade(g: DailyGrade) {
+    setGrade(g);
+    setMathIds(DEFAULT_MATH[g]);
+    setSpellIds(DEFAULT_SPELL[g]);
+  }
 
   function html(autoPrint: boolean, answers = withAnswers) {
     const footer = typeof window !== "undefined" ? `Phiếu tạo miễn phí tại ${window.location.host}` : undefined;
@@ -46,7 +59,7 @@ export default function DailySheetClient() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${subject === "toan" ? "phieu-toan" : "phieu-tieng-viet"}-lop-1-${seed}.doc`;
+    a.download = `${subject === "toan" ? "phieu-toan" : "phieu-tieng-viet"}-lop-${grade}-${seed}.doc`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -69,14 +82,23 @@ export default function DailySheetClient() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-7 space-y-5">
         <div>
-          <p className="text-sm font-bold text-gray-700 mb-2">Môn</p>
+          <p className="text-sm font-bold text-gray-700 mb-2">Lớp</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setSubject("toan")} className={chip(subject === "toan")}>Toán lớp 1</button>
-            <button onClick={() => setSubject("tieng-viet")} className={chip(subject === "tieng-viet")}>Tiếng Việt lớp 1</button>
+            {([1, 2] as const).map((g) => (
+              <button key={g} onClick={() => pickGrade(g)} className={chip(g === grade)}>Lớp {g}</button>
+            ))}
           </div>
         </div>
 
-        {subject === "toan" && (
+        <div>
+          <p className="text-sm font-bold text-gray-700 mb-2">Môn</p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setSubject("toan")} className={chip(subject === "toan")}>Toán lớp {grade}</button>
+            <button onClick={() => setSubject("tieng-viet")} className={chip(subject === "tieng-viet")}>Tiếng Việt lớp {grade}</button>
+          </div>
+        </div>
+
+        {subject === "toan" && grade === 1 && (
           <div>
             <p className="text-sm font-bold text-gray-700 mb-2">Phạm vi số</p>
             <div className="flex flex-wrap gap-2">

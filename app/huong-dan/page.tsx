@@ -83,11 +83,12 @@ const STEPS: GuideStep[] = [
   {
     id: "phieu-hang-ngay",
     emoji: "✏️",
-    title: "Phiếu luyện hằng ngày lớp 1 (Toán, Tiếng Việt)",
+    title: "Phiếu luyện hằng ngày lớp 1, lớp 2 (Toán, Tiếng Việt)",
     points: [
-      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Phiếu luyện hằng ngày</b>.</>,
-      <><b>Toán</b>: chọn phạm vi 5, 10 hoặc 100 rồi chọn các bài — sơ đồ tách – gộp số, điền dấu &gt; &lt; =, tính, điền số còn thiếu, viết số theo thứ tự, dãy số.</>,
-      <><b>Tiếng Việt</b>: điền c/k, ch/tr, s/x, l/n, g/gh, ng/ngh, h/th/kh, v/d/gi vào chỗ chấm.</>,
+      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Phiếu luyện hằng ngày</b>, rồi chọn <b>Lớp 1</b> hoặc <b>Lớp 2</b>.</>,
+      <><b>Toán lớp 1</b>: chọn phạm vi 5, 10 hoặc 100 rồi chọn các bài — sơ đồ tách – gộp số, điền dấu &gt; &lt; =, tính, điền số còn thiếu, viết số theo thứ tự, dãy số.</>,
+      <><b>Toán lớp 2</b>: tính nhẩm qua 10, cộng trừ có nhớ trong phạm vi 100, tìm số còn thiếu, bảng nhân chia 2 và 5, so sánh số có ba chữ số, viết số thành tổng trăm – chục – đơn vị, đếm thêm 2, 5, 10, 100, đổi m – dm – cm.</>,
+      <><b>Tiếng Việt</b>: lớp 1 điền c/k, ch/tr, s/x, l/n, g/gh, ng/ngh, h/th/kh, v/d/gi vào chỗ chấm; lớp 2 điền r/d/gi và vần ao/au, ai/ay, an/ang.</>,
       <>Chọn số phiếu (1, 5 hoặc 10 — mỗi phiếu khác nhau, một trang A4), bấm <b>Tạo phiếu</b> rồi <b>Tải Word (.doc)</b> hoặc <b>In / lưu PDF</b>. Đáp án điền sẵn ở các trang cuối.</>,
     ],
     cta: { href: "/phieu-bai-tap?loai=hang-ngay", label: "Tạo phiếu luyện hằng ngày" },
