@@ -41,6 +41,26 @@ const config: Config = {
           "0%": { transform: "translate(0, 0) scale(1)", opacity: "1" },
           "100%": { transform: "translate(var(--dx), var(--dy)) scale(0.4)", opacity: "0" },
         },
+        // Trò lớp 3: bóng bay lên từ đáy khung (top 100%) tới quá mép trên.
+        rise: {
+          "0%": { top: "100%" },
+          "100%": { top: "-30%" },
+        },
+        // Xe xoay một vòng khi trả lời sai.
+        spinout: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        // Số đếm ngược 3-2-1 phóng to rồi thu về.
+        zoomin: {
+          "0%": { transform: "scale(2.4)", opacity: "0" },
+          "40%": { transform: "scale(1)", opacity: "1" },
+          "100%": { transform: "scale(0.9)", opacity: "0.9" },
+        },
+        sway: {
+          "0%, 100%": { transform: "translateX(-6px) rotate(-3deg)" },
+          "50%": { transform: "translateX(6px) rotate(3deg)" },
+        },
       },
       animation: {
         shake: "shake 0.4s ease-in-out",
@@ -48,6 +68,11 @@ const config: Config = {
         float: "float 3s ease-in-out infinite",
         jump: "jump 0.6s ease-out",
         burst: "burst 0.8s ease-out forwards",
+        // Thời lượng thật đặt inline (animationDuration) theo từng quả bóng.
+        rise: "rise 6s linear forwards",
+        spinout: "spinout 0.6s ease-in-out",
+        zoomin: "zoomin 0.9s ease-out both",
+        sway: "sway 2.4s ease-in-out infinite",
       },
     },
   },
