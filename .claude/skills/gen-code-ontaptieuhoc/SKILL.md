@@ -26,7 +26,9 @@ Vietnamese primary-school quiz platform. **All user-facing strings in Vietnamese
 npm run dev    # :3000
 npm run build
 npm run lint
-# tsc --noEmit  (no npm script)
+npm run typecheck   # tsc --noEmit
+npm test            # tests/*.test.ts (node:test + tsx)
+npm run check       # lint + typecheck + test + scripts/*-check.ts — run before calling a change done
 ```
 
 ## Supabase — pick the right client
