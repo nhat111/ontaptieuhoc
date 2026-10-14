@@ -1,9 +1,12 @@
-// lib/dailySheet.ts — "Phiếu luyện hằng ngày" lớp 1: phiếu in dày đặc kiểu luyện tay,
+// lib/dailySheet.ts — "Phiếu luyện hằng ngày" lớp 1, lớp 2: phiếu in dày đặc kiểu luyện tay,
 // mỗi bài là một khối nhiều ô nhỏ (khác phiếu theo chủ đề ở lib/worksheetExport.ts,
 // vốn in từng câu trắc nghiệm / tự luận).
 //
-//   Toán:       sơ đồ tách–gộp, điền > < =, tính, điền số thiếu, viết số theo thứ tự, dãy số.
-//   Tiếng Việt: điền âm đầu vào chỗ chấm (c/k, ch/tr, s/x, l/n, g/gh, ng/ngh, h/th/kh, v/d/gi).
+//   Lớp 1 Toán:       sơ đồ tách–gộp, điền > < =, tính, điền số thiếu, viết số theo thứ tự, dãy số.
+//   Lớp 1 Tiếng Việt: điền âm đầu vào chỗ chấm (c/k, ch/tr, s/x, l/n, g/gh, ng/ngh, h/th/kh, v/d/gi).
+//   Lớp 2 Toán:       tính nhẩm qua 10, cộng trừ có nhớ (phạm vi 100), bảng nhân chia 2 và 5,
+//                     so sánh số có ba chữ số, trăm – chục – đơn vị, đếm thêm, đổi m – dm – cm.
+//   Lớp 2 Tiếng Việt: điền r/d/gi; vần ao/au, ai/ay, an/ang.
 //
 // Không gọi AI: số do code sinh (cùng seed → cùng phiếu), từ Tiếng Việt lấy từ kho soạn
 // tay bên dưới. scripts/daily-sheet-check.ts kiểm tra đáp án và luật chính tả của kho từ.
@@ -47,7 +50,9 @@ export const MATH_RANGES: { value: MathRange; label: string }[] = [
   { value: 100, label: "Phạm vi 100" },
 ];
 
-export type MathBlockId = "bond" | "compare" | "calc" | "missing" | "order" | "seq";
+export type MathBlockId =
+  | "bond" | "compare" | "calc" | "missing" | "order" | "seq"
+  | "qua10" | "conho" | "thieu2" | "nhanchia" | "sosanh1000" | "tramchuc" | "demthem" | "donvi2";
 
 type MathBlockDef = {
   id: MathBlockId;
@@ -161,13 +166,112 @@ export const MATH_BLOCKS: MathBlockDef[] = [
   },
 ];
 
+/* ═══════════════ TOÁN LỚP 2 ═══════════════
+   Không có lựa chọn phạm vi: mỗi bài tự mang phạm vi của chương trình lớp 2. */
+
+export const MATH_BLOCKS_2: MathBlockDef[] = [
+  {
+    id: "qua10", label: "Tính nhẩm qua 10 (phạm vi 20)", title: "Tính nhẩm", perRow: 4, count: 16,
+    make: (r) => {
+      // Cộng qua 10: hai số có tổng 11–18; trừ qua 10: số bị trừ 11–18, hàng đơn vị bé hơn số trừ.
+      const a = int(r, 2, 9), b = int(r, 11 - a > 2 ? 11 - a : 2, 9);
+      const c = a + b;
+      return chance(r, 0.5)
+        ? { kind: "inline", cells: [T(a), T("+"), T(b), T("="), B(c)] }
+        : { kind: "inline", cells: [T(c), T("-"), T(a), T("="), B(b)] };
+    },
+  },
+  {
+    id: "conho", label: "Cộng, trừ có nhớ (phạm vi 100)", title: "Tính", perRow: 3, count: 12,
+    make: (r) => {
+      for (;;) {
+        if (chance(r, 0.5)) {
+          const a = int(r, 11, 89), b = int(r, 2, 99 - a);
+          if ((a % 10) + (b % 10) >= 10) return { kind: "inline", cells: [T(a), T("+"), T(b), T("="), B(a + b)] };
+        } else {
+          const a = int(r, 21, 99), b = int(r, 2, a - 10);
+          if ((a % 10) < (b % 10)) return { kind: "inline", cells: [T(a), T("-"), T(b), T("="), B(a - b)] };
+        }
+      }
+    },
+  },
+  {
+    id: "thieu2", label: "Tìm số còn thiếu (có nhớ)", title: "Điền số thích hợp vào ô trống", perRow: 3, count: 9,
+    make: (r) => {
+      for (;;) {
+        const a = int(r, 11, 79), b = int(r, 5, 99 - a);
+        if ((a % 10) + (b % 10) < 10) continue;
+        return chance(r, 0.5)
+          ? { kind: "inline", cells: [B(a), T("+"), T(b), T("="), T(a + b)] }
+          : { kind: "inline", cells: [T(a + b), T("-"), B(b), T("="), T(a)] };
+      }
+    },
+  },
+  {
+    id: "nhanchia", label: "Bảng nhân, bảng chia 2 và 5", title: "Tính nhẩm", perRow: 4, count: 16,
+    make: (r) => {
+      const k = pick(r, [2, 5]), x = int(r, 1, 10);
+      return chance(r, 0.55)
+        ? { kind: "inline", cells: chance(r, 0.5) ? [T(k), T("×"), T(x), T("="), B(k * x)] : [T(x), T("×"), T(k), T("="), B(k * x)] }
+        : { kind: "inline", cells: [T(k * x), T(":"), T(k), T("="), B(x)] };
+    },
+  },
+  {
+    id: "sosanh1000", label: "So sánh số có ba chữ số", title: "Điền dấu &gt;, &lt;, = vào ô trống", perRow: 3, count: 12,
+    make: (r) => {
+      const a = int(r, 100, 999);
+      let b: number;
+      if (chance(r, 0.12)) b = a;
+      else if (chance(r, 0.5)) b = Math.floor(a / 100) * 100 + int(r, 0, 99); // cùng hàng trăm
+      else if (chance(r, 0.5)) b = Math.floor(a / 10) * 10 + int(r, 0, 9);    // cùng trăm, chục
+      else b = int(r, 100, 999);
+      return { kind: "inline", cells: [T(a), B(sign(a, b)), T(b)] };
+    },
+  },
+  {
+    id: "tramchuc", label: "Viết số thành tổng trăm, chục, đơn vị", title: "Viết số thành tổng các trăm, chục, đơn vị", perRow: 2, count: 6,
+    make: (r) => {
+      const h = int(r, 1, 9), t = int(r, 1, 9), u = int(r, 1, 9);
+      return { kind: "inline", cells: [T(h * 100 + t * 10 + u), T("="), B(h * 100), T("+"), B(t * 10), T("+"), B(u)] };
+    },
+  },
+  {
+    id: "demthem", label: "Đếm thêm 2, 5, 10, 100", title: "Viết số còn thiếu vào ô trống", perRow: 2, count: 4,
+    make: (r) => {
+      const step = pick(r, [2, 5, 10, 100]);
+      const len = 6;
+      const max = step === 100 ? 1000 : 100;
+      const start = step * int(r, step === 100 ? 1 : 0, Math.floor(max / step) - (len - 1));
+      const nums = Array.from({ length: len }, (_, i) => start + step * i);
+      const hidden = new Set(shuffle(r, [2, 3, 4, 5]).slice(0, 3));
+      return { kind: "inline", cells: nums.map((v, i) => (hidden.has(i) ? B(v) : T(v))) };
+    },
+  },
+  {
+    id: "donvi2", label: "Đổi đơn vị: m, dm, cm", title: "Viết số thích hợp vào ô trống", perRow: 3, count: 9,
+    make: (r) => {
+      const [big, small, f] = pick(r, [["dm", "cm", 10], ["m", "dm", 10], ["m", "cm", 100]] as const);
+      const n = int(r, 1, 9);
+      return chance(r, 0.6)
+        ? { kind: "inline", cells: [T(`${n} ${big}`), T("="), B(n * f), T(small)] }
+        : { kind: "inline", cells: [T(`${n * f} ${small}`), T("="), B(n), T(big)] };
+    },
+  },
+];
+
 /* ═══════════════ TIẾNG VIỆT — điền âm đầu ═══════════════
    Kho từ soạn tay. Phần trong [ ] là chỗ chấm. Luật chính tả (c/k, g/gh, ng/ngh)
    được scripts/daily-sheet-check.ts kiểm tra cho từng từ. */
 
 export type SpellGroupId = "c-k" | "ch-tr" | "s-x" | "l-n" | "g-gh" | "ng-ngh" | "h-th-kh" | "v-d-gi";
 
-type SpellGroupDef = { id: SpellGroupId; options: string[]; words: string[] };
+type SpellGroupDef = {
+  id: SpellGroupId | SpellGroupId2;
+  options: string[];
+  words: string[];
+  /** "van": chỗ chấm là vần (có thể cuối tiếng, mang dấu thanh: "ch[ào] cờ"). Mặc định là âm đầu. */
+  part?: "van";
+};
 
 export const SPELL_GROUPS: SpellGroupDef[] = [
   {
@@ -236,6 +340,46 @@ export const SPELL_GROUPS: SpellGroupDef[] = [
   },
 ];
 
+/* Lớp 2: r/d/gi và các vần dễ lẫn. Chỗ chấm của vần mang luôn dấu thanh ("ch[ào]"):
+   bé điền "ao" rồi đặt dấu — đề bài chỉ nêu "ao hay au". */
+
+export type SpellGroupId2 = "r-d-gi" | "ao-au" | "ai-ay" | "an-ang";
+
+export const SPELL_GROUPS_2: SpellGroupDef[] = [
+  {
+    id: "r-d-gi", options: ["r", "d", "gi"],
+    words: [
+      "con [r]ùa", "[r]ửa tay", "[r]ừng xanh", "[r]au muống", "cái [r]ổ", "[r]ực [r]ỡ", "[r]ung chuông", "con [r]ắn",
+      "con [d]ao", "[d]ịu [d]àng", "quả [d]ứa", "[d]ế mèn", "[d]ép nhựa", "[d]ạy học", "[d]ỗ [d]ành", "[d]ễ thương",
+      "[gi]ọng hát", "[gi]ặt áo", "[gi]ấc ngủ", "[gi]ữa trưa", "học [gi]ỏi", "[gi]ọt mưa", "cái [gi]ếng", "[gi]ận [d]ỗi",
+    ],
+  },
+  {
+    id: "ao-au", options: ["ao", "au"], part: "van",
+    words: [
+      "ngôi s[ao]", "con d[ao]", "b[ảo] vệ", "ch[ào] cờ", "quả t[áo]", "b[áo] tin", "c[ao] lớn", "đ[ào] đất",
+      "s[áo] trúc", "cái m[ào] gà", "quả c[au]", "s[au] này", "tô m[àu]", "đ[au] bụng", "ch[áu] ngoan", "cùng nh[au]",
+      "r[au] xanh", "l[au] nhà", "t[àu] thuỷ", "s[áu] tuổi", "m[au] lẹ", "con s[áo]",
+    ],
+  },
+  {
+    id: "ai-ay", options: ["ai", "ay"], part: "van",
+    words: [
+      "c[ái] ghế", "m[ai] mốt", "h[ai] tay", "tr[ái] cây", "con n[ai]", "ch[ai] nước", "b[ài] học", "l[ái] xe",
+      "t[ai] nghe", "bên ph[ải]", "m[áy] b[ay]", "bàn t[ay]", "nh[ảy] dây", "ch[ạy] bộ", "h[ay] lắm", "x[ay] lúa",
+      "d[ạy] học", "ớt c[ay]", "m[ay] áo", "ngủ s[ay]",
+    ],
+  },
+  {
+    id: "an-ang", options: ["an", "ang"], part: "van",
+    words: [
+      "b[àn] học", "hoa l[an]", "b[ạn] bè", "s[àn] nhà", "đ[àn] gà", "th[an] củi", "c[an] nước",
+      "b[ảng] đen", "s[áng] sớm", "màu v[àng]", "tr[ang] sách", "l[àng] quê", "c[àng] cua", "h[àng] cây", "cây b[àng]",
+      "h[ạn] hán", "l[ang] thang", "cái th[ang]",
+    ],
+  },
+];
+
 export const SPELL_PER_BLOCK = 16;
 
 /** "[c]on [c]á" → các phần chữ/chỗ chấm. */
@@ -261,7 +405,11 @@ function spellTitle(g: SpellGroupDef): string {
 
 export type DailySubject = "toan" | "tieng-viet";
 
+export type DailyGrade = 1 | 2;
+
 export interface DailyOptions {
+  /** Mặc định lớp 1 (phiếu cũ giữ nguyên seed). */
+  grade?: DailyGrade;
   subject: DailySubject;
   range: MathRange;          // chỉ dùng cho Toán
   blockIds: string[];        // MathBlockId[] hoặc SpellGroupId[]
@@ -269,11 +417,14 @@ export interface DailyOptions {
   seed: string;
 }
 
-/** Các bài Toán dùng được với phạm vi đang chọn (sơ đồ tách–gộp chỉ đến 10). */
-export const mathBlocksFor = (range: MathRange) => MATH_BLOCKS.filter((b) => !b.maxRange || range <= b.maxRange);
+/** Các bài Toán dùng được: lớp 1 theo phạm vi đang chọn (sơ đồ tách–gộp chỉ đến 10), lớp 2 cố định. */
+export const mathBlocksFor = (range: MathRange, grade: DailyGrade = 1) =>
+  grade === 2 ? MATH_BLOCKS_2 : MATH_BLOCKS.filter((b) => !b.maxRange || range <= b.maxRange);
 
-function mathSheet(r: Rng, range: MathRange, ids: string[]): DailySheet {
-  const blocks = mathBlocksFor(range).filter((b) => ids.includes(b.id)).map((def) => {
+export const spellGroupsFor = (grade: DailyGrade = 1) => (grade === 2 ? SPELL_GROUPS_2 : SPELL_GROUPS);
+
+function mathSheet(r: Rng, range: MathRange, ids: string[], grade: DailyGrade): DailySheet {
+  const blocks = mathBlocksFor(range, grade).filter((b) => ids.includes(b.id)).map((def) => {
     const seen = new Set<string>();
     const items: Item[] = [];
     for (let i = 0; i < def.count; i++) {
@@ -287,8 +438,8 @@ function mathSheet(r: Rng, range: MathRange, ids: string[]): DailySheet {
   return { blocks };
 }
 
-function spellSheet(r: Rng, ids: string[]): DailySheet {
-  const blocks = SPELL_GROUPS.filter((g) => ids.includes(g.id)).map((g) => ({
+function spellSheet(r: Rng, ids: string[], grade: DailyGrade): DailySheet {
+  const blocks = spellGroupsFor(grade).filter((g) => ids.includes(g.id)).map((g) => ({
     title: spellTitle(g),
     perRow: 4,
     items: shuffle(r, g.words).slice(0, SPELL_PER_BLOCK).map((w): Item => ({ kind: "spell", parts: parseSpell(w) })),
@@ -297,9 +448,12 @@ function spellSheet(r: Rng, ids: string[]): DailySheet {
 }
 
 export function buildDailySheets(o: DailyOptions): DailySheet[] {
+  const grade = o.grade ?? 1;
   return Array.from({ length: o.count }, (_, i) => {
-    const r = mulberry32(seedFrom(`ngay|${o.subject}|${o.range}|${o.blockIds.join(",")}|${o.seed}|${i}`));
-    return o.subject === "toan" ? mathSheet(r, o.range, o.blockIds) : spellSheet(r, o.blockIds);
+    // Lớp 1 giữ nguyên chuỗi seed cũ để phiếu đã quen không đổi.
+    const g = grade === 1 ? "" : `|lop${grade}`;
+    const r = mulberry32(seedFrom(`ngay${g}|${o.subject}|${o.range}|${o.blockIds.join(",")}|${o.seed}|${i}`));
+    return o.subject === "toan" ? mathSheet(r, o.range, o.blockIds, grade) : spellSheet(r, o.blockIds, grade);
   });
 }
 

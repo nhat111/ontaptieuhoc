@@ -13,9 +13,9 @@ const META = {
     url: "/phieu-bai-tap",
   },
   "hang-ngay": {
-    title: "Phiếu luyện hằng ngày Toán, Tiếng Việt lớp 1",
+    title: "Phiếu luyện hằng ngày Toán, Tiếng Việt lớp 1, lớp 2",
     description:
-      "Phiếu luyện lớp 1 in được: tách gộp số, điền dấu > < =, tính, viết số theo thứ tự; điền c/k, ch/tr, s/x, l/n, g/gh, ng/ngh vào chỗ chấm. Tải Word hoặc PDF kèm đáp án. Miễn phí.",
+      "Phiếu luyện lớp 1, lớp 2 in được: tách gộp số, điền dấu > < =, cộng trừ có nhớ, bảng nhân chia 2 và 5, đổi m dm cm; điền c/k, ch/tr, s/x, r/d/gi, vần ao/au, ai/ay, an/ang vào chỗ chấm. Tải Word hoặc PDF kèm đáp án. Miễn phí.",
     url: "/phieu-bai-tap?loai=hang-ngay",
   },
   ai: {
@@ -41,7 +41,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 const TABS = [
   { key: "chu-de", label: "Phiếu theo chủ đề", sub: "Toán lớp 1–5, trắc nghiệm + tự luận" },
-  { key: "hang-ngay", label: "Phiếu luyện hằng ngày", sub: "Toán, Tiếng Việt lớp 1" },
+  { key: "hang-ngay", label: "Phiếu luyện hằng ngày", sub: "Toán, Tiếng Việt lớp 1, 2" },
   { key: "ai", label: "Hoạt động AI", sub: "Lớp 4, 5 · QĐ 2422" },
 ] as const;
 
