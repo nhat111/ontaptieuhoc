@@ -223,12 +223,19 @@ export function setSpeechRate(rate: number) {
   rateListeners.forEach((l) => l());
 }
 
+// Lượt đọc đang chạy (nếu có). `cancel()` một mình KHÔNG dừng được chuỗi: Safari/iOS
+// bắn `onend` (không phải `onerror`) cho câu bị huỷ, và hẹn giờ dự phòng của câu
+// vẫn còn — cả hai đều gọi câu tiếp theo, nên bấm "Dừng đọc" mà máy vẫn đọc tiếp.
+// Vì vậy dừng hay bắt đầu lượt mới đều phải kết thúc hẳn lượt cũ qua hàm này.
+let endCurrent: (() => void) | null = null;
+
 /**
  * Đọc lần lượt các đoạn, mỗi đoạn có thể một ngôn ngữ khác nhau (đề tiếng Anh
  * hay có câu lệnh tiếng Việt kèm đáp án tiếng Anh).
  *
- * Trả về promise chạy xong hoặc bị huỷ. Luôn `cancel()` trước để không chồng
- * lên lượt đọc đang chạy.
+ * Lượt đọc đang chạy (của nút khác chẳng hạn) bị kết thúc trước, kể cả gọi
+ * `onEnd` của nó để nút đó trở về trạng thái "Nghe". `onEnd` được gọi đúng một
+ * lần dù đọc hết, lỗi hay bị dừng.
  */
 export function speakSegments(
   segments: SpeakSegment[],
@@ -242,6 +249,7 @@ export function speakSegments(
   if (!isSpeechSupported()) return;
 
   const ss = window.speechSynthesis;
+  endCurrent?.();
   ss.cancel();
   stopKeepAlive();
 
@@ -261,13 +269,17 @@ export function speakSegments(
 
   let i = 0;
   let stopped = false;
+  let guard: ReturnType<typeof setTimeout> | undefined;
 
   const finish = () => {
     if (stopped) return;
     stopped = true;
+    clearTimeout(guard);
+    if (endCurrent === finish) endCurrent = null;
     stopKeepAlive();
     opts.onEnd?.();
   };
+  endCurrent = finish;
 
   const next = () => {
     if (stopped) return;
@@ -293,7 +305,7 @@ export function speakSegments(
       next();
     };
     const estimateMs = (seg.text.length / Math.max(rate, 0.3)) * 110 + 2500;
-    const guard = setTimeout(advance, estimateMs);
+    guard = setTimeout(advance, estimateMs);
 
     u.onend = advance;
     // Huỷ giữa chừng cũng bắn `error`; dừng hẳn thay vì đọc tiếp.
@@ -307,8 +319,9 @@ export function speakSegments(
   next();
 }
 
-/** Dừng đọc và dọn bộ giữ tiếng. */
+/** Dừng đọc hẳn (không để câu sau tự đọc tiếp) và dọn bộ giữ tiếng. */
 export function stopSpeaking() {
+  endCurrent?.();
   stopKeepAlive();
   cancelSpeech();
 }
