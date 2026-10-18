@@ -5,18 +5,26 @@
 
 import Link from "next/link";
 import { useSyncExternalStore, type ReactNode } from "react";
-import { isMuted, setMuted, subscribeMuted } from "@/lib/sfx";
+import { isMuted, setMuted, sfx, subscribeMuted } from "@/lib/sfx";
 import { Burst } from "./Fx";
 
 export function SoundToggle() {
   const muted = useSyncExternalStore(subscribeMuted, isMuted, () => false);
+  // Nhãn ghi rõ TRẠNG THÁI ("Đang tắt") — "🔇 Tắt" cũ bị đọc nhầm thành nút bấm để tắt.
+  function toggle() {
+    setMuted(!muted);
+    // Bật lại thì kêu một tiếng ngay trong cú chạm: vừa mở khoá âm thanh trên iOS,
+    // vừa cho biết đã có tiếng thật.
+    if (muted) sfx.tick();
+  }
   return (
     <button
-      onClick={() => setMuted(!muted)}
-      className="w-20 shrink-0 text-right text-sm font-bold text-gray-500 hover:text-blue-600"
-      aria-label={muted ? "Bật tiếng" : "Tắt tiếng"}
+      onClick={toggle}
+      className="w-24 shrink-0 whitespace-nowrap text-right text-sm font-bold text-gray-500 hover:text-blue-600"
+      aria-label={muted ? "Âm thanh đang tắt, bấm để bật" : "Âm thanh đang bật, bấm để tắt"}
+      aria-pressed={!muted}
     >
-      {muted ? "🔇 Tắt" : "🔊 Bật"}
+      {muted ? "🔇 Đang tắt" : "🔊 Đang bật"}
     </button>
   );
 }
@@ -24,7 +32,7 @@ export function SoundToggle() {
 export function ArcadeHeader({ title, backHref }: { title: string; backHref: string }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
-      <Link href={backHref} className="w-20 shrink-0 whitespace-nowrap text-sm text-blue-600 hover:underline">‹ Trò chơi</Link>
+      <Link href={backHref} className="w-24 shrink-0 whitespace-nowrap text-sm text-blue-600 hover:underline">‹ Trò chơi</Link>
       <h1 className="text-base sm:text-xl font-extrabold text-gray-800 text-center">{title}</h1>
       <SoundToggle />
     </div>
