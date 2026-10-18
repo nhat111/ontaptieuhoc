@@ -15,27 +15,34 @@ const beVietnam = Be_Vietnam_Pro({
   variable: "--font-be-vietnam",
 });
 
-const SITE_NAME = "Ôn Tập Tiểu Học";
+const SITE_NAME = "Ôn Tập Phổ Thông";
 const SITE_DESCRIPTION =
-  "Nền tảng ôn tập miễn phí cho học sinh Tiểu học Việt Nam — bài tập và đề kiểm tra lớp 1 đến lớp 5, bám sát sách giáo khoa, làm bài và chấm điểm ngay trên web.";
+  "Nền tảng ôn tập miễn phí cho học sinh Tiểu học và THCS Việt Nam — bài tập và đề kiểm tra lớp 1 đến lớp 9, bám sát sách giáo khoa, làm bài và chấm điểm ngay trên web.";
 
 export const metadata: Metadata = {
   // Makes the relative Open Graph / canonical URLs below resolve to absolute ones.
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-5`,
+    default: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-9`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
+    "ôn tập phổ thông",
     "ôn tập tiểu học",
+    "ôn tập THCS",
     "bài tập lớp 1",
     "bài tập lớp 2",
     "bài tập lớp 3",
     "bài tập lớp 4",
     "bài tập lớp 5",
+    "bài tập lớp 6",
+    "bài tập lớp 7",
+    "bài tập lớp 8",
+    "bài tập lớp 9",
     "đề kiểm tra tiểu học",
+    "đề kiểm tra THCS",
     "trắc nghiệm online",
   ],
   alternates: { canonical: "/" },
@@ -44,12 +51,12 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "vi_VN",
     url: "/",
-    title: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-5`,
+    title: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-9`,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-5`,
+    title: `${SITE_NAME} — Bài tập & đề kiểm tra lớp 1-9`,
     description: SITE_DESCRIPTION,
   },
   icons: {

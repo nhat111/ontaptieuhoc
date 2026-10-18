@@ -1,4 +1,4 @@
-# AI Context — Ôn Tập Tiểu Học
+# AI Context — Ôn Tập Phổ Thông
 
 Tài liệu ngắn cho agent/LLM khi làm việc trong repo. **Nguồn chính xác nhất cho chi tiết sâu:** `CLAUDE.md` ở root. **Quy tắc codegen:** `.claude/skills/gen-code-ontaptieuhoc/SKILL.md`.
 

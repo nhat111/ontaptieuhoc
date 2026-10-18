@@ -11,7 +11,7 @@ import type { User } from "@supabase/supabase-js";
 // ở chân trang — không để chen vào đây, phụ huynh không cần tới.
 const NAV = [
   { label: "Trang chủ", href: "/" },
-  { label: "Lớp 1–5", href: "/#grades" },
+  { label: "Lớp 1–9", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
   { label: "Trò chơi", href: "/lop/1/tro-choi" },
   { label: "Phiếu bài tập", href: "/phieu-bai-tap" },
@@ -70,7 +70,7 @@ export default function Header() {
           <LogoMark />
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[17px] font-extrabold text-blue-700 tracking-tight leading-none">Ôn Tập</span>
-            <span className="text-[11px] font-bold text-orange-500 tracking-widest leading-none uppercase">Tiểu Học</span>
+            <span className="text-[11px] font-bold text-orange-500 tracking-widest leading-none uppercase">Phổ Thông</span>
           </div>
         </Link>
 

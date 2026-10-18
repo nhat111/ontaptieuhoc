@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn sử dụng",
   description:
-    "Hướng dẫn phụ huynh dùng Ôn Tập Tiểu Học: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–3.",
+    "Hướng dẫn phụ huynh dùng Ôn Tập Phổ Thông: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–3.",
   alternates: { canonical: "/huong-dan" },
 };
 
@@ -17,8 +17,8 @@ const STEPS: GuideStep[] = [
     emoji: "🎒",
     title: "Chọn lớp và môn học",
     points: [
-      <>Ở trang chủ, bấm <b>Chọn lớp của con</b> rồi chọn thẻ lớp (Lớp 1 → Lớp 5).</>,
-      <>Chọn môn ở hàng tab trên cùng: <b>Toán</b>, <b>Tiếng Việt</b>…</>,
+      <>Ở trang chủ, bấm <b>Chọn lớp của con</b> rồi chọn thẻ lớp: Tiểu học (Lớp 1 → Lớp 5) hoặc Trung học cơ sở (Lớp 6 → Lớp 9).</>,
+      <>Chọn môn ở hàng tab trên cùng: <b>Toán</b>, <b>Tiếng Việt</b>… (THCS: <b>Ngữ văn</b>, <b>Khoa học tự nhiên</b>, <b>Lịch sử và Địa lí</b>…)</>,
       <>Chọn <b>Bài tập</b> (luyện theo từng chương, từng bài) hoặc <b>Đề kiểm tra</b> (ôn thi cuối kỳ).</>,
       <>Bấm vào một bài để mở. Mỗi bài ghi sẵn số câu hỏi.</>,
     ],
@@ -41,7 +41,7 @@ const STEPS: GuideStep[] = [
     emoji: "🔊",
     title: "Nghe đọc đề (cho bé chưa đọc thạo)",
     points: [
-      <>Có ở các bài <b>lớp 1, lớp 2</b> và mọi bài <b>Tiếng Anh</b>. Từ lớp 3, bài Toán và Tiếng Việt không có nút nghe vì bé đã tự đọc được.</>,
+      <>Có ở các bài <b>lớp 1, lớp 2</b> và mọi bài <b>Tiếng Anh</b>. Từ lớp 3 trở lên, bài các môn khác (kể cả lớp 6–9) không có nút nghe vì các em đã tự đọc được.</>,
       <>Mỗi câu có nút <b>Nghe</b> — máy đọc câu hỏi và các đáp án.</>,
       <>Nút <b>Nghe cả bài</b> ở đầu trang đọc lần lượt từng câu và tự cuộn tới câu đang đọc.</>,
       <>Chỉnh tốc độ <b>Chậm / Vừa / Nhanh</b> ngay cạnh nút. Mặc định là <b>Vừa</b> — đã chậm hơn giọng máy bình thường để bé nghe kịp.</>,
@@ -150,7 +150,7 @@ export default function ParentGuidePage() {
   return (
     <GuidePage
       title="Hướng dẫn sử dụng"
-      intro="Lần đầu dùng Ôn Tập Tiểu Học? Bạn Cú chỉ cho phụ huynh từng bước — mất khoảng 2 phút đọc."
+      intro="Lần đầu dùng Ôn Tập Phổ Thông? Bạn Cú chỉ cho phụ huynh từng bước — mất khoảng 2 phút đọc."
       steps={STEPS}
       faq={FAQ}
       switchTo={{

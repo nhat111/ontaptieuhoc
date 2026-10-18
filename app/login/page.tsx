@@ -153,7 +153,7 @@ function LoginForm() {
         <LogoMark />
         <span className="flex flex-col gap-0.5 leading-none">
           <span className="text-[17px] font-extrabold leading-none tracking-tight text-blue-700">Ôn Tập</span>
-          <span className="text-[11px] font-bold uppercase leading-none tracking-widest text-orange-500">Tiểu Học</span>
+          <span className="text-[11px] font-bold uppercase leading-none tracking-widest text-orange-500">Phổ Thông</span>
         </span>
       </Link>
 

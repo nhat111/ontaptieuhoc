@@ -1,4 +1,4 @@
-# Workflow Guide — Ôn Tập Tiểu Học
+# Workflow Guide — Ôn Tập Phổ Thông
 
 Reference: `.claude/ai-context/` · `CLAUDE.md`
 

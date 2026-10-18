@@ -13,9 +13,15 @@
 // Kiểm tra danh sách này có khớp DB không:  node --env-file=.env.local scripts/check-subjects.mjs
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const GRADES = [1, 2, 3, 4, 5] as const;
+export const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export type Grade = (typeof GRADES)[number];
+
+/** Cấp học: tiểu học lớp 1–5, trung học cơ sở lớp 6–9. Trang chủ chia thẻ lớp theo cấp. */
+export const SCHOOL_LEVELS = [
+  { key: "tieu-hoc", label: "Tiểu học", grades: [1, 2, 3, 4, 5] },
+  { key: "thcs", label: "Trung học cơ sở", grades: [6, 7, 8, 9] },
+] as const satisfies readonly { key: string; label: string; grades: readonly Grade[] }[];
 
 /** Môn học theo lớp, đúng thứ tự hiển thị trên tab. */
 export const SUBJECTS_BY_GRADE: Record<Grade, readonly string[]> = {
@@ -24,6 +30,12 @@ export const SUBJECTS_BY_GRADE: Record<Grade, readonly string[]> = {
   3: ["Toán", "Tiếng Việt", "Tiếng Anh"],
   4: ["Toán", "Tiếng Việt", "Tiếng Anh"],
   5: ["Toán", "Tiếng Việt", "Tiếng Anh"],
+  // THCS theo chương trình GDPT 2018: Tiếng Việt thành Ngữ văn, thêm KHTN, Sử–Địa, GDCD, Tin học, Công nghệ.
+  // Viết nguyên mảng từng lớp: scripts/check-subjects.mjs bóc literal của từng dòng.
+  6: ["Toán", "Ngữ văn", "Tiếng Anh", "Khoa học tự nhiên", "Lịch sử và Địa lí", "Giáo dục công dân", "Tin học", "Công nghệ"],
+  7: ["Toán", "Ngữ văn", "Tiếng Anh", "Khoa học tự nhiên", "Lịch sử và Địa lí", "Giáo dục công dân", "Tin học", "Công nghệ"],
+  8: ["Toán", "Ngữ văn", "Tiếng Anh", "Khoa học tự nhiên", "Lịch sử và Địa lí", "Giáo dục công dân", "Tin học", "Công nghệ"],
+  9: ["Toán", "Ngữ văn", "Tiếng Anh", "Khoa học tự nhiên", "Lịch sử và Địa lí", "Giáo dục công dân", "Tin học", "Công nghệ"],
 };
 
 export function isGrade(value: unknown): value is Grade {
