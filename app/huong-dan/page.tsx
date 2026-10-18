@@ -112,7 +112,7 @@ const STEPS: GuideStep[] = [
       <>Lớp 1: đếm hình, hái táo, nghe âm chọn chữ, nhìn hình chọn chữ, chọn dấu thanh.</>,
       <>Lớp 2: xem đồng hồ, tính nhẩm trong phạm vi 100, điền chữ chính tả, phân loại từ.</>,
       <>Lớp 3: đua xe bảng nhân, bắn bóng bay, chỉnh đồng hồ (kéo kim), lật thẻ từ trái nghĩa – cùng nghĩa. Mỗi trò lưu kỷ lục trên máy để bé phá; đua xe thắng thì được huy chương cho từng bảng nhân.</>,
-      <>Lớp 1, 2 và trò chỉnh đồng hồ: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Bật / 🔇 Tắt</b> ở góc phải tắt tiếng hiệu ứng của các trò lớp 3.</>,
+      <>Lớp 1, 2 và trò chỉnh đồng hồ: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Đang bật / 🔇 Đang tắt</b> ở góc phải bật, tắt tiếng hiệu ứng của các trò lớp 3. iPhone để chế độ im lặng (gạt chuông) mà vẫn không nghe tiếng thì gạt chuông lên hoặc tăng âm lượng — iOS 17 trở lên thì không cần.</>,
     ],
     cta: { href: "/lop/1/tro-choi", label: "Vào khu trò chơi" },
   },

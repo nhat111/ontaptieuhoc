@@ -4,6 +4,11 @@
 // iOS chỉ cho AudioContext chạy sau một cú chạm: lần đầu gọi `sfx.*` phải nằm trong
 // handler của cú chạm (nút Bắt đầu). Sau đó gọi từ timer cũng được.
 // Tắt / bật tiếng lưu ở localStorage (`ontap_sfx_muted`), đọc qua useSyncExternalStore.
+//
+// iOS: Web Audio mặc định bị gạt im lặng (chuông) chặn hẳn — máy để im lặng thì bật
+// tiếng trong game cũng không nghe gì. Safari/WebKit iOS 17+ có Audio Session API:
+// đặt `navigator.audioSession.type = "playback"` thì trang phát như trình nghe nhạc,
+// không phụ thuộc gạt im lặng. Máy cũ hơn không có API này thì vẫn như trước.
 
 const MUTE_KEY = "ontap_sfx_muted";
 const listeners = new Set<() => void>();
@@ -32,15 +37,25 @@ export function subscribeMuted(cb: () => void) {
   };
 }
 
+/** iOS 17+: cho âm thanh của trang phát cả khi máy đang để chế độ im lặng. */
+function allowPlaybackWhenSilenced() {
+  try {
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session && session.type !== "playback") session.type = "playback";
+  } catch {/* trình duyệt không có Audio Session API */}
+}
+
 function audio(): AudioContext | null {
   if (typeof window === "undefined" || isMuted()) return null;
   try {
     if (!ctx) {
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return null;
+      allowPlaybackWhenSilenced();
       ctx = new AC();
     }
-    if (ctx.state === "suspended") void ctx.resume();
+    // "suspended" (chưa có cú chạm) hoặc "interrupted" (iOS sau khi khoá máy, có cuộc gọi).
+    if (ctx.state !== "running") void ctx.resume();
     return ctx;
   } catch {
     return null;
