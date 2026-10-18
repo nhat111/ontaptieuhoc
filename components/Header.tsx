@@ -11,7 +11,7 @@ import type { User } from "@supabase/supabase-js";
 // ở chân trang — không để chen vào đây, phụ huynh không cần tới.
 const NAV = [
   { label: "Trang chủ", href: "/" },
-  { label: "Lớp 1–5", href: "/#grades" },
+  { label: "Lớp 1–9", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
   { label: "Trò chơi", href: "/lop/1/tro-choi" },
   { label: "Phiếu bài tập", href: "/phieu-bai-tap" },

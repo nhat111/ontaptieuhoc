@@ -51,7 +51,7 @@ for (const r of rows) {
 }
 
 let problems = 0;
-for (const grade of [1, 2, 3, 4, 5]) {
+for (const grade of [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
   const code = catalog[grade] ?? [];
   const db = dbByGrade.get(grade) ?? [];
   const missing = code.filter((n) => !db.includes(n));

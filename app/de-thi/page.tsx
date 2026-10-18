@@ -8,14 +8,14 @@ import { getAllExams, type ExamListItem } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Đề kiểm tra tiểu học lớp 1-5",
+  title: "Đề kiểm tra lớp 1-9",
   description:
-    "Kho đề kiểm tra tiểu học lớp 1 đến lớp 5 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay và xem lời giải từng câu.",
+    "Kho đề kiểm tra tiểu học và THCS lớp 1 đến lớp 9 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay và xem lời giải từng câu.",
   alternates: { canonical: "/de-thi" },
   openGraph: {
-    title: "Đề kiểm tra tiểu học lớp 1-5",
+    title: "Đề kiểm tra lớp 1-9",
     description:
-      "Kho đề kiểm tra tiểu học lớp 1 đến lớp 5 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay.",
+      "Kho đề kiểm tra tiểu học và THCS lớp 1 đến lớp 9 theo môn và theo chương. Làm bài trực tuyến miễn phí, chấm điểm ngay.",
     url: "/de-thi",
   },
 };

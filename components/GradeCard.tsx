@@ -10,8 +10,8 @@ interface GradeCardProps {
 
 /**
  * Thẻ chọn lớp ở trang chủ. Màu, biểu tượng lấy từ lib/gradeTheme.ts để đồng
- * bộ với trang lớp. Điện thoại: một hàng ngang (5 thẻ xếp dọc gọn gàng, không
- * lệch cột); màn rộng: thẻ đứng, 5 cột.
+ * bộ với trang lớp. Điện thoại: một hàng ngang (các thẻ xếp dọc gọn gàng, không
+ * lệch cột); màn rộng: thẻ đứng, mỗi cấp học một hàng (trang chủ chia cột).
  */
 export default function GradeCard({ grade, subjects, stats }: GradeCardProps) {
   const theme = gradeTheme(grade);

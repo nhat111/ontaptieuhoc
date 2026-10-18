@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS subjects (
   id          SERIAL PRIMARY KEY,
   name        TEXT NOT NULL,
-  grade       INT  NOT NULL,            -- 1-5
+  grade       INT  NOT NULL,            -- 1-9 (6-9 = THCS)
   order_index INT  NOT NULL DEFAULT 0
 );
 

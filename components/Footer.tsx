@@ -37,7 +37,7 @@ export default function Footer() {
             <span className="text-lg font-extrabold tracking-tight text-blue-700">Ôn Tập Tiểu Học</span>
           </Link>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-            Luyện tập miễn phí, bám sát chương trình lớp 1 đến lớp 5.
+            Luyện tập miễn phí, bám sát chương trình lớp 1 đến lớp 9.
           </p>
           <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
             {GRADES.map((g) => {

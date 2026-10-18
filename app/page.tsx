@@ -3,7 +3,7 @@ import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 import Footer from "@/components/Footer";
 import TryQuestion from "@/components/home/TryQuestion";
-import { GRADES, getSubjects } from "@/lib/subjects";
+import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
 import { getGradeStats } from "@/lib/db";
 
 // Số bài/đề đếm từ DB; làm mới mỗi 5 phút là đủ, không cần truy vấn mỗi lượt xem.
@@ -29,7 +29,7 @@ export default async function HomePage() {
               Bé ôn bài <span className="whitespace-nowrap text-blue-600">15 phút</span> mỗi ngày
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Bài tập và đề kiểm tra lớp 1 đến lớp 5 theo sách giáo khoa mới. Làm trên web, chấm điểm
+              Bài tập và đề kiểm tra lớp 1 đến lớp 9 theo sách giáo khoa mới. Làm trên web, chấm điểm
               ngay, có lời giải — hoặc tải đề về in cho con làm trên giấy.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -81,10 +81,24 @@ export default async function HomePage() {
           <p className="mt-1 text-sm text-slate-500 sm:text-base">Mỗi lớp có bài tập theo từng chương và đề kiểm tra.</p>
         </div>
 
-        {/* Điện thoại: danh sách dọc · màn rộng: 5 thẻ đứng */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
-          {GRADES.map((g) => (
-            <GradeCard key={g} grade={g} subjects={[...getSubjects(g)]} stats={stats[g]} />
+        {/* Mỗi cấp một nhóm. Điện thoại: danh sách dọc · màn rộng: một hàng thẻ đứng
+            (5 cột tiểu học, 4 cột THCS — viết nguyên class để Tailwind sinh CSS). */}
+        <div className="space-y-8">
+          {SCHOOL_LEVELS.map((level) => (
+            <div key={level.key}>
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-500">
+                {level.label} · lớp {level.grades[0]}–{level.grades[level.grades.length - 1]}
+              </h3>
+              <div
+                className={`grid grid-cols-1 gap-3 sm:grid-cols-2 lg:gap-4 ${
+                  level.grades.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-5"
+                }`}
+              >
+                {level.grades.map((g) => (
+                  <GradeCard key={g} grade={g} subjects={[...getSubjects(g)]} stats={stats[g]} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>
