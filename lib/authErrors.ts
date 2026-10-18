@@ -61,6 +61,16 @@ export function authErrorMessage(error: AuthErrorLike | null | undefined): strin
 }
 
 /**
+ * Giới hạn gửi thư / thao tác chỉ cần đợi, không phải lỗi của người dùng: hiện
+ * màu vàng thay vì đỏ.
+ */
+export function authErrorTone(error: AuthErrorLike | null | undefined): "error" | "warning" {
+  if (!error) return "error";
+  if (error.status === 429) return "warning";
+  return error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit" ? "warning" : "error";
+}
+
+/**
  * Mã lỗi kỹ thuật hiện nhỏ dưới câu báo, để người quản trị đối chiếu với
  * Supabase → Logs → Auth. Câu tiếng Việt ở trên cố ý nói chung chung.
  */

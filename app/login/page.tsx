@@ -4,8 +4,9 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LogoMark from "@/components/LogoMark";
+import AuthNotice from "@/components/AuthNotice";
 import { createClient } from "@/lib/supabase/client";
-import { authErrorDetail, authErrorMessage, type AuthErrorLike } from "@/lib/authErrors";
+import { authErrorDetail, authErrorMessage, authErrorTone, type AuthErrorLike } from "@/lib/authErrors";
 import { safeNext } from "@/lib/safeRedirect";
 
 type Tab = "login" | "register" | "forgot";
@@ -29,6 +30,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [errorDetail, setErrorDetail] = useState("");
+  const [errorTone, setErrorTone] = useState<"error" | "warning">("error");
   const [success, setSuccess] = useState("");
   // Hiện nút "Gửi lại email xác nhận" khi đăng nhập bị chặn vì chưa xác nhận.
   const [canResend, setCanResend] = useState(false);
@@ -37,6 +39,7 @@ function LoginForm() {
     setTab(t);
     setError("");
     setErrorDetail("");
+    setErrorTone("error");
     setSuccess("");
     setCanResend(false);
     setConfirm("");
@@ -46,6 +49,7 @@ function LoginForm() {
     console.error("[login]", err.status, err.code, err.message);
     setError(authErrorMessage(err));
     setErrorDetail(authErrorDetail(err));
+    setErrorTone(authErrorTone(err));
   }
 
   /**
@@ -70,6 +74,7 @@ function LoginForm() {
     e.preventDefault();
     setError("");
     setErrorDetail("");
+    setErrorTone("error");
     setSuccess("");
     setCanResend(false);
 
@@ -184,10 +189,12 @@ function LoginForm() {
         )}
 
         {linkExpired && !error && !success && (
-          <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-800">
-            Link trong email đã hết hạn, đã dùng rồi, hoặc được mở trên máy/trình duyệt khác với lúc đăng ký. Nếu bạn vừa
-            bấm link xác nhận, cứ thử đăng nhập — tài khoản thường đã được xác nhận. Quên mật khẩu thì yêu cầu link mới.
-          </p>
+          <div className="mb-4">
+            <AuthNotice tone="warning">
+              Link trong email đã hết hạn, đã dùng rồi, hoặc được mở trên máy/trình duyệt khác với lúc đăng ký. Nếu bạn vừa
+              bấm link xác nhận, cứ thử đăng nhập — tài khoản thường đã được xác nhận. Quên mật khẩu thì yêu cầu link mới.
+            </AuthNotice>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -258,9 +265,8 @@ function LoginForm() {
           )}
 
           {error && (
-            <div role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            <AuthNotice tone={errorTone} detail={errorDetail}>
               {error}
-              {errorDetail && <span className="mt-1 block text-xs text-red-400">Mã lỗi: {errorDetail}</span>}
               {canResend && (
                 <button
                   type="button"
@@ -271,11 +277,9 @@ function LoginForm() {
                   Gửi lại email xác nhận
                 </button>
               )}
-            </div>
+            </AuthNotice>
           )}
-          {success && (
-            <p role="status" className="rounded-xl bg-green-50 px-3 py-2 text-sm leading-relaxed text-green-800">{success}</p>
-          )}
+          {success && <AuthNotice tone="success">{success}</AuthNotice>}
 
           <button
             type="submit"
