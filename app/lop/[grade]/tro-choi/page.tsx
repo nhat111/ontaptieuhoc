@@ -7,9 +7,11 @@ import StarTotal from "@/components/games/StarTotal";
 type Game = { href: string; emoji: string; title: string; subject: string; desc: string; color: string };
 
 const DESCRIPTIONS: Record<string, string> = {
-  "1": "Vừa học vừa chơi cho bé lớp 1: đếm hình, hái táo làm quen phép cộng trừ, nghe chọn chữ, nhìn hình chọn chữ, chọn dấu thanh. Miễn phí, không cần đăng nhập.",
-  "2": "Trò chơi ôn tập lớp 2: xem đồng hồ, cộng trừ có nhớ trong phạm vi 100, bảng nhân chia 2 và 5, chính tả ch/tr s/x g/gh c/k l/n, từ chỉ sự vật hoạt động đặc điểm. Miễn phí.",
-  "3": "Trò chơi lớp 3: đua xe bảng nhân, bắn bóng bay bảng nhân, kéo kim chỉnh đồng hồ đến từng phút, lật thẻ ghép từ trái nghĩa – cùng nghĩa. Có kỷ lục và huy chương. Miễn phí.",
+  "1": "Vừa học vừa chơi cho bé lớp 1: đếm hình, hái táo làm quen phép cộng trừ, so sánh số, nghe chọn chữ, nhìn hình chọn chữ, chọn dấu thanh. Miễn phí, không cần đăng nhập.",
+  "2": "Trò chơi ôn tập lớp 2: xem đồng hồ, cộng trừ có nhớ trong phạm vi 100, bảng nhân chia 2 và 5, tiền Việt Nam, chính tả ch/tr s/x g/gh c/k l/n, từ chỉ sự vật hoạt động đặc điểm. Miễn phí.",
+  "3": "Trò chơi lớp 3: đua xe bảng nhân, bắn bóng bay bảng nhân, kéo kim chỉnh đồng hồ đến từng phút, làm tròn số, lật thẻ ghép từ trái nghĩa – cùng nghĩa. Có kỷ lục và huy chương. Miễn phí.",
+  "4": "Trò chơi lớp 4: phân số (đọc hình, so sánh, rút gọn), đổi đơn vị đo khối lượng, thời gian, diện tích, phân loại danh từ – động từ – tính từ. Miễn phí, không cần đăng nhập.",
+  "5": "Trò chơi lớp 5: số thập phân (so sánh, hàng, viết phân số thập phân), tỉ số phần trăm, chọn kết từ. Miễn phí, không cần đăng nhập.",
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ grade: string }> }): Promise<Metadata> {
@@ -35,6 +37,14 @@ const GAMES_1: Game[] = [
     subject: "Toán",
     desc: "Tính nhẩm rồi hái quả táo đúng — táo rơi vào giỏ!",
     color: "from-lime-400 to-emerald-500",
+  },
+  {
+    href: "so-sanh",
+    emoji: "🐊",
+    title: "So sánh số",
+    subject: "Toán",
+    desc: "Số nào lớn hơn? Chọn dấu >, < hoặc = — phạm vi 10 có hình để đếm.",
+    color: "from-teal-400 to-emerald-500",
   },
   {
     href: "nghe-chu",
@@ -80,6 +90,14 @@ const GAMES_2: Game[] = [
     color: "from-lime-400 to-emerald-500",
   },
   {
+    href: "tien",
+    emoji: "💵",
+    title: "Tiền Việt Nam",
+    subject: "Toán",
+    desc: "Đếm các tờ 100, 200, 500 đồng; đi chợ tính tiền trả lại.",
+    color: "from-emerald-400 to-teal-500",
+  },
+  {
     href: "chinh-ta",
     emoji: "✍️",
     title: "Điền chữ chính tả",
@@ -123,6 +141,14 @@ const GAMES_3: Game[] = [
     color: "from-amber-400 to-yellow-500",
   },
   {
+    href: "lam-tron",
+    emoji: "🎯",
+    title: "Làm tròn số",
+    subject: "Toán",
+    desc: "Làm tròn đến hàng chục, hàng trăm: từ 5 trở lên thì làm tròn lên.",
+    color: "from-violet-400 to-fuchsia-500",
+  },
+  {
     href: "lat-the",
     emoji: "🃏",
     title: "Lật thẻ từ",
@@ -132,7 +158,61 @@ const GAMES_3: Game[] = [
   },
 ];
 
-const GAMES_BY_GRADE: Record<string, Game[]> = { "1": GAMES_1, "2": GAMES_2, "3": GAMES_3 };
+const GAMES_4: Game[] = [
+  {
+    href: "phan-so",
+    emoji: "🍫",
+    title: "Phân số",
+    subject: "Toán",
+    desc: "Nhìn thanh sô-cô-la đọc phân số, so sánh và rút gọn phân số.",
+    color: "from-orange-400 to-rose-500",
+  },
+  {
+    href: "doi-don-vi",
+    emoji: "⚖️",
+    title: "Đổi đơn vị đo",
+    subject: "Toán",
+    desc: "Yến, tạ, tấn · giây, thế kỉ · mm², cm², dm², m².",
+    color: "from-sky-400 to-blue-500",
+  },
+  {
+    href: "tu-loai",
+    emoji: "🗂️",
+    title: "Danh từ, động từ, tính từ",
+    subject: "Tiếng Việt",
+    desc: "Đọc từ rồi xếp vào đúng từ loại.",
+    color: "from-fuchsia-400 to-pink-500",
+  },
+];
+
+const GAMES_5: Game[] = [
+  {
+    href: "thap-phan",
+    emoji: "🔢",
+    title: "Số thập phân",
+    subject: "Toán",
+    desc: "2,5 hay 2,45 lớn hơn? Chữ số thuộc hàng nào? 7/100 viết thế nào?",
+    color: "from-indigo-400 to-violet-500",
+  },
+  {
+    href: "phan-tram",
+    emoji: "📊",
+    title: "Tỉ số phần trăm",
+    subject: "Toán",
+    desc: "25% của 80 là bao nhiêu? Giải bài toán tỉ số phần trăm.",
+    color: "from-amber-400 to-orange-500",
+  },
+  {
+    href: "ket-tu",
+    emoji: "🔗",
+    title: "Kết từ",
+    subject: "Tiếng Việt",
+    desc: "và, nhưng, vì… nên…, nếu… thì… — chọn kết từ hợp với câu.",
+    color: "from-cyan-400 to-blue-500",
+  },
+];
+
+const GAMES_BY_GRADE: Record<string, Game[]> = { "1": GAMES_1, "2": GAMES_2, "3": GAMES_3, "4": GAMES_4, "5": GAMES_5 };
 
 export default async function GamesPage({ params }: { params: Promise<{ grade: string }> }) {
   const { grade } = await params;
@@ -153,7 +233,7 @@ export default async function GamesPage({ params }: { params: Promise<{ grade: s
 
         <h1 className="text-2xl font-extrabold text-gray-800">Vừa học vừa chơi 🎮</h1>
         {/* Chuyển lớp */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {Object.keys(GAMES_BY_GRADE).map((g) => (
             <Link
               key={g}
@@ -169,7 +249,9 @@ export default async function GamesPage({ params }: { params: Promise<{ grade: s
         <p className="text-gray-500 text-sm mt-1 mb-4">
           {grade === "3"
             ? "Mỗi ván 1–2 phút, có kỷ lục để phá. Bật loa để nghe hiệu ứng nhé."
-            : "Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bật loa để nghe đọc nhé."}
+            : grade === "1" || grade === "2"
+              ? "Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bật loa để nghe đọc nhé."
+              : "Mỗi lượt chơi 10 câu, khoảng 3 phút. Sai được chọn lại, đúng ngay lần đầu được một ⭐."}
         </p>
         <StarTotal />
 

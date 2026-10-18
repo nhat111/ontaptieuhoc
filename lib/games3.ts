@@ -187,3 +187,33 @@ export function makeMemoryDeck(kind: WordPairKind, pairs: number): MemoryCard[] 
   const cards = chosen.flatMap(([a, b], i) => [{ word: a, pair: i }, { word: b, pair: i }]);
   return shuffle(cards).map((c, id) => ({ ...c, id }));
 }
+
+/* ═════════════ Làm tròn số ═════════════ */
+
+// Lớp 3: làm tròn đến hàng chục, hàng trăm (số đến 10 000). Chữ số ngay sau hàng cần
+// làm tròn từ 5 trở lên thì làm tròn lên, bé hơn 5 thì làm tròn xuống.
+
+export type RoundLevel = "hang-chuc" | "hang-tram";
+
+export type RoundQuestion = { n: number; to: 10 | 100; answer: number; options: number[]; reveal: string };
+
+export const roundTo = (n: number, to: number) => Math.floor((n + to / 2) / to) * to;
+
+export function makeRoundQuestion(level: RoundLevel): RoundQuestion {
+  const to = level === "hang-chuc" ? 10 : 100;
+  let n: number;
+  // Không lấy số đã tròn sẵn — câu hỏi khi đó chẳng có gì để làm tròn.
+  do n = randInt(level === "hang-chuc" ? 11 : 101, 9999);
+  while (n % to === 0);
+  const answer = roundTo(n, to);
+  const down = Math.floor(n / to) * to;
+  const up = down + to;
+  // Nhiễu: làm tròn ngược chiều, làm tròn nhầm hàng, chỉ bỏ chữ số cuối.
+  const other = level === "hang-chuc" ? roundTo(n, 100) : roundTo(n, 1000);
+  const cands = [answer === up ? down : up, other, level === "hang-chuc" ? roundTo(n, 100) + 10 : answer + 1000, answer - to * 2, answer + to * 2];
+  const set = new Set([answer]);
+  for (const c of shuffle(cands)) if (set.size < 4 && c > 0 && c !== n) set.add(c);
+  for (let d = 3; set.size < 4; d++) set.add(answer + d * to);
+  const label = to === 10 ? "hàng chục" : "hàng trăm";
+  return { n, to, answer, options: [...set].sort((x, y) => x - y), reveal: `${n} làm tròn đến ${label} được ${answer}` };
+}

@@ -137,6 +137,34 @@ export function makeLetterQuestion(level: LetterLevel, avoid?: string): LetterQu
   return { answer, options: shuffle(options), sound: pool[answer] };
 }
 
+/** Số có dấu cách ngăn nghìn, như SGK tiểu học viết: 3 000, 12 500. */
+export function fmtInt(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+// ── So sánh số (> < =) ───────────────────────────────────────────────────────
+
+export type CompareLevel = "pham-vi-10" | "pham-vi-100";
+export type CompareQuestion = { a: number; b: number; answer: ">" | "<" | "="; emoji: string; reveal: string };
+
+const COMPARE_WORDS = { ">": "lớn hơn", "<": "bé hơn", "=": "bằng" } as const;
+
+export function makeCompareQuestion(level: CompareLevel): CompareQuestion {
+  const max = level === "pham-vi-10" ? 10 : 100;
+  const a = randInt(level === "pham-vi-10" ? 0 : 10, max);
+  // Khoảng 1/5 số câu là "bằng nhau", phần còn lại hai số khác nhau;
+  // phạm vi 100 hay hỏi cặp cùng chục (45 và 48) hoặc đảo chữ số (36 và 63).
+  let b: number;
+  const r = Math.random();
+  if (r < 0.2) b = a;
+  else if (level === "pham-vi-100" && r < 0.45 && a % 10 !== Math.floor(a / 10) && a % 10 !== 0) b = (a % 10) * 10 + Math.floor(a / 10);
+  else if (level === "pham-vi-100" && r < 0.7) b = Math.floor(a / 10) * 10 + randInt(0, 9);
+  else b = randInt(level === "pham-vi-10" ? 0 : 10, max);
+  b = Math.min(b, max); // a = 100 ở nhánh "cùng chục" cho ra 101–109
+  const answer = a > b ? ">" : a < b ? "<" : "=";
+  return { a, b, answer, emoji: pick(THINGS).emoji, reveal: `${a} ${COMPARE_WORDS[answer]} ${b}` };
+}
+
 // ── Sao tích luỹ ─────────────────────────────────────────────────────────────
 //
 // Chỉ là phần thưởng hiển thị cho bé trên máy này; mất cũng không sao, nên để

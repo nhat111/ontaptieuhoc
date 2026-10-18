@@ -22,10 +22,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/huong-dan`, lastModified, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/huong-dan/soan-de`, lastModified, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/gop-y`, lastModified, changeFrequency: "yearly", priority: 0.3 },
-    // Trò chơi lớp 1, lớp 2 (câu hỏi sinh trên trình duyệt, nội dung trang cố định).
+    // Trò chơi lớp 1–5 (câu hỏi sinh trên trình duyệt, nội dung trang cố định).
     ...[
-      ...["", "/dem-hinh", "/hai-tao", "/nghe-chu", "/nhin-hinh", "/chon-dau"].map((p) => `/lop/1/tro-choi${p}`),
-      ...["", "/dong-ho", "/hai-tao", "/chinh-ta", "/loai-tu"].map((p) => `/lop/2/tro-choi${p}`),
+      ...["", "/dem-hinh", "/hai-tao", "/so-sanh", "/nghe-chu", "/nhin-hinh", "/chon-dau"].map((p) => `/lop/1/tro-choi${p}`),
+      ...["", "/dong-ho", "/hai-tao", "/tien", "/chinh-ta", "/loai-tu"].map((p) => `/lop/2/tro-choi${p}`),
+      ...["", "/dua-xe", "/ban-bong", "/chinh-dong-ho", "/lam-tron", "/lat-the"].map((p) => `/lop/3/tro-choi${p}`),
+      ...["", "/phan-so", "/doi-don-vi", "/tu-loai"].map((p) => `/lop/4/tro-choi${p}`),
+      ...["", "/thap-phan", "/phan-tram", "/ket-tu"].map((p) => `/lop/5/tro-choi${p}`),
     ].map((path) => ({
       url: `${SITE_URL}${path}`,
       lastModified,
