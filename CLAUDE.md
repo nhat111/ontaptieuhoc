@@ -6,7 +6,7 @@ Shorter feature index: `.claude/ai-context/README.md` · Codegen skill: `.claude
 
 ## Project
 
-**Ôn Tập Tiểu Học** — a Vietnamese free online quiz platform for primary (grades 1–5, Tiểu học) and lower-secondary students (grades 6–9, THCS). The brand name stays "Ôn Tập Tiểu Học". All user-facing strings are in Vietnamese; preserve language and tone when editing UI text.
+**Ôn Tập Phổ Thông** (formerly "Ôn Tập Tiểu Học"; the repo name is unchanged) — a Vietnamese free online quiz platform for primary (grades 1–5, Tiểu học) and lower-secondary students (grades 6–9, THCS). All user-facing strings are in Vietnamese; preserve language and tone when editing UI text.
 
 Stack: **Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind v3 · Supabase (auth + Postgres + Storage) · Tiptap · KaTeX**. Path alias `@/*` resolves to the repo root.
 
@@ -112,7 +112,7 @@ Scoring lives in `lib/quizData.ts → scoreAnswer(q, answer)`. The `answers[i]` 
 
 ### SEO
 
-`app/layout.tsx` sets `metadataBase`, a `%s · Ôn Tập Tiểu Học` title template and the default Open Graph/Twitter block; every other page only overrides what differs. `generateMetadata` exists on `/lop/[grade]` (title/description vary by subject + `view=exam`; canonical drops the default subject so `/lop/3` and `/lop/3?subject=<first>` aren't indexed twice) and on `/quiz` (a lesson with 0 questions gets `robots: noindex`). Editor and per-account pages (`/import*`, `/progress`, `/nang-cap`) export `robots: { index: false }`; the client-component pages (`/result`, `/login`, `/reset-password`, `/import/edit/[id]`) can't export metadata, so `robots.txt` is what covers them.
+`app/layout.tsx` sets `metadataBase`, a `%s · Ôn Tập Phổ Thông` title template and the default Open Graph/Twitter block; every other page only overrides what differs. `generateMetadata` exists on `/lop/[grade]` (title/description vary by subject + `view=exam`; canonical drops the default subject so `/lop/3` and `/lop/3?subject=<first>` aren't indexed twice) and on `/quiz` (a lesson with 0 questions gets `robots: noindex`). Editor and per-account pages (`/import*`, `/progress`, `/nang-cap`) export `robots: { index: false }`; the client-component pages (`/result`, `/login`, `/reset-password`, `/import/edit/[id]`) can't export metadata, so `robots.txt` is what covers them.
 
 `getQuestionsFromDB` and `getLessonMetaFromDB` are wrapped in React `cache()` because `/quiz` calls each twice per request — once in `generateMetadata`, once in the page body.
 

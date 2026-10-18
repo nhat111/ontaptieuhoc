@@ -1,12 +1,12 @@
 ---
 name: gen-code-ontaptieuhoc
 description: >-
-  Code generation conventions for Ôn Tập Tiểu Học (Next.js 16 quiz app).
+  Code generation conventions for Ôn Tập Phổ Thông (Next.js 16 quiz app).
   Use when implementing or editing features in this repo — quiz, import,
   grade browse, auth, Supabase API routes, KaTeX/Tiptap, or NXBGD scripts.
 ---
 
-# Ôn Tập Tiểu Học — Code Skill
+# Ôn Tập Phổ Thông — Code Skill
 
 Vietnamese primary-school quiz platform. **All user-facing strings in Vietnamese.**
 

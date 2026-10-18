@@ -34,7 +34,7 @@ export default function Footer() {
         <div className="col-span-2 lg:col-span-1">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <LogoMark size={32} />
-            <span className="text-lg font-extrabold tracking-tight text-blue-700">Ôn Tập Tiểu Học</span>
+            <span className="text-lg font-extrabold tracking-tight text-blue-700">Ôn Tập Phổ Thông</span>
           </Link>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
             Luyện tập miễn phí, bám sát chương trình lớp 1 đến lớp 9.
@@ -73,7 +73,7 @@ export default function Footer() {
 
       <div className="border-t border-slate-100">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Ôn Tập Tiểu Học</p>
+          <p>© {new Date().getFullYear()} Ôn Tập Phổ Thông</p>
           <Link href="/import" className="hover:text-slate-600">
             ✏️ Dành cho người soạn đề
           </Link>

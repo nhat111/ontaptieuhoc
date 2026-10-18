@@ -15,7 +15,7 @@ const beVietnam = Be_Vietnam_Pro({
   variable: "--font-be-vietnam",
 });
 
-const SITE_NAME = "Ôn Tập Tiểu Học";
+const SITE_NAME = "Ôn Tập Phổ Thông";
 const SITE_DESCRIPTION =
   "Nền tảng ôn tập miễn phí cho học sinh Tiểu học và THCS Việt Nam — bài tập và đề kiểm tra lớp 1 đến lớp 9, bám sát sách giáo khoa, làm bài và chấm điểm ngay trên web.";
 
@@ -29,7 +29,9 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
+    "ôn tập phổ thông",
     "ôn tập tiểu học",
+    "ôn tập THCS",
     "bài tập lớp 1",
     "bài tập lớp 2",
     "bài tập lớp 3",

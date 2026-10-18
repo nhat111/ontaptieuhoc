@@ -1,6 +1,6 @@
 [ROLE: UI_DESIGNER]
 
-Build or adjust UI for Ôn Tập Tiểu Học.
+Build or adjust UI for Ôn Tập Phổ Thông.
 
 Requirements:
 - Vietnamese copy throughout

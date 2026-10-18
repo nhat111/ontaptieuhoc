@@ -70,7 +70,7 @@ export default function Header() {
           <LogoMark />
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[17px] font-extrabold text-blue-700 tracking-tight leading-none">Ôn Tập</span>
-            <span className="text-[11px] font-bold text-orange-500 tracking-widest leading-none uppercase">Tiểu Học</span>
+            <span className="text-[11px] font-bold text-orange-500 tracking-widest leading-none uppercase">Phổ Thông</span>
           </div>
         </Link>
 

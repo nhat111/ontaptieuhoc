@@ -9,7 +9,7 @@
 - Path alias `@/*` → repo root
 
 ## Purpose
-**Ôn Tập Tiểu Học** — nền tảng ôn tập / làm bài trắc nghiệm miễn phí cho học sinh tiểu học Việt Nam (Lớp 1–5). Mọi chuỗi UI bằng tiếng Việt.
+**Ôn Tập Phổ Thông** (tên cũ: Ôn Tập Tiểu Học) — nền tảng ôn tập / làm bài trắc nghiệm miễn phí cho học sinh tiểu học và THCS Việt Nam (Lớp 1–9). Mọi chuỗi UI bằng tiếng Việt.
 
 Làm bài **không bắt buộc đăng nhập**. Đăng nhập (Supabase Auth) để lưu tiến độ và gắn `user_id` vào `quiz_results`.
 
