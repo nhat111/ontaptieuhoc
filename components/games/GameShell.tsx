@@ -4,6 +4,7 @@ import { isSpeechSupported, speakSegments, stopSpeaking, type SpeakSegment } fro
 import { speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 import { useRecordedClips } from "@/lib/recordedClips";
 import { addStars, pick } from "@/lib/games";
+import { isAutoVoice, setAutoVoice, subscribeAutoVoice } from "@/lib/gameVoice";
 import { Burst, Mascot, type Mood } from "./Fx";
 
 export type GameRound = {
@@ -71,6 +72,9 @@ const vi = (text: string): SpeakSegment => ({ text, lang: "vi-VN" });
  *
  * Mọi lệnh đọc đều gọi thẳng trong handler của cú chạm, không qua effect hay
  * `await`: iOS chỉ cho phát tiếng trong luồng của cú chạm (xem lib/speech.ts).
+ *
+ * Mặc định không tự đọc gì (lib/gameVoice.ts): chỉ đọc khi bấm 🔊 Nghe, trừ khi
+ * người dùng bật "Tự đọc" ở góc phải.
  */
 export default function GameShell({
   title, intro, levels, make, requiresSpeech, optionCols = 4, clips, Board, promptOnce, backHref,
@@ -81,6 +85,7 @@ export default function GameShell({
     () => true
   );
 
+  const autoVoice = useSyncExternalStore(subscribeAutoVoice, isAutoVoice, () => false);
   const [level, setLevel] = useState<string | null>(null);
   const [round, setRound] = useState<GameRound | null>(null);
   const [index, setIndex] = useState(0);
@@ -119,6 +124,29 @@ export default function GameShell({
     }
   }
 
+  /**
+   * Lời đọc tự động (ra câu hỏi, khen, nhắc thử lại): chỉ khi bật "Tự đọc". Tắt thì
+   * vẫn dừng lượt đọc cũ — bé bấm Nghe rồi chọn ngay thì không đọc tiếp câu đã qua.
+   */
+  function autoSay(texts: string[]) {
+    if (autoVoice) say(texts);
+    else {
+      stopSpeaking();
+      stopAudioFiles();
+    }
+  }
+
+  function toggleVoice() {
+    const on = !autoVoice;
+    setAutoVoice(on);
+    // Bật thì đọc ngay câu đang hỏi (trong cú chạm — luật iOS) để biết đã có tiếng.
+    if (on) say([round && !done ? round.say : "Đã bật tự đọc."]);
+    else {
+      stopSpeaking();
+      stopAudioFiles();
+    }
+  }
+
   function react(m: Mood, text: string) {
     setMood(m);
     setBubble(text);
@@ -154,7 +182,7 @@ export default function GameShell({
     setCorrectKey(null);
     setDone(false);
     react("idle", IDLE_TEXT);
-    say([first.say]);
+    autoSay([first.say]);
   }
 
   function choose(key: string) {
@@ -164,7 +192,7 @@ export default function GameShell({
       if (!wrong.includes(key)) setWrong([...wrong, key]);
       setShakeKey(key);
       react("sad", "Thử lại nhé!");
-      say(promptOnce ? ["Chưa đúng, bé thử lại nhé."] : ["Chưa đúng, bé thử lại nhé.", round.say]);
+      autoSay(promptOnce ? ["Chưa đúng, bé thử lại nhé."] : ["Chưa đúng, bé thử lại nhé.", round.say]);
       return;
     }
 
@@ -178,7 +206,7 @@ export default function GameShell({
     setStars(total);
     react("happy", praise);
     const reveal = round.reveal ? [round.reveal] : [];
-    say(
+    autoSay(
       last
         ? [praise, ...reveal, `Bé được ${total} ngôi sao!`]
         : [praise, ...reveal, ...(promptOnce ? [] : [next!.say])]
@@ -203,9 +231,21 @@ export default function GameShell({
 
   const header = (
     <div className="flex items-center justify-between gap-3 mb-4">
-      <a href={backHref} className="w-20 shrink-0 whitespace-nowrap text-sm text-blue-600 hover:underline">‹ Trò chơi</a>
+      <a href={backHref} className="w-24 shrink-0 whitespace-nowrap text-sm text-blue-600 hover:underline">‹ Trò chơi</a>
       <h1 className="text-base sm:text-xl font-extrabold text-gray-800 text-center">{title}</h1>
-      <span className="w-20 shrink-0" />
+      {speech || clips ? (
+        // Nhãn ghi TRẠNG THÁI, giống nút âm thanh của trò lớp 3.
+        <button
+          onClick={toggleVoice}
+          aria-pressed={autoVoice}
+          aria-label={autoVoice ? "Đang tự đọc câu hỏi, bấm để tắt" : "Không tự đọc, bấm để bật tự đọc câu hỏi"}
+          className="w-24 shrink-0 whitespace-nowrap text-right text-sm font-bold text-gray-500 hover:text-blue-600"
+        >
+          {autoVoice ? "🔊 Tự đọc" : "🔈 Không đọc"}
+        </button>
+      ) : (
+        <span className="w-24 shrink-0" />
+      )}
     </div>
   );
 
@@ -363,7 +403,7 @@ export default function GameShell({
               onClick={() => say([round.say])}
               className="inline-flex items-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold px-5 py-2.5 rounded-full text-base border-b-4 border-orange-300 active:translate-y-0.5 active:border-b-2 transition-all"
             >
-              🔊 Nghe lại
+              🔊 {autoVoice ? "Nghe lại" : "Nghe"}
             </button>
           </div>
         )}
