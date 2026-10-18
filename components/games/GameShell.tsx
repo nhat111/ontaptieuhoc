@@ -14,6 +14,8 @@ export type GameRound = {
   answer: string;
   /** Đọc sau lời khen khi bé chọn đúng, vd: tên hình ("cá"), tên dấu ("dấu sắc"). */
   reveal?: string;
+  /** Số cột riêng cho câu này (vd: câu so sánh > < = trong trò có cả câu 4 đáp án). */
+  cols?: 1 | 2 | 3 | 4;
 };
 
 export type GameLevel = { id: string; label: string; hint: string };
@@ -35,8 +37,8 @@ interface Props {
   make: (level: string, prev: GameRound | null) => GameRound;
   /** Trò chỉ chơi được bằng tai (nghe chữ) thì cần giọng đọc. */
   requiresSpeech?: boolean;
-  /** Lưới đáp án: 1 cột cho đáp án dài, 2 cột cho chữ to, 4 cột cho số. */
-  optionCols?: 1 | 2 | 4;
+  /** Lưới đáp án: 1 cột cho đáp án dài, 2 cột cho chữ to, 3 cột cho dấu > < =, 4 cột cho số. */
+  optionCols?: 1 | 2 | 3 | 4;
   /**
    * File đọc sẵn theo câu (vd: lib/gameClips.ts). Một lượt nói mà mọi câu
    * đều có file thì phát file; thiếu câu nào thì cả lượt dùng giọng máy, để
@@ -284,6 +286,7 @@ export default function GameShell({
   }
 
   // ── Đang chơi ──────────────────────────────────────────────────────────────
+  const cols = round.cols ?? optionCols;
   const board = Board ? (
     <Board
       round={round}
@@ -296,7 +299,7 @@ export default function GameShell({
   ) : (
     <div
       className={`grid gap-3 mt-6 ${
-        optionCols === 1 ? "grid-cols-1" : optionCols === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"
+        cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"
       }`}
     >
       {round.options.map((o, i) => {

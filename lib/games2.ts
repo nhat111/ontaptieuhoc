@@ -4,7 +4,7 @@
 //
 // Như lib/games.ts: chỉ sinh sau cú bấm "Bắt đầu", không sinh lúc render.
 
-import { pick, shuffle } from "./games";
+import { fmtInt, pick, shuffle } from "./games";
 
 function randInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -207,4 +207,56 @@ export function makeKindQuestion(avoid?: string): KindQuestion {
   const answer = pick(Object.keys(KIND_WORDS) as WordKind[]);
   const word = pick(KIND_WORDS[answer].filter((w) => w !== avoid));
   return { word, answer };
+}
+
+// ── Tiền Việt Nam ────────────────────────────────────────────────────────────
+//
+// Lớp 2 làm quen tờ 100, 200, 500 và 1 000 đồng; tổng không quá 1 000 đồng.
+
+export const NOTES = [100, 200, 500, 1000] as const;
+export type MoneyLevel = "dem-tien" | "tra-lai";
+
+export type MoneyQuestion = {
+  /** Các tờ tiền hiện trên màn hình (dem-tien), hoặc giá món hàng (tra-lai). */
+  notes: number[];
+  price?: number;
+  item?: { emoji: string; name: string };
+  answer: number;
+  options: number[];
+  reveal: string;
+};
+
+const ITEMS = [
+  { emoji: "🍬", name: "gói kẹo" },
+  { emoji: "✏️", name: "cái bút chì" },
+  { emoji: "📒", name: "quyển vở" },
+  { emoji: "🧃", name: "hộp nước" },
+  { emoji: "🎈", name: "quả bóng bay" },
+  { emoji: "🍪", name: "cái bánh" },
+] as const;
+
+export const moneyText = (n: number) => `${fmtInt(n)} đồng`;
+
+export function makeMoneyQuestion(level: MoneyLevel): MoneyQuestion {
+  if (level === "dem-tien") {
+    let notes: number[];
+    do {
+      notes = Array.from({ length: randInt(2, 4) }, () => pick(NOTES.slice(0, 3)));
+    } while (notes.reduce((s, n) => s + n, 0) > 1000);
+    notes.sort((x, y) => y - x);
+    const total = notes.reduce((s, n) => s + n, 0);
+    // Nhiễu: đếm thiếu / thừa một tờ 100 hoặc 200, quên một tờ.
+    return { notes, answer: total, options: nearOptions(total, [-100, 100, -200, 200, -notes[0]], 100, 1000), reveal: `Có tất cả ${moneyText(total)}` };
+  }
+  const price = randInt(1, 9) * 100;
+  const item = pick(ITEMS);
+  const change = 1000 - price;
+  return {
+    notes: [1000],
+    price,
+    item,
+    answer: change,
+    options: nearOptions(change, [-100, 100, -200, 200, price - change], 100, 900),
+    reveal: `Được trả lại ${moneyText(change)}`,
+  };
 }

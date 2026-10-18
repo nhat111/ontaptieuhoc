@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn sử dụng",
   description:
-    "Hướng dẫn phụ huynh dùng Ôn Tập Phổ Thông: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–3.",
+    "Hướng dẫn phụ huynh dùng Ôn Tập Phổ Thông: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–5.",
   alternates: { canonical: "/huong-dan" },
 };
 
@@ -107,12 +107,13 @@ const STEPS: GuideStep[] = [
   {
     id: "tro-choi",
     emoji: "🎮",
-    title: "Trò chơi cho bé lớp 1, 2, 3",
+    title: "Trò chơi cho bé lớp 1 đến lớp 5",
     points: [
-      <>Lớp 1: đếm hình, hái táo, nghe âm chọn chữ, nhìn hình chọn chữ, chọn dấu thanh.</>,
-      <>Lớp 2: xem đồng hồ, tính nhẩm trong phạm vi 100, điền chữ chính tả, phân loại từ.</>,
-      <>Lớp 3: đua xe bảng nhân, bắn bóng bay, chỉnh đồng hồ (kéo kim), lật thẻ từ trái nghĩa – cùng nghĩa. Mỗi trò lưu kỷ lục trên máy để bé phá; đua xe thắng thì được huy chương cho từng bảng nhân.</>,
-      <>Lớp 1, 2 và trò chỉnh đồng hồ: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Đang bật / 🔇 Đang tắt</b> ở góc phải bật, tắt tiếng hiệu ứng của các trò lớp 3. iPhone để chế độ im lặng (gạt chuông) mà vẫn không nghe tiếng thì gạt chuông lên hoặc tăng âm lượng — iOS 17 trở lên thì không cần.</>,
+      <>Lớp 1: đếm hình, hái táo, so sánh số, nghe âm chọn chữ, nhìn hình chọn chữ, chọn dấu thanh.</>,
+      <>Lớp 2: xem đồng hồ, tính nhẩm trong phạm vi 100, tiền Việt Nam, điền chữ chính tả, phân loại từ.</>,
+      <>Lớp 3: đua xe bảng nhân, bắn bóng bay, chỉnh đồng hồ (kéo kim), làm tròn số, lật thẻ từ trái nghĩa – cùng nghĩa. Đua xe, bắn bóng, lật thẻ lưu kỷ lục trên máy để bé phá; đua xe thắng thì được huy chương cho từng bảng nhân.</>,
+      <>Lớp 4: phân số, đổi đơn vị đo, danh từ – động từ – tính từ. Lớp 5: số thập phân, tỉ số phần trăm, kết từ.</>,
+      <>Lớp 1, 2, 4, 5, trò chỉnh đồng hồ và làm tròn số: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Đang bật / 🔇 Đang tắt</b> ở góc phải bật, tắt tiếng hiệu ứng của các trò lớp 3. iPhone để chế độ im lặng (gạt chuông) mà vẫn không nghe tiếng thì gạt chuông lên hoặc tăng âm lượng — iOS 17 trở lên thì không cần.</>,
     ],
     cta: { href: "/lop/1/tro-choi", label: "Vào khu trò chơi" },
   },
