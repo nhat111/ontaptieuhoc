@@ -250,7 +250,7 @@ export default async function GamesPage({ params }: { params: Promise<{ grade: s
           {grade === "3"
             ? "Mỗi ván 1–2 phút, có kỷ lục để phá. Bật loa để nghe hiệu ứng nhé."
             : grade === "1" || grade === "2"
-              ? "Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bật loa để nghe đọc nhé."
+              ? "Mỗi lượt chơi 10 câu, khoảng 2–3 phút. Bấm 🔊 Nghe để nghe đọc câu hỏi, hoặc bật “Tự đọc” ở góc phải."
               : "Mỗi lượt chơi 10 câu, khoảng 3 phút. Sai được chọn lại, đúng ngay lần đầu được một ⭐."}
         </p>
         <StarTotal />

@@ -113,6 +113,7 @@ const STEPS: GuideStep[] = [
       <>Lớp 2: xem đồng hồ, tính nhẩm trong phạm vi 100, tiền Việt Nam, điền chữ chính tả, phân loại từ.</>,
       <>Lớp 3: đua xe bảng nhân, bắn bóng bay, chỉnh đồng hồ (kéo kim), làm tròn số, lật thẻ từ trái nghĩa – cùng nghĩa. Đua xe, bắn bóng, lật thẻ lưu kỷ lục trên máy để bé phá; đua xe thắng thì được huy chương cho từng bảng nhân.</>,
       <>Lớp 4: phân số, đổi đơn vị đo, danh từ – động từ – tính từ. Lớp 5: số thập phân, tỉ số phần trăm, kết từ.</>,
+      <>Trò chơi không tự đọc to: bấm <b>🔊 Nghe</b> để nghe câu hỏi, hoặc bấm <b>🔈 Không đọc</b> ở góc phải để chuyển sang <b>🔊 Tự đọc</b> — web sẽ tự đọc câu hỏi và lời khen. Lựa chọn được nhớ trên máy.</>,
       <>Lớp 1, 2, 4, 5, trò chỉnh đồng hồ và làm tròn số: mỗi lượt 10 câu. Chọn sai không bị trừ điểm — bé được chọn lại; đúng ngay lần đầu thì được một ⭐. Nút <b>🔊 Đang bật / 🔇 Đang tắt</b> ở góc phải bật, tắt tiếng hiệu ứng của các trò lớp 3. iPhone để chế độ im lặng (gạt chuông) mà vẫn không nghe tiếng thì gạt chuông lên hoặc tăng âm lượng — iOS 17 trở lên thì không cần.</>,
     ],
     cta: { href: "/lop/1/tro-choi", label: "Vào khu trò chơi" },
