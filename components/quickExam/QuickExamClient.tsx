@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Clock, Download, ListChecks, MonitorPlay, Printer, RefreshCw, Sparkles } from "lucide-react";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
-import {
-  EXAM_KINDS, buildQuickExamRows, getQuickExam, hasQuickExam, quickExamHref, type ExamKind,
-} from "@/lib/quickExam";
-import { answerText, buildWorksheetHtml, type AnswerMode } from "@/lib/worksheetExport";
+import { EXAM_KINDS, getQuickExam, hasQuickExam, quickExamHref, type ExamKind } from "@/lib/quickExam";
+import { answerText, type AnswerMode } from "@/lib/worksheetExport";
+import { paperRows } from "@/lib/exam5/paper";
+import { buildPaperHtml, schoolYearOf } from "@/lib/exam5/print";
 import { gradeTheme } from "@/lib/gradeTheme";
+import MathText from "@/components/MathText";
 
 const ANSWER_MODES: { value: AnswerMode; label: string }[] = [
   { value: "solutions", label: "Đáp án + lời giải" },
@@ -33,7 +34,8 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   const [seed, setSeed] = useState<string | null>(null);
 
   const spec = useMemo(() => getQuickExam(grade, subject, kind), [grade, subject, kind]);
-  const rows = useMemo(() => (spec && seed ? buildQuickExamRows(spec, seed) : []), [spec, seed]);
+  const paper = useMemo(() => (spec && seed ? spec.paper(seed) : null), [spec, seed]);
+  const rows = useMemo(() => (paper ? paperRows(paper) : []), [paper]);
   const theme = gradeTheme(grade);
 
   // Đổi lựa chọn nào cũng bỏ đề cũ — tránh in nhầm đề lớp khác với tiêu đề lớp mới.
@@ -45,14 +47,18 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   function pickKind(k: ExamKind) { setKind(k); setSeed(null); }
   function pickSubject(s: string) { setSubject(s); setSeed(null); }
 
-  function html(autoPrint: boolean) {
-    return buildWorksheetHtml([{ label: "", rows }], {
-      title: spec!.title, grade, answers, autoPrint, minutes: spec!.minutes, topics: spec!.topics.map((t) => t.title),
-    });
+  function html(o: { autoPrint?: boolean; forWord?: boolean; imageFor?: (url: string) => string }) {
+    return buildPaperHtml(paper!, { answers, schoolYear: schoolYearOf(new Date()), ...o });
   }
 
-  function downloadDoc() {
-    const blob = new Blob([html(false)], { type: "application/msword" });
+  async function downloadDoc() {
+    // Word không hiện ảnh SVG nhúng — đổi hình vẽ sang PNG trước khi ghi file.
+    const svgs = [...new Set(paper!.sections.flatMap((s) => s.items).flatMap((it) => ("parts" in it ? it.parts : [it]))
+      .flatMap((q) => { try { return (JSON.parse(q.row.explanation).images ?? []).map((i: { url: string }) => i.url); } catch { return []; } })
+      .filter((u: string) => u.startsWith("data:image/svg")))];
+    const png = new Map<string, string>();
+    await Promise.all(svgs.map(async (u) => png.set(u, await svgToPng(u))));
+    const blob = new Blob([html({ forWord: true, imageFor: (u) => png.get(u) ?? u })], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -66,7 +72,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   function openPdf() {
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(html(true));
+    w.document.write(html({ autoPrint: true }));
     w.document.close();
   }
 
@@ -125,7 +131,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
               </p>
               <p className="mt-2 text-xs font-bold text-slate-500">Nội dung kiểm tra</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-700">
-                {spec.topics.map((t) => <li key={t.id}>{t.title}</li>)}
+                {spec.scope.map((t) => <li key={t}>{t}</li>)}
               </ul>
             </div>
 
@@ -175,10 +181,10 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
                   <ol className="mt-3 space-y-3 text-sm text-slate-700">
                     {rows.map((r, i) => (
                       <li key={i} className="border-b border-slate-100 pb-2">
-                        <span className="font-bold">{i + 1}.</span> {r.content}
+                        <span className="font-bold">{i + 1}.</span> <MathText text={r.content} />
                         {r.options.length > 0 && (
                           <span className="ml-4 flex flex-wrap gap-x-6 text-slate-500">
-                            {r.options.map((o, k) => <span key={k}>{"ABCDEF"[k]}. {o}</span>)}
+                            {r.options.map((o, k) => <span key={k}>{"ABCDEF"[k]}. <MathText text={o} /></span>)}
                           </span>
                         )}
                         <span className="ml-4 block font-semibold text-success-700">→ {answerText(r)}</span>
@@ -190,8 +196,9 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             )}
 
             <p className="text-xs leading-relaxed text-slate-500">
-              Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Nội dung theo thứ tự các chủ đề
-              thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút.
+              {spec.subject === "Tiếng Việt"
+                ? "Bài đọc và câu hỏi do Ôn Tập Phổ Thông tự soạn theo chủ điểm sách giáo khoa; mỗi lần bấm chọn bài đọc, câu hỏi và đề văn khác. Câu viết và bài tập làm văn chấm trên giấy."
+                : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Nội dung theo thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
             </p>
           </>
         ) : (
@@ -199,7 +206,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             <BookOpen className="mx-auto mb-2 h-6 w-6 text-slate-400" aria-hidden />
             <p className="font-bold text-slate-700">Môn {subject} lớp {grade} chưa có đề tạo tự động</p>
             <p className="mt-1 text-sm text-slate-500">
-              Hiện máy mới tạo được đề Toán lớp 1–5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
+              Hiện máy tạo được đề Toán lớp 1–5 và Tiếng Việt lớp 5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
             </p>
             <Link
               href={`/lop/${grade}?subject=${encodeURIComponent(subject)}&view=exam`}
@@ -224,4 +231,24 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       {children}
     </section>
   );
+}
+
+/** Vẽ ảnh SVG (data URI) lên canvas, trả về PNG data URI; lỗi thì trả lại SVG. */
+function svgToPng(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => {
+      const k = 2;
+      const c = document.createElement("canvas");
+      c.width = im.naturalWidth * k;
+      c.height = im.naturalHeight * k;
+      const ctx = c.getContext("2d");
+      if (!ctx) return resolve(url);
+      ctx.scale(k, k);
+      ctx.drawImage(im, 0, 0);
+      resolve(c.toDataURL("image/png"));
+    };
+    im.onerror = () => resolve(url);
+    im.src = url;
+  });
 }

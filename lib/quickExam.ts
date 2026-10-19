@@ -2,9 +2,11 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có bộ sinh câu hỏi bằng code mới có đề — hiện là Toán lớp 1–5 (lib/mathGen).
-// Không gọi AI, không đọc DB: đáp án do máy tính tính, cùng `seed` → cùng đề, nên link
-// /quiz?de=toan-3-cuoi-hk1&seed=abc mở lại đúng đề đó (server và trình duyệt trùng nhau).
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 (lib/mathGen) và — theo cấu trúc
+// đề giấy thật, có hình vẽ — Toán, Tiếng Việt lớp 5 (lib/exam5). Mỗi đề là một "tờ đề"
+// (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
+// Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
+// mở lại đúng đề đó (server và trình duyệt trùng nhau).
 //
 // Phạm vi kiến thức mỗi kì lấy theo thứ tự chủ đề thường gặp trong SGK lớp 1–5
 // (chương trình GDPT 2018); mỗi kì là một danh sách id chủ đề trong MATH_LESSONS.
@@ -12,6 +14,10 @@
 
 import { MATH_LESSONS, buildWorksheetQuestions, type GenQuestionRow, type MathLessonSpec } from "./mathGen";
 import type { Question, QImage } from "./quizData";
+import { paperRows, type ExamPaper, type PaperSection } from "./exam5/paper";
+import { buildToan5 } from "./exam5/toan5";
+import { buildTiengViet5, passagesFor } from "./exam5/tiengViet5";
+import { LTVC_BY_KIND, LTVC_TOPIC_NAMES } from "./exam5/tvContent";
 
 export const EXAM_KINDS = [
   { key: "giua-hk1", label: "Giữa học kì I", short: "Giữa HK I" },
@@ -64,7 +70,7 @@ export const MATH_SCOPE: Record<number, Record<ExamKind, string[]>> = {
   },
 };
 
-/** Số câu và thời gian: giữa kì ngắn hơn cuối kì; lớp nhỏ làm ít câu hơn. */
+/** Số câu và thời gian (lớp 1–4): giữa kì ngắn hơn cuối kì; lớp nhỏ làm ít câu hơn. */
 function sizeOf(grade: number, kind: ExamKind): { count: number; minutes: number } {
   const final = kind.startsWith("cuoi");
   if (grade <= 2) return final ? { count: 15, minutes: 35 } : { count: 10, minutes: 30 };
@@ -72,41 +78,99 @@ function sizeOf(grade: number, kind: ExamKind): { count: number; minutes: number
 }
 
 export interface QuickExamSpec {
-  /** Khoá trong URL: "toan-3-cuoi-hk1". */
+  /** Khoá trong URL: "toan-3-cuoi-hk1", "tieng-viet-5-giua-hk2". */
   id: string;
   grade: number;
   subject: string;
   kind: ExamKind;
   title: string;
-  topics: MathLessonSpec[];
+  /** Nội dung kiểm tra, hiện cho phụ huynh xem trước khi tạo đề. */
+  scope: string[];
+  /** Số câu làm trên máy (câu máy chấm được). */
   count: number;
   minutes: number;
+  /** Tờ đề đầy đủ (để in và để lấy câu làm trên máy). Cùng seed → cùng đề. */
+  paper: (seed: string) => ExamPaper;
 }
 
-const examId = (grade: number, kind: ExamKind) => `toan-${grade}-${kind}`;
+const SUBJECT_SLUG: Record<string, string> = { "Toán": "toan", "Tiếng Việt": "tieng-viet" };
+const lowerFirst = (s: string) => s.replace(/^./, (c) => c.toLowerCase());
+
+/**
+ * Lớp 1–4: câu tự sinh xếp thành tờ đề — trắc nghiệm trước (0,5 điểm/câu), tự luận sau,
+ * chia đều phần điểm còn lại theo bậc 0,25 sao cho tổng đúng 10 điểm.
+ */
+function paperFromRows(title: string, grade: number, kind: ExamKind, minutes: number, rows: GenQuestionRow[]): ExamPaper {
+  const mcq = rows.filter((r) => r.type === "mcq");
+  const open = rows.filter((r) => r.type !== "mcq");
+  const split = (total: number, n: number) => {
+    const each = Math.floor((total / n) * 4) / 4;
+    return Array.from({ length: n }, (_, i) => (i === n - 1 ? Math.round((total - each * (n - 1)) * 100) / 100 : each));
+  };
+  const mcqPts = open.length ? mcq.map(() => 0.5) : split(10, mcq.length);
+  const openPts = open.length ? split(10 - mcqPts.reduce((a, b) => a + b, 0), open.length) : [];
+  const wordProblem = (r: GenQuestionRow) => /Trả lời: ___ .+\.$/.test(r.content);
+  const sections: PaperSection[] = [];
+  if (mcq.length) sections.push({ title: "PHẦN I. TRẮC NGHIỆM", note: "Khoanh vào chữ đặt trước câu trả lời đúng.", label: "Câu", items: mcq.map((row, i) => ({ row, points: mcqPts[i] })) });
+  if (open.length) sections.push({
+    title: mcq.length ? "PHẦN II. TỰ LUẬN" : "TỰ LUẬN", label: "Bài",
+    items: open.map((row, i) => ({ row, points: openPts[i], ...(wordProblem(row) ? { work: "bai-giai" as const, lines: 4 } : {}) })),
+  });
+  return { title, subject: "Toán", grade, kindLabel: examKindLabel(kind), minutes, sections };
+}
 
 /** Đề tạo được cho (lớp, môn, kì); null khi môn đó chưa có bộ sinh câu hỏi. */
 export function getQuickExam(grade: number, subject: string, kind: ExamKind): QuickExamSpec | null {
-  if (subject !== "Toán") return null;
+  const slug = SUBJECT_SLUG[subject];
+  if (!slug) return null;
+  const kindLabel = examKindLabel(kind);
+  // Chỉ hạ chữ đầu: "Cuối học kì I" → "cuối học kì I" (toLowerCase sẽ biến "I" thành "i").
+  const title = `Đề kiểm tra ${lowerFirst(kindLabel)} – ${subject} lớp ${grade}`;
+  const base = { id: `${slug}-${grade}-${kind}`, grade, subject, kind, title };
+
+  if (subject === "Tiếng Việt") {
+    if (grade !== 5) return null;
+    const [t8, t9] = LTVC_BY_KIND[kind];
+    return {
+      ...base,
+      scope: [
+        `Đọc hiểu: một bài đọc mới (${passagesFor(kind).map((p) => `“${p.title}”`).join(" hoặc ")}) và 6 câu hỏi`,
+        `Luyện từ và câu: ${[...new Set([t8, t9])].map((t) => LTVC_TOPIC_NAMES[t]).join(", ")}`,
+        "Câu hỏi viết 1–2 câu (chấm trên giấy)",
+        "Kiểm tra viết: một đề tập làm văn (in kèm, chấm trên giấy)",
+      ],
+      count: 9, minutes: 35,
+      paper: (seed) => buildTiengViet5(kind, kindLabel, seed),
+    };
+  }
+
   const ids = MATH_SCOPE[grade]?.[kind];
   if (!ids) return null;
   const topics = ids.map((id) => MATH_LESSONS.find((l) => l.id === id)).filter((l): l is MathLessonSpec => !!l);
   if (topics.length === 0) return null;
+  if (grade === 5) {
+    return {
+      ...base, scope: [...topics.map((t) => t.title), "Có câu hình vẽ, đặt tính, tìm x và bài toán có lời văn như đề thật"],
+      count: 16, minutes: 40,
+      paper: (seed) => buildToan5(kind, kindLabel, seed),
+    };
+  }
+  const { count, minutes } = sizeOf(grade, kind);
   return {
-    id: examId(grade, kind),
-    grade, subject, kind,
-    // Chỉ hạ chữ đầu: "Cuối học kì I" → "cuối học kì I" (toLowerCase sẽ biến "I" thành "i").
-    title: `Đề kiểm tra ${examKindLabel(kind).replace(/^./, (c) => c.toLowerCase())} – Toán lớp ${grade}`,
-    topics,
-    ...sizeOf(grade, kind),
+    ...base, scope: topics.map((t) => t.title), count, minutes,
+    paper: (seed) => {
+      const rows = buildWorksheetQuestions(topics, count, `de|${base.id}|${seed}`);
+      return paperFromRows(title, grade, kind, minutes, [...rows.filter((r) => r.type === "mcq"), ...rows.filter((r) => r.type !== "mcq")]);
+    },
   };
 }
 
 /** Đọc lại spec từ khoá trong URL (`?de=`); khoá lạ → null. */
 export function quickExamById(id: string | undefined | null): QuickExamSpec | null {
-  const m = id?.match(/^toan-(\d)-(giua-hk[12]|cuoi-hk[12])$/);
-  if (!m || !isExamKind(m[2])) return null;
-  return getQuickExam(Number(m[1]), "Toán", m[2]);
+  const m = id?.match(/^(toan|tieng-viet)-(\d)-(giua-hk[12]|cuoi-hk[12])$/);
+  if (!m || !isExamKind(m[3])) return null;
+  const subject = Object.keys(SUBJECT_SLUG).find((k) => SUBJECT_SLUG[k] === m[1])!;
+  return getQuickExam(Number(m[2]), subject, m[3]);
 }
 
 /** Môn nào của lớp này có đề tự sinh (để giao diện gắn nhãn "Sắp có" cho môn còn lại). */
@@ -120,13 +184,9 @@ export function cleanSeed(seed: string | undefined | null): string | null {
   return s || null;
 }
 
-/**
- * Sinh câu hỏi của đề. Trắc nghiệm đặt trước, tự luận sau — giống đề giấy (Phần 1,
- * Phần 2), và trang in /tao-de cũng xếp như vậy nên đề trên máy khớp đề in.
- */
+/** Các câu làm trên máy, đúng thứ tự trên tờ đề in. */
 export function buildQuickExamRows(spec: QuickExamSpec, seed: string): GenQuestionRow[] {
-  const rows = buildWorksheetQuestions(spec.topics, spec.count, `de|${spec.id}|${seed}`);
-  return [...rows.filter((r) => r.type === "mcq"), ...rows.filter((r) => r.type !== "mcq")];
+  return paperRows(spec.paper(seed));
 }
 
 /** Dòng tự sinh → câu hỏi của trang quiz (cùng cách đọc `explanation` như lib/db.ts). */

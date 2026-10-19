@@ -31,6 +31,7 @@ import {
   RATE_OPTIONS,
 } from "@/lib/speech";
 import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
+import ReadingCard from "./ReadingCard";
 
 interface Props {
   initialQuestions: Question[];
@@ -216,6 +217,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
         lessonId,
         lessonTitle: lesson.title,
         retryHref: quickExamHref,
+        reading: lesson.reading,
         grade: lesson.grade ?? null,
         subjectName: lesson.subjectName ?? null,
       })
@@ -573,6 +575,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[70%_30%] gap-5 items-start">
+        <div className="space-y-4">
+        {lesson.reading && <ReadingCard reading={lesson.reading} />}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           {questions.map((q, i) => (
             <QuestionCard
@@ -584,6 +588,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
               speak={readAloud}
             />
           ))}
+        </div>
         </div>
 
         <QuestionPalette
