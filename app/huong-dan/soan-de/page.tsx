@@ -20,7 +20,7 @@ const STEPS: GuideStep[] = [
     id: "vao-khu-soan",
     title: "Vào khu soạn đề",
     points: [
-      <>Kéo xuống cuối trang chủ, bấm <b>Dành cho người soạn đề</b>. Nếu đã đăng nhập thì mở menu tài khoản, chọn <b>Tạo bài học</b> hoặc <b>Tạo đề kiểm tra</b>.</>,
+      <>Bấm nút <b>Mở khu soạn đề</b> ngay dưới đây (hoặc gõ địa chỉ <Code>/import</Code>, nên lưu lại làm dấu trang). Nếu đã đăng nhập thì mở menu tài khoản, chọn <b>Tạo bài học</b> hoặc <b>Tạo đề kiểm tra</b>.</>,
       <>Nếu web yêu cầu <b>Nhập mật khẩu</b>, hãy hỏi người quản trị web mật khẩu soạn đề. Phần làm bài của các bé vẫn mở bình thường, không cần mật khẩu.</>,
       <><b>Bài học</b> là bài luyện theo chương. <b>Đề kiểm tra</b> hiện ở mục Đề kiểm tra và trong kho đề, có thời gian làm bài.</>,
     ],

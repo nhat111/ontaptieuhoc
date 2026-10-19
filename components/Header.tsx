@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 // Menu cho phụ huynh và học sinh. Lối soạn bài/đề nằm trong menu tài khoản và
-// ở chân trang — không để chen vào đây, phụ huynh không cần tới.
+// /huong-dan/soan-de — không để chen vào đây, phụ huynh không cần tới.
 const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–9", href: "/#grades" },
