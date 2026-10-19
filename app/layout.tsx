@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SITE_URL } from "@/lib/siteUrl";
 
-// Font thiết kế riêng cho tiếng Việt: dấu đặt cân, không chồng lên nhau ở chữ
-// in hoa ("Ổ", "Ậ"), dễ đọc cho bé. next/font tự tải về lúc build và phục vụ từ
-// chính site, không gọi Google lúc người dùng mở trang.
-const beVietnam = Be_Vietnam_Pro({
+// Nunito: nét bo tròn thân thiện, chữ a/g một tầng dễ đọc cho bé, có đủ dấu
+// tiếng Việt. next/font tự tải về lúc build và phục vụ từ chính site, không gọi
+// Google lúc người dùng mở trang.
+const nunito = Nunito({
   subsets: ["vietnamese", "latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
-  variable: "--font-be-vietnam",
+  variable: "--font-nunito",
 });
 
 const SITE_NAME = "Ôn Tập Phổ Thông";
@@ -72,8 +72,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className={beVietnam.variable}>
-      <body>
+    <html lang="vi" className={nunito.variable}>
+      <body className="leading-relaxed">
         {children}
         <SpeedInsights />
       </body>

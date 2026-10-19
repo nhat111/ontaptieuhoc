@@ -7,9 +7,9 @@ import { getTotalStars, subscribeStars } from "@/lib/games";
 export default function StarTotal() {
   const stars = useSyncExternalStore(subscribeStars, getTotalStars, () => 0);
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
-      <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden />
-      <span className="font-semibold tabular-nums text-slate-900">{stars}</span> ngôi sao đã gom
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-star-50 px-3.5 py-1.5 text-sm font-semibold text-star-800 ring-1 ring-star-200">
+      <Star className="h-5 w-5 fill-star-400 text-star-400" aria-hidden />
+      <span className="font-black tabular-nums text-slate-900">{stars}</span> ngôi sao đã gom
     </div>
   );
 }

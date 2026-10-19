@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
+import { saveLessonResult } from "@/lib/lessonProgress";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
@@ -196,6 +197,8 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
       body: JSON.stringify({ lessonId, score, total }),
       keepalive: true,
     }).catch(() => {});
+    // Tiến độ trên máy: trang lớp dựa vào đây để hiện Học ngay / Tiếp tục / Làm lại.
+    saveLessonResult(lessonId, score, total);
 
     sessionStorage.setItem(
       "quizResult",

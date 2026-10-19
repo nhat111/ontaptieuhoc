@@ -1,5 +1,6 @@
 "use client";
 
+import { Download, Printer, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import {
   MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
@@ -74,13 +75,13 @@ export default function DailySheetClient() {
   }
 
   const chip = (active: boolean) =>
-    `rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors ${
-      active ? "bg-rose-500 border-transparent text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+    `min-h-10 rounded-xl border-2 px-4 py-1.5 text-sm font-bold transition-colors ${
+      active ? "border-primary-500 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600 hover:border-primary-200"
     }`;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-7 space-y-5">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 sm:p-7 space-y-5">
         <div>
           <p className="text-sm font-bold text-gray-700 mb-2">Lớp</p>
           <div className="flex flex-wrap gap-2">
@@ -120,7 +121,7 @@ export default function DailySheetClient() {
             {available.map((b) => {
               const on = chosen.includes(b.id);
               return (
-                <label key={b.id} className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer ${on ? "bg-rose-50 border-rose-200" : "border-gray-200 hover:bg-gray-50"}`}>
+                <label key={b.id} className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer ${on ? "border-primary-400 bg-primary-50/60" : "border-gray-200 hover:border-primary-200"}`}>
                   <input type="checkbox" checked={on} onChange={() => toggle(b.id)} className="mt-0.5" />
                   <span className="text-gray-700">{b.label}</span>
                 </label>
@@ -144,17 +145,20 @@ export default function DailySheetClient() {
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button onClick={() => setSeed(newSeed())}
-            className="rounded-2xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-gray-900 shadow hover:bg-yellow-300">
-            {seed ? "🔄 Đổi bộ khác" : "Tạo phiếu"}
+            className={seed ? "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50" : "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2"}>
+            {seed ? <RefreshCw className="h-4 w-4" aria-hidden /> : <Printer className="h-5 w-5" aria-hidden />}
+            {seed ? "Đổi bộ khác" : "Tạo phiếu"}
           </button>
           {sheets.length > 0 && (
             <>
               <button onClick={downloadDoc}
-                className="rounded-2xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50">
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
+                <Download className="h-4 w-4" aria-hidden />
                 Tải Word (.doc)
               </button>
               <button onClick={openPdf}
-                className="rounded-2xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50">
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2">
+                <Printer className="h-4 w-4" aria-hidden />
                 In / lưu PDF
               </button>
             </>
@@ -166,7 +170,7 @@ export default function DailySheetClient() {
       </div>
 
       {sheets.length > 0 && (
-        <div className="mt-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-3 sm:p-5">
+        <div className="mt-6 bg-white rounded-3xl border border-slate-200 shadow-soft p-3 sm:p-5">
           <h2 className="px-2 pb-2 font-extrabold text-gray-800">
             Xem trước{count > 1 ? " – phiếu số 1" : ""}
           </h2>

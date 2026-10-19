@@ -1,8 +1,8 @@
 "use client";
-import { useState, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { CheckCircle2, ChevronDown } from "lucide-react";
 import LessonItem, { Lesson } from "./LessonItem";
-import { gradeTheme } from "@/lib/gradeTheme";
+import { getProgress, getServerProgress, lessonState, subscribeProgress } from "@/lib/lessonProgress";
 
 export type Chapter = {
   id: number;
@@ -22,44 +22,57 @@ export default function ChapterItem({
   viewType?: "lesson" | "exam";
   grade?: number;
 }) {
-  const theme = gradeTheme(grade);
   const [open, setOpen] = useState(defaultOpen);
+  // Tiến độ đọc từ máy này; lúc render ở server là rỗng nên không lệch hydration.
+  const progress = useSyncExternalStore(subscribeProgress, getProgress, getServerProgress);
 
-  const { completed, progress } = useMemo(() => {
-    const completed = chapter.lessons.filter((l) => l.status === "completed").length;
-    return { completed, progress: Math.round((completed / chapter.lessons.length) * 100) };
-  }, [chapter.lessons]);
+  const total = chapter.lessons.length;
+  const done = chapter.lessons.filter((l) => lessonState(progress[l.id]) === "done").length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  const complete = total > 0 && done === total;
+  const unit = viewType === "exam" ? "đề" : "bài";
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className={`overflow-hidden rounded-2xl border bg-white shadow-soft ${complete ? "border-success-200" : "border-slate-200"}`}>
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-left gap-4"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50/70"
       >
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-900 truncate">{chapter.title}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {chapter.lessons.length} {viewType === "exam" ? "đề" : "bài học"} · {chapter.questionCount} câu hỏi
+        <div className="min-w-0 flex-1">
+          <h3 className="flex items-center gap-1.5 text-base font-extrabold text-slate-900">
+            {complete && <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-success-500" aria-label="Đã xong cả chương" />}
+            <span className="truncate">{chapter.title}</span>
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {total} {viewType === "exam" ? "đề" : "bài học"} · {chapter.questionCount} câu hỏi
           </p>
-          <div className="mt-2.5 h-1 bg-slate-100 rounded-full w-48 max-w-full">
+          <div className="mt-3 flex items-center gap-3">
             <div
-              className={`h-1 ${theme.solid} rounded-full transition-all`}
-              style={{ width: `${progress}%` }}
-            />
+              className="h-2.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-100"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={done}
+              aria-label={`Đã xong ${done} trên ${total} ${unit}`}
+            >
+              <div className="h-full rounded-full bg-success-500 transition-all duration-500" style={{ width: `${percent}%` }} />
+            </div>
+            <span className={`flex-shrink-0 text-xs font-bold tabular-nums ${complete ? "text-success-700" : "text-slate-500"}`}>
+              {done}/{total} {unit}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-slate-400 font-medium tabular-nums">{completed}/{chapter.lessons.length}</span>
-          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden />
-        </div>
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden />
+        </span>
       </button>
 
       {/* Lessons */}
       {open && (
-        <div className="px-4 pt-3 pb-2 border-t border-slate-100">
+        <div className="border-t border-slate-100 px-4 pb-2 pt-3">
           {chapter.lessons.map((lesson, i) => (
             <LessonItem
               key={lesson.id}
@@ -67,6 +80,7 @@ export default function ChapterItem({
               isLast={i === chapter.lessons.length - 1}
               viewType={viewType}
               grade={grade}
+              record={progress[lesson.id]}
             />
           ))}
         </div>

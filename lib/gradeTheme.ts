@@ -1,4 +1,4 @@
-// Màu riêng của từng lớp (theo .claude/ai-context/ui-rules.md): 1 hồng, 2 cam,
+// Màu riêng của từng lớp (theo .claude/ai-context/ui-rules.md): 1 coral (dịu, không đỏ gắt), 2 cam,
 // 3 xanh lá, 4 xanh dương, 5 tím; THCS: 6 xanh ngọc, 7 vàng hổ phách, 8 hồng tím, 9 chàm.
 // Màu lớp chỉ là điểm nhấn (ô số lớp, tab đang chọn, thanh tiến độ) — nền và thẻ
 // vẫn trung tính. Không dùng emoji làm biểu tượng lớp: hiện chính con số của lớp.
@@ -19,7 +19,7 @@ export type GradeTheme = {
 };
 
 const THEMES: Record<number, GradeTheme> = {
-  1: { solid: "bg-rose-500", soft: "bg-rose-50", border: "border-rose-200", text: "text-rose-600", hoverBorder: "hover:border-rose-300", edge: "border-rose-300" },
+  1: { solid: "bg-coral-500", soft: "bg-coral-50", border: "border-coral-200", text: "text-coral-700", hoverBorder: "hover:border-coral-300", edge: "border-coral-300" },
   2: { solid: "bg-orange-500", soft: "bg-orange-50", border: "border-orange-200", text: "text-orange-600", hoverBorder: "hover:border-orange-300", edge: "border-orange-300" },
   3: { solid: "bg-emerald-500", soft: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600", hoverBorder: "hover:border-emerald-300", edge: "border-emerald-300" },
   4: { solid: "bg-blue-500", soft: "bg-blue-50", border: "border-blue-200", text: "text-blue-600", hoverBorder: "hover:border-blue-300", edge: "border-blue-300" },

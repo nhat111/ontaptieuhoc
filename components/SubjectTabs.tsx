@@ -28,8 +28,11 @@ export default function SubjectTabs({ subjects, activeSubject, grade }: Props) {
           key={subject}
           onClick={() => handleClick(subject)}
           aria-current={subject === activeSubject ? "page" : undefined}
-          className={`whitespace-nowrap px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            subject === activeSubject ? `${theme.solid} text-white` : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          // Ô đang chọn: nền nhạt + chữ đậm màu lớp, không tô khối màu gắt.
+          className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-bold transition-colors ${
+            subject === activeSubject
+              ? `${theme.soft} ${theme.text} ${theme.border}`
+              : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           {subject}
