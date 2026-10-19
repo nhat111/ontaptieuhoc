@@ -14,6 +14,7 @@ const NAV = [
   { label: "Trang chủ", href: "/" },
   { label: "Lớp 1–9", href: "/#grades" },
   { label: "Đề kiểm tra", href: "/de-thi" },
+  { label: "Tạo đề nhanh", href: "/tao-de" },
   { label: "Trò chơi", href: "/lop/1/tro-choi" },
   { label: "Phiếu bài tập", href: "/phieu-bai-tap" },
   { label: "Hướng dẫn", href: "/huong-dan" },

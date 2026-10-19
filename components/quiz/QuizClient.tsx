@@ -35,9 +35,14 @@ import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeec
 interface Props {
   initialQuestions: Question[];
   initialLesson: LessonMeta;
+  /**
+   * Đề tự sinh ("Tạo đề nhanh", lib/quickExam.ts): link mở lại đúng đề này. Đề không
+   * nằm trong DB nên không lưu kết quả, không ghi tiến độ, không có nút Sửa đề.
+   */
+  quickExamHref?: string;
 }
 
-export default function QuizClient({ initialQuestions, initialLesson }: Props) {
+export default function QuizClient({ initialQuestions, initialLesson, quickExamHref }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -157,7 +162,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
   // Đọc to chỉ dành cho lớp 1–2 và đề Tiếng Anh (xem lib/readAloud.ts).
   const readAloud = readAloudEnabled(lesson.grade, lesson.subjectName, hasAudioFiles);
-  const showAttachVoice = canAttachVoice(lesson.subjectName);
+  const showAttachVoice = !quickExamHref && canAttachVoice(lesson.subjectName);
   // File audio phát được cả trên máy không có speechSynthesis.
   const canListen = readAloud && (speechOk || hasAudioFiles);
 
@@ -191,14 +196,17 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
     // keepalive: trang chuyển sang /result ngay sau dòng này; thiếu nó trình
     // duyệt thường huỷ request giữa chừng và kết quả không bao giờ được lưu.
-    fetch("/api/quiz-result", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lessonId, score, total }),
-      keepalive: true,
-    }).catch(() => {});
-    // Tiến độ trên máy: trang lớp dựa vào đây để hiện Học ngay / Tiếp tục / Làm lại.
-    saveLessonResult(lessonId, score, total);
+    // Đề tự sinh không có lessonId — lưu thì sẽ ghi nhầm vào bài số 1.
+    if (!quickExamHref) {
+      fetch("/api/quiz-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonId, score, total }),
+        keepalive: true,
+      }).catch(() => {});
+      // Tiến độ trên máy: trang lớp dựa vào đây để hiện Học ngay / Tiếp tục / Làm lại.
+      saveLessonResult(lessonId, score, total);
+    }
 
     sessionStorage.setItem(
       "quizResult",
@@ -207,6 +215,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
         answers: finalAnswers,
         lessonId,
         lessonTitle: lesson.title,
+        retryHref: quickExamHref,
         grade: lesson.grade ?? null,
         subjectName: lesson.subjectName ?? null,
       })
@@ -424,6 +433,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </div>
             )}
 
+            {!quickExamHref && (
             <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
               <a
                 href={`/import/edit/${lessonId}`}
@@ -447,6 +457,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </a>
               )}
             </div>
+            )}
             </div>
           </div>
         </div>
@@ -485,6 +496,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
 
           <div className="flex items-center justify-center gap-3 mb-5">
             <h1 className="text-xl font-bold text-gray-800">{lesson.title}</h1>
+            {!quickExamHref && (
             <a
               href={`/import/edit/${lessonId}`}
               title="Chỉnh sửa bài học"
@@ -495,6 +507,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
               </svg>
               Sửa đề
             </a>
+            )}
           </div>
 
           <div className={`flex items-center justify-center gap-2 font-mono font-bold text-2xl ${isLow ? "text-red-500 animate-pulse" : "text-green-500"}`}>

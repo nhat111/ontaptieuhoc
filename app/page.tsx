@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Apple, ArrowRight, Gamepad2, Gift, ListChecks, Printer, Scale, Shapes, Star, Volume2 } from "lucide-react";
+import { Apple, ArrowRight, Gamepad2, Gift, ListChecks, Printer, Scale, Shapes, Sparkles, Star, Volume2 } from "lucide-react";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 import Footer from "@/components/Footer";
+import QuickExamFab from "@/components/home/QuickExamFab";
 import TryQuestion from "@/components/home/TryQuestion";
 import HeroArt from "@/components/home/HeroArt";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
@@ -58,19 +59,26 @@ export default async function HomePage() {
               Bài tập và đề kiểm tra lớp 1 đến lớp 9. Làm trên web, chấm điểm ngay, có lời giải — hoặc
               tải đề về in cho con làm trên giấy.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div id="hero-cta" className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <a
                 href="#grades"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 py-3 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 whitespace-nowrap px-5 py-3 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2"
               >
                 Chọn lớp của con
                 <ArrowRight className="h-5 w-5" aria-hidden />
               </a>
               <Link
                 href="/de-thi"
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-6 py-3 text-base font-bold text-slate-700 transition-colors hover:border-primary-300 hover:text-primary-700"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white whitespace-nowrap px-5 py-3 text-base font-bold text-slate-700 transition-colors hover:border-primary-300 hover:text-primary-700"
               >
                 Kho đề kiểm tra
+              </Link>
+              <Link
+                href="/tao-de"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-star-200 bg-star-50 whitespace-nowrap px-5 py-3 text-base font-bold text-slate-800 transition-colors hover:border-star-300"
+              >
+                <Sparkles className="h-5 w-5 text-star-500" aria-hidden />
+                Tạo đề nhanh
               </Link>
             </div>
             <p className="mt-4 text-center text-sm text-slate-500 sm:text-left">
@@ -83,7 +91,7 @@ export default async function HomePage() {
 
           <div className="relative lg:col-start-2 lg:row-span-2 lg:row-start-1">
             <HeroArt className="mx-auto -mb-10 hidden h-auto w-full max-w-md lg:block" />
-            <div className="relative">
+            <div id="try-question" className="relative">
               <TryQuestion />
             </div>
           </div>
@@ -165,6 +173,9 @@ export default async function HomePage() {
       </section>
 
       <Footer />
+      {/* Chừa chỗ dưới cùng cho nút nổi, để nó không che dòng bản quyền ở chân trang. */}
+      <div className="h-20 bg-slate-50 sm:hidden" aria-hidden />
+      <QuickExamFab />
     </div>
   );
 }

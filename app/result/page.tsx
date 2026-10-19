@@ -34,7 +34,11 @@ export default function ResultPage() {
     );
   }
 
-  const { questions, answers, lessonId, lessonTitle, grade, subjectName } = result;
+  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref } = result;
+  // Đề tự sinh ("Tạo đề nhanh") không nằm trong DB: làm lại bằng chính link của nó,
+  // quay về trang tạo đề thay vì danh sách bài, và không mời đăng nhập để "lưu tiến độ".
+  const quick = !!retryHref;
+  const quizHref = retryHref ?? `/quiz?lessonId=${lessonId}`;
   const title = lessonTitle ?? `Bài ${lessonId}`;
   // Cùng quy tắc với trang làm bài: lớp 1–2, đề Tiếng Anh, hoặc đề đã gắn giọng.
   const readAloud = readAloudEnabled(grade, subjectName, questions.some((q) => !!q.audioUrl));
@@ -49,7 +53,8 @@ export default function ResultPage() {
       href: grade ? `/lop/${grade}?subject=${encodeURIComponent(subjectName)}` : "/de-thi",
     });
   }
-  crumbs.push({ label: title, href: `/quiz?lessonId=${lessonId}` });
+  if (quick) crumbs.push({ label: "Tạo đề nhanh", href: grade ? `/tao-de?lop=${grade}` : "/tao-de" });
+  crumbs.push({ label: title, href: quizHref });
 
   const { correct, wrong, unanswered } = questions.reduce(
     (acc, q, i) => {
@@ -96,11 +101,11 @@ export default function ResultPage() {
         <h2 className="text-base font-bold text-gray-700 mb-3">Chi tiết từng câu</h2>
         <div className="space-y-3 mb-8">
           {questions.map((q, i) => (
-            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} lessonId={lessonId} speak={readAloud} />
+            <ResultItem key={q.id} question={q} userAnswer={answers[i]} index={i} lessonId={quick ? undefined : lessonId} speak={readAloud} />
           ))}
         </div>
 
-        {isGuest && (
+        {isGuest && !quick && (
           <div className="mb-5 bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-blue-800">Đăng nhập để lưu tiến độ</p>
@@ -117,7 +122,7 @@ export default function ResultPage() {
 
         <div className="flex gap-3">
           <button
-            onClick={() => router.push(`/quiz?lessonId=${lessonId}`)}
+            onClick={() => router.push(quizHref)}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
           >
             Làm lại
@@ -125,14 +130,16 @@ export default function ResultPage() {
           <button
             onClick={() =>
               router.push(
-                grade
-                  ? `/lop/${grade}${subjectName ? `?subject=${encodeURIComponent(subjectName)}` : ""}`
-                  : "/"
+                quick
+                  ? grade ? `/tao-de?lop=${grade}` : "/tao-de"
+                  : grade
+                    ? `/lop/${grade}${subjectName ? `?subject=${encodeURIComponent(subjectName)}` : ""}`
+                    : "/"
               )
             }
             className="flex-1 bg-white text-gray-700 font-bold py-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
           >
-            Quay lại danh sách
+            {quick ? "Tạo đề khác" : "Quay lại danh sách"}
           </button>
         </div>
       </div>

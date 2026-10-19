@@ -1,0 +1,155 @@
+// lib/quickExam.ts
+// "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
+// một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
+//
+// Chỉ môn có bộ sinh câu hỏi bằng code mới có đề — hiện là Toán lớp 1–5 (lib/mathGen).
+// Không gọi AI, không đọc DB: đáp án do máy tính tính, cùng `seed` → cùng đề, nên link
+// /quiz?de=toan-3-cuoi-hk1&seed=abc mở lại đúng đề đó (server và trình duyệt trùng nhau).
+//
+// Phạm vi kiến thức mỗi kì lấy theo thứ tự chủ đề thường gặp trong SGK lớp 1–5
+// (chương trình GDPT 2018); mỗi kì là một danh sách id chủ đề trong MATH_LESSONS.
+// Đổi/xoá id ở MATH_LESSONS thì sửa ở đây — scripts/quick-exam-check.ts báo id lạc.
+
+import { MATH_LESSONS, buildWorksheetQuestions, type GenQuestionRow, type MathLessonSpec } from "./mathGen";
+import type { Question, QImage } from "./quizData";
+
+export const EXAM_KINDS = [
+  { key: "giua-hk1", label: "Giữa học kì I", short: "Giữa HK I" },
+  { key: "cuoi-hk1", label: "Cuối học kì I", short: "Cuối HK I" },
+  { key: "giua-hk2", label: "Giữa học kì II", short: "Giữa HK II" },
+  { key: "cuoi-hk2", label: "Cuối học kì II", short: "Cuối năm" },
+] as const;
+
+export type ExamKind = (typeof EXAM_KINDS)[number]["key"];
+
+export function isExamKind(v: unknown): v is ExamKind {
+  return EXAM_KINDS.some((k) => k.key === v);
+}
+
+export function examKindLabel(kind: ExamKind): string {
+  return EXAM_KINDS.find((k) => k.key === kind)!.label;
+}
+
+/** Chủ đề (id trong MATH_LESSONS) của từng kì, theo lớp. Cuối kì gồm cả phần giữa kì. */
+export const MATH_SCOPE: Record<number, Record<ExamKind, string[]>> = {
+  1: {
+    "giua-hk1": ["toan-1-cac-so-0-10"],
+    "cuoi-hk1": ["toan-1-cac-so-0-10", "toan-1-cong-tru-pv10"],
+    "giua-hk2": ["toan-1-so-den-100"],
+    "cuoi-hk2": ["toan-1-so-den-100", "toan-1-cong-tru-pv100", "toan-1-thoi-gian"],
+  },
+  2: {
+    "giua-hk1": ["toan-2-cong-tru-pv20"],
+    "cuoi-hk1": ["toan-2-cong-tru-pv20", "toan-2-cong-tru-pv100", "toan-2-thoi-gian"],
+    "giua-hk2": ["toan-2-nhan-chia", "toan-2-so-den-1000"],
+    "cuoi-hk2": ["toan-2-nhan-chia", "toan-2-so-den-1000", "toan-2-do-luong"],
+  },
+  3: {
+    "giua-hk1": ["toan-3-bang-nhan-chia-3-4", "toan-3-nhan-chia-6-7", "toan-3-bang-nhan-chia-8-9"],
+    "cuoi-hk1": ["toan-3-bang-nhan-chia-3-4", "toan-3-nhan-chia-6-7", "toan-3-bang-nhan-chia-8-9", "toan-3-gap-giam", "toan-3-nhan-chia-mot-chu-so"],
+    "giua-hk2": ["toan-3-so-den-100000", "toan-3-phep-tinh-100000"],
+    "cuoi-hk2": ["toan-3-so-den-100000", "toan-3-phep-tinh-100000", "toan-3-hinh-do-luong"],
+  },
+  4: {
+    "giua-hk1": ["toan-4-so-nhieu-chu-so", "toan-4-don-vi-do"],
+    "cuoi-hk1": ["toan-4-so-nhieu-chu-so", "toan-4-don-vi-do", "toan-4-cong-tru", "toan-4-tbc-tong-hieu"],
+    "giua-hk2": ["toan-4-nhan-chia"],
+    "cuoi-hk2": ["toan-4-nhan-chia", "toan-4-phan-so"],
+  },
+  5: {
+    "giua-hk1": ["toan-5-phan-so-hon-so", "toan-5-so-thap-phan"],
+    "cuoi-hk1": ["toan-5-so-thap-phan", "toan-5-phep-tinh-stp", "toan-5-doi-don-vi"],
+    "giua-hk2": ["toan-5-ti-so-phan-tram", "toan-5-hinh-hoc"],
+    "cuoi-hk2": ["toan-5-ti-so-phan-tram", "toan-5-hinh-hoc", "toan-5-thoi-gian-chuyen-dong", "toan-5-on-tap-loi-van"],
+  },
+};
+
+/** Số câu và thời gian: giữa kì ngắn hơn cuối kì; lớp nhỏ làm ít câu hơn. */
+function sizeOf(grade: number, kind: ExamKind): { count: number; minutes: number } {
+  const final = kind.startsWith("cuoi");
+  if (grade <= 2) return final ? { count: 15, minutes: 35 } : { count: 10, minutes: 30 };
+  return final ? { count: 20, minutes: 40 } : { count: 15, minutes: 35 };
+}
+
+export interface QuickExamSpec {
+  /** Khoá trong URL: "toan-3-cuoi-hk1". */
+  id: string;
+  grade: number;
+  subject: string;
+  kind: ExamKind;
+  title: string;
+  topics: MathLessonSpec[];
+  count: number;
+  minutes: number;
+}
+
+const examId = (grade: number, kind: ExamKind) => `toan-${grade}-${kind}`;
+
+/** Đề tạo được cho (lớp, môn, kì); null khi môn đó chưa có bộ sinh câu hỏi. */
+export function getQuickExam(grade: number, subject: string, kind: ExamKind): QuickExamSpec | null {
+  if (subject !== "Toán") return null;
+  const ids = MATH_SCOPE[grade]?.[kind];
+  if (!ids) return null;
+  const topics = ids.map((id) => MATH_LESSONS.find((l) => l.id === id)).filter((l): l is MathLessonSpec => !!l);
+  if (topics.length === 0) return null;
+  return {
+    id: examId(grade, kind),
+    grade, subject, kind,
+    // Chỉ hạ chữ đầu: "Cuối học kì I" → "cuối học kì I" (toLowerCase sẽ biến "I" thành "i").
+    title: `Đề kiểm tra ${examKindLabel(kind).replace(/^./, (c) => c.toLowerCase())} – Toán lớp ${grade}`,
+    topics,
+    ...sizeOf(grade, kind),
+  };
+}
+
+/** Đọc lại spec từ khoá trong URL (`?de=`); khoá lạ → null. */
+export function quickExamById(id: string | undefined | null): QuickExamSpec | null {
+  const m = id?.match(/^toan-(\d)-(giua-hk[12]|cuoi-hk[12])$/);
+  if (!m || !isExamKind(m[2])) return null;
+  return getQuickExam(Number(m[1]), "Toán", m[2]);
+}
+
+/** Môn nào của lớp này có đề tự sinh (để giao diện gắn nhãn "Sắp có" cho môn còn lại). */
+export function hasQuickExam(grade: number, subject: string): boolean {
+  return EXAM_KINDS.some((k) => getQuickExam(grade, subject, k.key) !== null);
+}
+
+/** Seed chỉ gồm chữ thường và số, ngắn — nằm trong URL nên lọc cho sạch. */
+export function cleanSeed(seed: string | undefined | null): string | null {
+  const s = (seed ?? "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12);
+  return s || null;
+}
+
+/**
+ * Sinh câu hỏi của đề. Trắc nghiệm đặt trước, tự luận sau — giống đề giấy (Phần 1,
+ * Phần 2), và trang in /tao-de cũng xếp như vậy nên đề trên máy khớp đề in.
+ */
+export function buildQuickExamRows(spec: QuickExamSpec, seed: string): GenQuestionRow[] {
+  const rows = buildWorksheetQuestions(spec.topics, spec.count, `de|${spec.id}|${seed}`);
+  return [...rows.filter((r) => r.type === "mcq"), ...rows.filter((r) => r.type !== "mcq")];
+}
+
+/** Dòng tự sinh → câu hỏi của trang quiz (cùng cách đọc `explanation` như lib/db.ts). */
+export function rowToQuestion(row: GenQuestionRow, id: number): Question {
+  let images: QImage[] = [];
+  let explanation: string | undefined;
+  try {
+    const exp = JSON.parse(row.explanation) as { solution?: string; images?: { url: string; position?: string }[] };
+    images = (exp.images ?? []).map((im) => ({ url: im.url, position: im.position === "before" ? "before" : "after" }));
+    if (exp.solution?.trim()) explanation = exp.solution;
+  } catch { /* không có lời giải thì thôi */ }
+  return {
+    id,
+    type: row.type,
+    question: row.content,
+    options: row.options,
+    correctAnswer: row.correct_answer,
+    images,
+    imageUrl: images[0]?.url,
+    explanation,
+  };
+}
+
+export function quickExamHref(spec: QuickExamSpec, seed: string): string {
+  return `/quiz?de=${spec.id}&seed=${encodeURIComponent(seed)}`;
+}

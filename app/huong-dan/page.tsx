@@ -65,6 +65,17 @@ const STEPS: GuideStep[] = [
     ],
   },
   {
+    id: "tao-de",
+    title: "Tạo đề giữa kì, cuối kì",
+    points: [
+      <>Vào <b>Tạo đề nhanh</b>, chọn lớp, loại đề (<b>Giữa học kì I</b>, <b>Cuối học kì I</b>, <b>Giữa học kì II</b>, <b>Cuối học kì II</b>) và môn, rồi bấm <b>Tạo đề</b>.</>,
+      <>Hiện máy tạo được đề <b>Toán lớp 1–5</b>; môn khác ghi <b>Sắp có</b> và có nút xem các đề đã soạn sẵn của môn đó.</>,
+      <>Có đề rồi: bấm <b>Làm bài trên máy</b> để bé làm và được chấm ngay, hoặc <b>In / lưu PDF</b>, <b>Tải Word (.doc)</b> để làm trên giấy. Bấm <b>Đổi đề khác</b> để ra đề mới.</>,
+      <>Bấm <b>Xem đề và đáp án (dành cho phụ huynh)</b> để xem đáp án ngay trên trang. Đề tạo nhanh không được lưu vào tiến độ học tập.</>,
+    ],
+    cta: { href: "/tao-de", label: "Tạo đề nhanh" },
+  },
+  {
     id: "phieu-bai-tap",
     title: "Tạo phiếu bài tập Toán theo chủ đề",
     points: [
