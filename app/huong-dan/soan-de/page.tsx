@@ -18,7 +18,6 @@ const Code = ({ children }: { children: React.ReactNode }) => (
 const STEPS: GuideStep[] = [
   {
     id: "vao-khu-soan",
-    emoji: "🔑",
     title: "Vào khu soạn đề",
     points: [
       <>Kéo xuống cuối trang chủ, bấm <b>Dành cho người soạn đề</b>. Nếu đã đăng nhập thì mở menu tài khoản, chọn <b>Tạo bài học</b> hoặc <b>Tạo đề kiểm tra</b>.</>,
@@ -29,7 +28,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "thong-tin",
-    emoji: "📋",
     title: "Điền thông tin bài",
     points: [
       <>Chọn <b>Lớp</b> và <b>Môn học</b>.</>,
@@ -39,7 +37,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "soan-cau-hoi",
-    emoji: "✏️",
     title: "Soạn từng câu hỏi",
     points: [
       <>Bấm <b>Thêm câu hỏi</b> (hoặc <b>Ctrl+Enter</b>), rồi chọn loại câu:</>,
@@ -58,7 +55,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "dan-ca-de",
-    emoji: "📥",
     title: "Nhập nhanh cả đề (không gõ từng câu)",
     points: [
       <>Bấm <b>Dán đề từ văn bản</b> ở đầu trang soạn. Có 3 cách đưa đề vào:</>,
@@ -71,7 +67,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "luu",
-    emoji: "💾",
     title: "Lưu bài",
     points: [
       <>Bấm <b>Lưu bài học</b> hoặc <b>Lưu đề kiểm tra</b> (phím tắt <b>Ctrl+S</b>). Bài hiện ngay trên trang lớp để các bé làm.</>,
@@ -80,7 +75,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "sua-de",
-    emoji: "🛠️",
     title: "Sửa bài hoặc đề đã có",
     points: [
       <>Mở bài như khi làm bài, ở màn đầu bấm <b>Sửa đề</b>.</>,
@@ -90,7 +84,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "giong-doc",
-    emoji: "🎙️",
     title: "Gắn giọng đọc (không bắt buộc)",
     points: [
       <>Mặc định bé nghe bằng giọng máy của điện thoại. Muốn bé nghe giọng người thật: ở màn đầu của bài <b>Tiếng Anh</b>, bấm <b>Gắn giọng đọc</b>.</>,
@@ -135,11 +128,11 @@ export default function EditorGuidePage() {
       faq={FAQ}
       switchTo={{
         href: "/huong-dan",
-        label: "👨‍👩‍👧 Hướng dẫn cho phụ huynh và bé",
+        label: "Hướng dẫn cho phụ huynh và bé",
         desc: "Chọn lớp, làm bài, nghe đọc, xem kết quả, tải đề in, trò chơi.",
       }}
       outro={{
-        title: "Bắt đầu soạn thôi! ✍️",
+        title: "Bắt đầu soạn thôi!",
         desc: "Mở khu soạn đề và thử tạo bài đầu tiên — dán vài câu mẫu là thấy ngay.",
         href: "/import",
         label: "Mở khu soạn đề",

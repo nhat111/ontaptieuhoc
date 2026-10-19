@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChevronRight, FileText, Gamepad2, Inbox, Plus } from "lucide-react";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
@@ -89,11 +90,11 @@ export default async function GradePage({
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header />
 
       {/* Subject tabs bar */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <SubjectTabs
             subjects={[...subjects]}
@@ -105,66 +106,71 @@ export default async function GradePage({
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
-          <Link href="/" className="hover:text-blue-600 transition-colors">Trang chủ</Link>
-          <span>›</span>
-          <Link href={`/lop/${grade}`} className="hover:text-blue-600 transition-colors">Lớp {grade}</Link>
-          <span>›</span>
-          <span className="text-gray-600 font-medium">{activeSubject ?? "Toán"}</span>
-        </div>
+        <nav aria-label="Đường dẫn" className="flex items-center gap-1 text-xs text-slate-400 mb-5">
+          <Link href="/" className="hover:text-slate-700 transition-colors">Trang chủ</Link>
+          <ChevronRight className="h-3 w-3" aria-hidden />
+          <Link href={`/lop/${grade}`} className="hover:text-slate-700 transition-colors">Lớp {grade}</Link>
+          <ChevronRight className="h-3 w-3" aria-hidden />
+          <span className="text-slate-600">{activeSubject ?? "Toán"}</span>
+        </nav>
 
-        {/* Tiêu đề trong dải màu của lớp */}
-        <div className={`mb-5 flex items-center gap-4 rounded-3xl border ${theme.border} ${theme.soft} px-5 py-5`}>
-          <div className="flex-1 min-w-0">
-            <p className={`text-xs font-bold uppercase tracking-wide ${theme.text}`}>Lớp {grade}</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
+        {/* Tiêu đề: ô số lớp tô màu lớp, phần còn lại trung tính */}
+        <div className="mb-6 flex items-center gap-4">
+          <span
+            className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl ${theme.soft} ${theme.text} text-3xl font-bold tabular-nums`}
+            aria-hidden
+          >
+            {grade}
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject ?? "Toán"}
+              <span className="text-slate-400 font-medium"> · Lớp {grade}</span>
             </h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-slate-500 text-sm mt-1">
               {activeView === "exam"
                 ? "Đề kiểm tra theo chương · Luyện thi cuối kỳ"
                 : "Bám sát sách giáo khoa · Luyện từng chương, từng bài"}
             </p>
           </div>
-          <span className="text-5xl sm:text-6xl drop-shadow-sm" aria-hidden>{theme.emoji}</span>
         </div>
 
         {GAME_BLURB[gradeNum] && (
           <Link
             href={`/lop/${gradeNum}/tro-choi`}
-            className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-orange-200 rounded-2xl px-4 py-3 mb-5 hover:shadow-md transition-shadow"
+            className="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 mb-6 hover:border-slate-300 transition-colors"
           >
-            <span className="text-3xl">🎮</span>
-            <span className="flex-1 min-w-0">
-              <span className="block font-bold text-gray-800">Vừa học vừa chơi</span>
-              <span className="block text-sm text-gray-500">{GAME_BLURB[gradeNum]}</span>
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600" aria-hidden>
+              <Gamepad2 className="h-5 w-5" />
             </span>
-            <span className="text-orange-500 font-bold">Chơi ›</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-slate-900">Vừa học vừa chơi</span>
+              <span className="block text-sm text-slate-500 truncate">{GAME_BLURB[gradeNum]}</span>
+            </span>
+            <span className="inline-flex items-center gap-0.5 text-sm font-medium text-blue-600">
+              Chơi
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </span>
           </Link>
         )}
 
-        {/* Toggle */}
-        <div className="flex gap-2 mb-7">
-          <a
-            href={`/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}`}
-            className={`text-sm font-bold px-5 py-2 rounded-full shadow-sm transition-colors ${
-              activeView === "baitap"
-                ? `${theme.solid} text-white`
-                : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
-            }`}
-          >
-            Bài tập
-          </a>
-          <a
-            href={`/lop/${grade}?${subjectParam ? `subject=${encodeURIComponent(subjectParam)}&` : ""}view=exam`}
-            className={`text-sm font-semibold px-5 py-2 rounded-full transition-colors ${
-              activeView === "exam"
-                ? `${theme.solid} text-white shadow-sm`
-                : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600"
-            }`}
-          >
-            Đề kiểm tra
-          </a>
+        {/* Bài tập / Đề kiểm tra: nút chuyển dạng segmented */}
+        <div className="inline-flex mb-6 rounded-lg bg-slate-200/70 p-1">
+          {[
+            { key: "baitap", label: "Bài tập", href: `/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}` },
+            { key: "exam", label: "Đề kiểm tra", href: `/lop/${grade}?${subjectParam ? `subject=${encodeURIComponent(subjectParam)}&` : ""}view=exam` },
+          ].map((t) => (
+            <a
+              key={t.key}
+              href={t.href}
+              aria-current={activeView === t.key ? "page" : undefined}
+              className={`text-sm font-medium px-4 py-1.5 rounded-md transition-colors ${
+                activeView === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              {t.label}
+            </a>
+          ))}
         </div>
 
         {/* Content grid */}
@@ -172,9 +178,11 @@ export default async function GradePage({
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
             {chapters.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
-                <p className="text-4xl mb-3">{activeView === "exam" ? "📝" : "📭"}</p>
-                <p className="font-medium text-gray-500">
+              <div className="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center">
+                <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
+                  {activeView === "exam" ? <FileText className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
+                </span>
+                <p className="font-medium text-slate-600">
                   {activeView === "exam"
                     ? `Chưa có đề kiểm tra ${activeSubject ?? ""} lớp ${grade}`
                     : "Chưa có nội dung cho môn học này"}
@@ -182,9 +190,10 @@ export default async function GradePage({
                 {activeView === "exam" && (
                   <a
                     href={`/import/exam`}
-                    className="mt-4 inline-block text-sm text-blue-600 hover:underline font-medium"
+                    className="mt-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    + Tạo đề kiểm tra mới
+                    <Plus className="h-4 w-4" aria-hidden />
+                    Tạo đề kiểm tra mới
                   </a>
                 )}
               </div>

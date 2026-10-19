@@ -1,4 +1,5 @@
 "use client";
+import { CircleCheck } from "lucide-react";
 import { useState } from "react";
 import { MAX_CONTACT, MAX_MESSAGE } from "@/lib/feedback";
 
@@ -35,9 +36,9 @@ export default function FeedbackForm() {
 
   if (state === "sent") {
     return (
-      <div className="rounded-3xl border border-green-200 bg-green-50 p-6 text-center">
-        <p className="text-4xl">💌</p>
-        <p className="mt-2 text-lg font-extrabold text-green-800">Đã nhận góp ý, cảm ơn bạn!</p>
+      <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-center">
+        <CircleCheck className="mx-auto h-8 w-8 text-green-600" aria-hidden />
+        <p className="mt-2 text-lg font-semibold text-green-800">Đã nhận góp ý, cảm ơn bạn!</p>
         <p className="mt-1 text-sm text-green-700">
           {contact.trim() ? "Nếu cần, mình sẽ liên hệ lại theo thông tin bạn để lại." : "Mọi góp ý đều được đọc kỹ."}
         </p>

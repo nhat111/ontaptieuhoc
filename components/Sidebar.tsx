@@ -1,6 +1,15 @@
+import { Trophy } from "lucide-react";
 import type { LeaderboardEntry } from "@/lib/db";
 
-const rankMedal = ["🥇", "🥈", "🥉"];
+// Ba hạng đầu: chỉ tô màu ô số hạng (vàng, bạc, đồng), không dùng emoji huy chương.
+const RANK_STYLE = ["bg-amber-100 text-amber-700", "bg-slate-200 text-slate-700", "bg-orange-100 text-orange-700"];
+
+const LEVELS = [
+  { label: "Giỏi", desc: "từ 80%", dot: "bg-emerald-500" },
+  { label: "Khá", desc: "từ 65%", dot: "bg-blue-500" },
+  { label: "Trung bình", desc: "từ 50%", dot: "bg-amber-500" },
+  { label: "Cố gắng thêm", desc: "dưới 50%", dot: "bg-slate-300" },
+];
 
 export default function Sidebar({
   leaderboard = [],
@@ -10,73 +19,58 @@ export default function Sidebar({
   grade?: number;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Leaderboard */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-1">
-          🏆 Bảng xếp hạng{grade ? ` Lớp ${grade}` : ""}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <Trophy className="h-4 w-4 text-amber-500" aria-hidden />
+          Bảng xếp hạng{grade ? ` lớp ${grade}` : ""}
         </h3>
-        <p className="text-xs text-gray-400 mb-4">Mỗi bài tính lần làm tốt nhất, tối đa 100 điểm — làm càng nhiều bài càng nhiều điểm.</p>
+        <p className="mt-1 mb-4 text-xs leading-relaxed text-slate-500">
+          Mỗi bài tính lần làm tốt nhất, tối đa 100 điểm — làm càng nhiều bài càng nhiều điểm.
+        </p>
 
         {leaderboard.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-4">
-            Chưa có ai làm bài trong lớp này.
-          </p>
+          <p className="rounded-lg bg-slate-50 py-6 text-center text-xs text-slate-400">Chưa có ai làm bài trong lớp này.</p>
         ) : (
-          <div className="space-y-1">
+          <ol className="-mx-2 space-y-0.5">
             {leaderboard.map((row) => (
-              <div
-                key={row.rank}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                  row.rank <= 3 ? "bg-yellow-50" : "hover:bg-gray-50"
-                }`}
-              >
-                {/* Rank */}
-                <span className="w-6 text-center text-base flex-shrink-0">
-                  {row.rank <= 3 ? rankMedal[row.rank - 1] : (
-                    <span className="text-xs font-bold text-gray-400">{row.rank}</span>
-                  )}
+              <li key={row.rank} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
+                <span
+                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-xs font-semibold tabular-nums ${
+                    RANK_STYLE[row.rank - 1] ?? "text-slate-400"
+                  }`}
+                >
+                  {row.rank}
                 </span>
-
-                {/* Avatar */}
-                <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                  {row.name.slice(0, 2).toUpperCase()}
-                </span>
-
-                {/* Name + lessons */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-700 truncate">{row.name}</p>
-                  <p className="text-xs text-gray-400">{row.lessonCount} bài · đúng TB {row.avgScore}%</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800">{row.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {row.lessonCount} bài · đúng TB {row.avgScore}%
+                  </p>
                 </div>
-
-                {/* Score */}
-                <span className="flex-shrink-0 text-right leading-tight">
-                  <span className="block text-sm font-extrabold text-blue-700">{row.points}</span>
-                  <span className="block text-[11px] text-gray-400">điểm</span>
+                <span className="flex-shrink-0 text-right text-sm font-semibold tabular-nums text-slate-900">
+                  {row.points}
+                  <span className="ml-0.5 text-xs font-normal text-slate-400">đ</span>
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         )}
       </div>
 
-      {/* Badges */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-3">🏅 Huy hiệu học tập</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { emoji: "🥇", label: "Giỏi", desc: "≥ 80%", bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700" },
-            { emoji: "🥈", label: "Khá", desc: "≥ 65%", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
-            { emoji: "🥉", label: "Trung bình", desc: "≥ 50%", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
-            { emoji: "💪", label: "Cố gắng thêm", desc: "< 50%", bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-500" },
-          ].map((b) => (
-            <div key={b.label} className={`${b.bg} border ${b.border} rounded-xl p-3 text-center`}>
-              <div className="text-2xl mb-1">{b.emoji}</div>
-              <p className={`text-xs font-bold ${b.text}`}>{b.label}</p>
-              <p className={`text-xs ${b.text} opacity-70 mt-0.5`}>{b.desc}</p>
-            </div>
+      {/* Mức xếp loại */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">Xếp loại theo điểm</h3>
+        <ul className="space-y-2">
+          {LEVELS.map((l) => (
+            <li key={l.label} className="flex items-center gap-2.5 text-sm">
+              <span className={`h-2 w-2 rounded-full ${l.dot}`} aria-hidden />
+              <span className="font-medium text-slate-700">{l.label}</span>
+              <span className="ml-auto text-xs text-slate-400">{l.desc}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );

@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 const STEPS: GuideStep[] = [
   {
     id: "chon-lop",
-    emoji: "🎒",
     title: "Chọn lớp và môn học",
     points: [
       <>Ở trang chủ, bấm <b>Chọn lớp của con</b> rồi chọn thẻ lớp: Tiểu học (Lớp 1 → Lớp 5) hoặc Trung học cơ sở (Lớp 6 → Lớp 9).</>,
@@ -26,7 +25,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "lam-bai",
-    emoji: "✏️",
     title: "Cho bé làm bài",
     points: [
       <>Màn đầu tiên cho biết <b>số câu</b> và <b>số phút</b>. Đồng hồ <b>chưa chạy</b> cho tới khi bấm <b>Bắt đầu làm bài</b>.</>,
@@ -38,7 +36,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "nghe-doc",
-    emoji: "🔊",
     title: "Nghe đọc đề (cho bé chưa đọc thạo)",
     points: [
       <>Có ở các bài <b>lớp 1, lớp 2</b> và mọi bài <b>Tiếng Anh</b>. Từ lớp 3 trở lên, bài các môn khác (kể cả lớp 6–9) không có nút nghe vì các em đã tự đọc được.</>,
@@ -50,7 +47,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "ket-qua",
-    emoji: "⭐",
     title: "Xem kết quả và lời giải",
     points: [
       <>Nộp bài xong web chấm ngay: số câu <b>Đúng</b>, <b>Sai</b>, <b>Bỏ qua</b>, kèm sao thưởng và lời khen của bạn Cú.</>,
@@ -61,7 +57,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "in-de",
-    emoji: "🖨️",
     title: "Tải đề về in cho con làm trên giấy",
     points: [
       <>Ở màn đầu của mỗi bài, mục <b>Tải đề để in</b>: chọn <b>Word (.doc)</b> hoặc <b>PDF</b>.</>,
@@ -71,7 +66,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "phieu-bai-tap",
-    emoji: "📝",
     title: "Tạo phiếu bài tập Toán theo chủ đề",
     points: [
       <>Vào <b>Phiếu bài tập</b>, chọn lớp (từ lớp 1 đến lớp 5), một hoặc nhiều chủ đề, số câu và số đề khác nhau.</>,
@@ -82,7 +76,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "phieu-hang-ngay",
-    emoji: "✏️",
     title: "Phiếu luyện hằng ngày lớp 1, lớp 2 (Toán, Tiếng Việt)",
     points: [
       <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Phiếu luyện hằng ngày</b>, rồi chọn <b>Lớp 1</b> hoặc <b>Lớp 2</b>.</>,
@@ -95,7 +88,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "hoat-dong-ai",
-    emoji: "🤖",
     title: "Phiếu hoạt động AI cho thầy cô (lớp 4, lớp 5)",
     points: [
       <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Hoạt động AI</b> rồi chọn lớp: mỗi lớp 12 phiếu cho 12 tiết AI cốt lõi, theo Quyết định 2422/QĐ-BGDĐT.</>,
@@ -106,7 +98,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "tro-choi",
-    emoji: "🎮",
     title: "Trò chơi cho bé lớp 1 đến lớp 5",
     points: [
       <>Lớp 1: đếm hình, hái táo, so sánh số, nghe âm chọn chữ, nhìn hình chọn chữ, chọn dấu thanh.</>,
@@ -120,7 +111,6 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "dang-nhap",
-    emoji: "📈",
     title: "Đăng nhập để theo dõi tiến độ (không bắt buộc)",
     points: [
       <>Không đăng nhập vẫn làm bài, nghe đọc, tải đề và chơi trò chơi bình thường.</>,
@@ -134,7 +124,7 @@ const STEPS: GuideStep[] = [
 const FAQ: GuideFaq[] = [
   {
     q: "Thấy câu hỏi sai đáp án, hoặc muốn góp ý?",
-    a: "Ở trang kết quả, mỗi câu có nút “🚩 Báo lỗi câu này” — web tự gửi kèm bài và số câu. Góp ý chung thì vào trang Góp ý & liên hệ (link ở cuối trang chủ).",
+    a: "Ở trang kết quả, mỗi câu có nút “Báo lỗi câu này” (hình lá cờ) — web tự gửi kèm bài và số câu. Góp ý chung thì vào trang Góp ý & liên hệ (link ở cuối trang chủ).",
   },
   { q: "Web có mất phí không?", a: "Không. Làm bài, nghe đọc, tải đề và trò chơi đều miễn phí." },
   { q: "Có cần tạo tài khoản không?", a: "Không cần. Tài khoản chỉ để lưu lại kết quả và xem tiến độ học tập." },
@@ -152,16 +142,16 @@ export default function ParentGuidePage() {
   return (
     <GuidePage
       title="Hướng dẫn sử dụng"
-      intro="Lần đầu dùng Ôn Tập Phổ Thông? Bạn Cú chỉ cho phụ huynh từng bước — mất khoảng 2 phút đọc."
+      intro="Lần đầu dùng Ôn Tập Phổ Thông? Các bước dưới đây chỉ cho phụ huynh cách dùng — mất khoảng 2 phút đọc."
       steps={STEPS}
       faq={FAQ}
       switchTo={{
         href: "/huong-dan/soan-de",
-        label: "✍️ Thầy cô, phụ huynh muốn tự soạn bài / đề?",
+        label: "Thầy cô, phụ huynh muốn tự soạn bài / đề?",
         desc: "Xem hướng dẫn soạn đề: gõ câu hỏi, dán cả đề, quét ảnh đề, sửa đề, gắn giọng đọc.",
       }}
       outro={{
-        title: "Sẵn sàng rồi! 🎉",
+        title: "Sẵn sàng rồi!",
         desc: "Chọn lớp của con để bắt đầu bài đầu tiên.",
         href: "/#grades",
         label: "Chọn lớp của con",

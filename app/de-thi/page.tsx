@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChevronRight, Clock, FileText, ListChecks, Plus } from "lucide-react";
 import Header from "@/components/Header";
+import { gradeTheme } from "@/lib/gradeTheme";
 import { getAllExams, type ExamListItem } from "@/lib/db";
 
 // Live exam list — read from the DB on each request rather than freezing it
@@ -30,49 +32,28 @@ function groupByGrade(exams: ExamListItem[]): Map<number, ExamListItem[]> {
   return m;
 }
 
-const GRADE_COLOR: Record<number, { badge: string; ring: string }> = {
-  1: { badge: "bg-rose-100 text-rose-700", ring: "ring-rose-100" },
-  2: { badge: "bg-orange-100 text-orange-700", ring: "ring-orange-100" },
-  3: { badge: "bg-emerald-100 text-emerald-700", ring: "ring-emerald-100" },
-  4: { badge: "bg-blue-100 text-blue-700", ring: "ring-blue-100" },
-  5: { badge: "bg-violet-100 text-violet-700", ring: "ring-violet-100" },
-};
-
-const GRADE_SURFACE: Record<number, string> = {
-  1: "from-blue-50 to-orange-50/40",
-  2: "from-blue-50 to-orange-50/50",
-  3: "from-blue-50 to-orange-50/30",
-  4: "from-blue-50 to-orange-50/40",
-  5: "from-blue-50 to-orange-50/50",
-};
-
 export default async function ExamListPage() {
   const exams = await getAllExams();
   const groups = groupByGrade(exams);
   const grades = [...groups.keys()].sort((a, b) => a - b);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header />
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-indigo-900/30" />
-        <div className="relative max-w-5xl mx-auto px-4 py-10 sm:py-14 text-center">
-          <span className="mb-3 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-blue-50">
-            Kho đề luyện tập theo lớp
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight">Đề kiểm tra</h1>
-          <p className="mb-5 text-sm text-blue-100 sm:text-base">
-            Chọn đề để xem chi tiết · {exams.length} đề
-          </p>
+      <section className="border-b border-slate-200 bg-white">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-end justify-between gap-4 px-4 py-8 sm:py-10">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Đề kiểm tra</h1>
+            <p className="mt-1 text-sm text-slate-500 sm:text-base">
+              Kho đề luyện tập theo lớp · <span className="tabular-nums">{exams.length}</span> đề
+            </p>
+          </div>
           <Link
             href="/import/exam"
-            className="inline-flex items-center gap-1.5 rounded-2xl bg-yellow-400 px-6 py-3 text-sm font-bold text-gray-900 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-yellow-400/30"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="h-4 w-4" aria-hidden />
             Tạo đề mới
           </Link>
         </div>
@@ -80,33 +61,35 @@ export default async function ExamListPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         {exams.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
-            <p className="text-4xl mb-3">📝</p>
-            <p className="font-medium text-gray-500">Chưa có đề kiểm tra nào</p>
-            <p className="text-xs text-gray-400 mt-1">Bấm “Tạo đề mới” ở trên để bắt đầu.</p>
+          <div className="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center">
+            <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
+              <FileText className="h-5 w-5" />
+            </span>
+            <p className="font-medium text-slate-600">Chưa có đề kiểm tra nào</p>
+            <p className="text-xs text-slate-400 mt-1">Bấm “Tạo đề mới” ở trên để bắt đầu.</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {grades.map((g) => {
               const items = groups.get(g)!;
-              const color = GRADE_COLOR[g] ?? GRADE_COLOR[1];
-              const surface = GRADE_SURFACE[g] ?? GRADE_SURFACE[1];
+              const theme = gradeTheme(g);
               return (
-                <section key={g} className={`rounded-3xl border border-blue-100/80 bg-gradient-to-br ${surface} p-4 sm:p-5`}>
-                  <div className="mb-4 flex items-baseline justify-between">
-                    <h2 className="text-base font-bold text-slate-700">
-                      Lớp {g || "?"}
-                      <span className="text-xs font-normal text-gray-400 ml-1">
-                        ({items.length} đề)
+                <section key={g}>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h2 className="flex items-center gap-2.5 text-base font-semibold text-slate-900">
+                      <span className={`flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold tabular-nums ${theme.soft} ${theme.text}`} aria-hidden>
+                        {g || "?"}
                       </span>
+                      Lớp {g || "?"}
+                      <span className="text-sm font-normal text-slate-400">{items.length} đề</span>
                     </h2>
                     {g > 0 && (
                       <Link
                         href={`/lop/${g}?view=exam`}
-                        className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-orange-50 hover:text-orange-700"
+                        className="inline-flex items-center gap-0.5 text-sm font-medium text-blue-600 hover:text-blue-700"
                       >
                         Xem theo môn
-                        <span>→</span>
+                        <ChevronRight className="h-4 w-4" aria-hidden />
                       </Link>
                     )}
                   </div>
@@ -116,31 +99,17 @@ export default async function ExamListPage() {
                       <Link
                         key={exam.id}
                         href={`/quiz?lessonId=${exam.id}`}
-                        className={`group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md ring-2 ring-transparent hover:${color.ring}`}
+                        className="group rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50/60"
                       >
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${color.badge}`}>
-                            Lớp {g}
-                          </span>
-                          {exam.subjectName && (
-                            <span className="text-[11px] rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">{exam.subjectName}</span>
-                          )}
-                        </div>
-                        <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-800 group-hover:text-blue-700">
-                          {exam.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
+                        {exam.subjectName && <p className="mb-1 text-xs font-medium text-slate-400">{exam.subjectName}</p>}
+                        <h3 className="mb-3 line-clamp-2 text-sm font-semibold text-slate-900">{exam.title}</h3>
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span className="inline-flex items-center gap-1">
+                            <ListChecks className="h-3.5 w-3.5" aria-hidden />
                             {exam.questionCount} câu
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="9" />
-                              <path strokeLinecap="round" d="M12 7v5l3 2" />
-                            </svg>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" aria-hidden />
                             {exam.durationMinutes} phút
                           </span>
                         </div>

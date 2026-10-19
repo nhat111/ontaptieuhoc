@@ -1,4 +1,5 @@
 "use client";
+import { Clock, ListChecks, Play } from "lucide-react";
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +9,6 @@ import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
-import { Mascot } from "@/components/games/Fx";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { canAttachVoice, readAloudEnabled } from "@/lib/readAloud";
 import {
@@ -285,30 +285,38 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             <span className="text-orange-500 font-medium">{lesson.title}</span>
           </nav>
 
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden text-center">
-            {/* Dải màu theo lớp + bạn Cú chào bé */}
-            <div className={`${theme.soft} border-b ${theme.border} px-6 pt-6 pb-2`}>
-              <Mascot mood="idle" text="Sẵn sàng chưa nào?" beat={0} />
-            </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-center">
             <div className="p-6 sm:p-8">
-            <h1 className="text-2xl font-extrabold text-gray-800 mb-1">{lesson.title}</h1>
+            {lesson.grade ? (
+              <span
+                className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${theme.soft} ${theme.text} text-2xl font-bold tabular-nums`}
+                aria-hidden
+              >
+                {lesson.grade}
+              </span>
+            ) : null}
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">{lesson.title}</h1>
             {(lesson.grade || lesson.subjectName) && (
-              <p className="text-sm text-gray-500 mb-6">
+              <p className="text-sm text-slate-500 mb-6">
                 {lesson.subjectName ?? ""}{lesson.subjectName && lesson.grade ? " · " : ""}
                 {lesson.grade ? `Lớp ${lesson.grade}` : ""}
               </p>
             )}
 
-            <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-7">
-              <div className={`${theme.soft} rounded-2xl border ${theme.border} py-4`}>
-                <div className="text-2xl">📝</div>
-                <div className={`text-2xl font-extrabold ${theme.text}`}>{questions.length}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Câu hỏi</div>
+            <div className="mx-auto mb-7 inline-flex divide-x divide-slate-200 rounded-lg border border-slate-200 text-left">
+              <div className="flex items-center gap-2.5 px-5 py-3">
+                <ListChecks className="h-5 w-5 text-slate-400" aria-hidden />
+                <div>
+                  <div className="text-xl font-semibold tabular-nums text-slate-900">{questions.length}</div>
+                  <div className="text-xs text-slate-500">câu hỏi</div>
+                </div>
               </div>
-              <div className={`${theme.soft} rounded-2xl border ${theme.border} py-4`}>
-                <div className="text-2xl">⏰</div>
-                <div className={`text-2xl font-extrabold ${theme.text}`}>{durationMinutes}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Phút</div>
+              <div className="flex items-center gap-2.5 px-5 py-3">
+                <Clock className="h-5 w-5 text-slate-400" aria-hidden />
+                <div>
+                  <div className="text-xl font-semibold tabular-nums text-slate-900">{durationMinutes}</div>
+                  <div className="text-xs text-slate-500">phút</div>
+                </div>
               </div>
             </div>
 
@@ -319,7 +327,7 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             ) : null}
 
             {questions.length > 0 && (
-              <div className="mb-6 space-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
+              <div className="mb-6 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-left">
                 {/* Chỉ CÀI ĐẶT giọng đọc, không có nút nghe: màn hình này chưa
                     hiện câu hỏi nào nên bấm nghe cả bài không để làm gì, mà
                     phần tự cuộn tới câu đang đọc cũng không có gì để cuộn.
@@ -378,12 +386,9 @@ export default function QuizClient({ initialQuestions, initialLesson }: Props) {
             <button
               onClick={start}
               disabled={questions.length === 0}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-lg px-10 py-4 rounded-2xl border-b-[6px] border-blue-800 active:translate-y-1 active:border-b-2 transition-all flex items-center justify-center gap-2 mx-auto"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base px-8 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <circle cx="12" cy="12" r="9" />
-              </svg>
+              <Play className="h-4 w-4 fill-current" aria-hidden />
               Bắt đầu làm bài
             </button>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown, Menu, X } from "lucide-react";
 import LogoMark from "@/components/LogoMark";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -63,29 +64,27 @@ export default function Header() {
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? "";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 rounded-xl px-1 py-0.5 transition-colors hover:bg-slate-50">
-          <LogoMark />
-          <div className="flex flex-col leading-none gap-0.5">
-            <span className="text-[17px] font-extrabold text-blue-700 tracking-tight leading-none">Ôn Tập</span>
-            <span className="text-[11px] font-bold text-orange-500 tracking-widest leading-none uppercase">Phổ Thông</span>
-          </div>
+        <Link href="/" className="flex items-center gap-2 rounded-md">
+          <LogoMark size={28} />
+          <span className="text-[15px] font-bold tracking-tight text-slate-900 whitespace-nowrap">
+            Ôn Tập <span className="text-blue-600">Phổ Thông</span>
+          </span>
         </Link>
 
         {/* Nav */}
-        <nav className="hidden lg:flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 p-1 text-sm font-medium">
+        <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
           {NAV.map(({ label, href }) => {
             const active = isActivePath(path, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 transition-all ${
-                  active
-                    ? "bg-white text-blue-700 font-semibold shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-600 hover:bg-white hover:text-blue-700"
+                aria-current={active ? "page" : undefined}
+                className={`whitespace-nowrap rounded-md px-3 py-1.5 transition-colors ${
+                  active ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {label}
@@ -101,32 +100,24 @@ export default function Header() {
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Mở menu"
             aria-expanded={mobileOpen}
-            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
           {user ? (
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-slate-100"
               >
-                <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                <span className="w-7 h-7 rounded-full bg-slate-900 text-white text-[11px] font-semibold flex items-center justify-center">
                   {initials}
                 </span>
-                <span className="hidden sm:block text-sm text-gray-700 max-w-[120px] truncate">
+                <span className="hidden sm:block text-sm text-slate-700 max-w-[120px] truncate">
                   {user.email}
                 </span>
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
               </button>
 
               {menuOpen && (
@@ -171,7 +162,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-200"
+              className="rounded-md bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
             >
               Đăng nhập
             </Link>
@@ -190,10 +181,8 @@ export default function Header() {
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                    active
-                      ? "bg-blue-50 text-blue-700 font-semibold"
-                      : "text-slate-700 hover:bg-slate-50 hover:text-blue-700"
+                  className={`rounded-md px-3 py-2.5 text-sm transition-colors ${
+                    active ? "bg-slate-100 text-slate-900 font-medium" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
                   {label}
