@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/de-thi`, lastModified, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/tao-de`, lastModified, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/phieu-bai-tap`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/phieu-bai-tap?loai=hang-ngay`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/phieu-bai-tap?loai=ai`, lastModified, changeFrequency: "monthly", priority: 0.7 },

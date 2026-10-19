@@ -25,6 +25,8 @@ export interface WorksheetOptions {
   topics: string[];       // tên các chủ đề
   grade: number;
   answers: AnswerMode;
+  /** Đề kiểm tra: in "Thời gian làm bài: N phút" dưới tiêu đề. */
+  minutes?: number;
   /** Chèn script gọi window.print() sau khi tải xong (dùng cho nút PDF). */
   autoPrint?: boolean;
 }
@@ -88,6 +90,7 @@ function versionHtml(v: WorksheetVersion, o: WorksheetOptions, first: boolean): 
   const header =
     `<div class="${first ? "" : "pb"}">` +
     `<h1>${escapeHtml(o.title.toUpperCase())}${v.label ? ` – ${escapeHtml(v.label.toUpperCase())}` : ""}</h1>` +
+    (o.minutes ? `<p class="meta">Thời gian làm bài: ${o.minutes} phút</p>` : "") +
     `<p class="meta">Chủ đề: ${escapeHtml(o.topics.join("; "))}</p>` +
     `<p class="who">Họ và tên: ………………………………………………… Lớp: ${o.grade}……</p>` +
     `</div>`;

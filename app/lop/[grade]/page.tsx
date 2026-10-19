@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, FileText, Gamepad2, Inbox, Plus } from "lucide-react";
+import { ChevronRight, FileText, Gamepad2, Inbox, Plus, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 import { gradeTheme } from "@/lib/gradeTheme";
+import { hasQuickExam } from "@/lib/quickExam";
 
 export async function generateMetadata({
   params,
@@ -149,6 +150,26 @@ export default async function GradePage({
             </span>
             <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-star-200">
               Chơi
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </span>
+          </Link>
+        )}
+
+        {/* Môn có đề tự sinh (lib/quickExam.ts): mời tạo đề giữa kì / cuối kì ngay. */}
+        {activeView === "exam" && activeSubject && hasQuickExam(gradeNum, activeSubject) && (
+          <Link
+            href={`/tao-de?lop=${gradeNum}&mon=${encodeURIComponent(activeSubject)}`}
+            className="group mb-6 flex items-center gap-3 rounded-2xl border border-primary-200 bg-gradient-to-r from-primary-50 to-white px-4 py-3 shadow-soft transition-all hover:border-primary-300 motion-safe:hover:-translate-y-0.5"
+          >
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white shadow-sm" aria-hidden>
+              <Sparkles className="h-6 w-6" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-extrabold text-slate-900">Tạo đề nhanh</span>
+              <span className="block text-sm text-slate-600">Đề giữa kì, cuối kì {activeSubject} lớp {gradeNum} mới mỗi lần bấm, có đáp án</span>
+            </span>
+            <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-primary-200">
+              Tạo đề
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </span>
           </Link>

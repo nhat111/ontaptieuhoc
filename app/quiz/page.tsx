@@ -2,13 +2,25 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import QuizClient from "@/components/quiz/QuizClient";
 import { getQuestionsFromDB, getLessonMetaFromDB } from "@/lib/db";
+import { buildQuickExamRows, cleanSeed, quickExamById, quickExamHref, rowToQuestion } from "@/lib/quickExam";
 
 interface Props {
-  searchParams: Promise<{ lessonId?: string }>;
+  searchParams: Promise<{ lessonId?: string; de?: string; seed?: string }>;
+}
+
+/** `?de=toan-3-cuoi-hk1&seed=abc` — đề tự sinh (lib/quickExam.ts), không có trong DB. */
+function quickExamOf(sp: { de?: string; seed?: string }) {
+  const spec = quickExamById(sp.de);
+  const seed = cleanSeed(sp.seed);
+  return spec && seed ? { spec, seed } : null;
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { lessonId: rawId } = await searchParams;
+  const sp = await searchParams;
+  const quick = quickExamOf(sp);
+  // Mỗi seed là một đề khác nhau, vô số URL — không cho vào chỉ mục.
+  if (quick) return { title: quick.spec.title, robots: { index: false, follow: true } };
+  const { lessonId: rawId } = sp;
   const lessonId = Number(rawId ?? "1");
 
   const [lesson, questions] = await Promise.all([
@@ -40,13 +52,22 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function QuizPage({ searchParams }: Props) {
-  const { lessonId: rawId } = await searchParams;
-  const lessonId = Number(rawId ?? "1");
+  const sp = await searchParams;
+  const quick = quickExamOf(sp);
+  const lessonId = Number(sp.lessonId ?? "1");
 
-  const [questions, lesson] = await Promise.all([
-    getQuestionsFromDB(lessonId),
-    getLessonMetaFromDB(lessonId),
-  ]);
+  const [questions, lesson] = quick
+    ? [
+        buildQuickExamRows(quick.spec, quick.seed).map((r, i) => rowToQuestion(r, i + 1)),
+        {
+          id: 0,
+          title: quick.spec.title,
+          grade: quick.spec.grade,
+          subjectName: quick.spec.subject,
+          durationMinutes: quick.spec.minutes,
+        },
+      ]
+    : await Promise.all([getQuestionsFromDB(lessonId), getLessonMetaFromDB(lessonId)]);
 
   return (
     <Suspense
@@ -56,7 +77,11 @@ export default async function QuizPage({ searchParams }: Props) {
         </div>
       }
     >
-      <QuizClient initialQuestions={questions} initialLesson={lesson} />
+      <QuizClient
+        initialQuestions={questions}
+        initialLesson={lesson}
+        quickExamHref={quick ? quickExamHref(quick.spec, quick.seed) : undefined}
+      />
     </Suspense>
   );
 }

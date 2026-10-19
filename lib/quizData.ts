@@ -43,6 +43,8 @@ export type QuizResult = {
   // it has no server props of its own, only this sessionStorage payload.
   grade?: number | null;
   subjectName?: string | null;
+  /** Đề tự sinh (/quiz?de=…&seed=…): link làm lại đúng đề đó; không có lessonId thật. */
+  retryHref?: string;
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Clock, FileText, ListChecks, Plus } from "lucide-react";
+import { ChevronRight, Clock, FileText, ListChecks, Plus, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { getAllExams, type ExamListItem } from "@/lib/db";
@@ -49,6 +49,14 @@ export default async function ExamListPage() {
               Kho đề luyện tập theo lớp · <span className="tabular-nums">{exams.length}</span> đề
             </p>
           </div>
+          <div className="flex flex-wrap gap-2">
+          <Link
+            href="/tao-de"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Tạo đề nhanh
+          </Link>
           <Link
             href="/import/exam"
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
@@ -56,6 +64,7 @@ export default async function ExamListPage() {
             <Plus className="h-4 w-4" aria-hidden />
             Tạo đề mới
           </Link>
+          </div>
         </div>
       </section>
 
