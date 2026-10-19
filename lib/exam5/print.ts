@@ -86,6 +86,12 @@ function itemHtml(it: PaperItem, label: string, o: PrintOptions): string {
       return head + `<table class="dt"><tr>${parts.map((p) => `<td>${p}</td>`).join("")}</tr>` +
         `<tr>${parts.map(() => `<td class="space">&nbsp;</td>`).join("")}</tr></table>`;
     }
+    if (it.work === "none") {
+      // Tính nhẩm, "Số?": điền ngay vào chỗ chấm, hai ý một hàng.
+      const trs: string[] = [];
+      for (let i = 0; i < parts.length; i += 2) trs.push(`<tr>${parts.slice(i, i + 2).map((p) => `<td>${p}</td>`).join("")}</tr>`);
+      return head + `<table class="inl"><colgroup><col width="50%"/><col width="50%"/></colgroup>${trs.join("")}</table>`;
+    }
     return head + parts.map((p) => `<p class="part">${p}</p>${lines(2)}`).join("");
   }
   const imgs = imagesOf(it).map((u) => img(u, o)).join("");
@@ -209,6 +215,8 @@ export function buildPaperHtml(p: ExamPaper, o: PrintOptions): string {
   .dt { width: 100%; margin: 4px 0 0 18px; }
   .dt td { width: 25%; vertical-align: top; padding: 2px 4px; }
   .dt td.space { height: 130px; }
+  .inl { width: 100%; margin: 4px 0 0 18px; }
+  .inl td { padding: 5px 4px; vertical-align: top; }
   .bg { margin: 6px 0 0; text-align: center; text-decoration: underline; font-weight: bold; }
   .line { margin: 8px 0 0 18px; color: #444; white-space: nowrap; overflow: hidden; }
   .img { margin: 6px 0 4px 18px; }

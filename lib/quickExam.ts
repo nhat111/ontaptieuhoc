@@ -2,20 +2,22 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 (lib/mathGen) và — theo cấu trúc
-// đề giấy thật, có hình vẽ — Toán, Tiếng Việt lớp 5 (lib/exam5). Mỗi đề là một "tờ đề"
-// (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 5, đều theo cấu
+// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet5.ts). Mỗi đề là
+// một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
 // mở lại đúng đề đó (server và trình duyệt trùng nhau).
 //
 // Phạm vi kiến thức mỗi kì lấy theo thứ tự chủ đề thường gặp trong SGK lớp 1–5
-// (chương trình GDPT 2018); mỗi kì là một danh sách id chủ đề trong MATH_LESSONS.
+// (chương trình GDPT 2018); mỗi kì là một danh sách id chủ đề trong MATH_LESSONS — dùng để
+// giới thiệu nội dung đề cho phụ huynh. Câu hỏi cụ thể do BLUEPRINTS của từng lớp quyết định.
 // Đổi/xoá id ở MATH_LESSONS thì sửa ở đây — scripts/quick-exam-check.ts báo id lạc.
 
-import { MATH_LESSONS, buildWorksheetQuestions, type GenQuestionRow, type MathLessonSpec } from "./mathGen";
+import { MATH_LESSONS, type GenQuestionRow, type MathLessonSpec } from "./mathGen";
 import type { Question, QImage } from "./quizData";
-import { paperRows, type ExamPaper, type PaperSection } from "./exam5/paper";
+import { paperRows, type ExamPaper } from "./exam5/paper";
 import { buildToan5 } from "./exam5/toan5";
+import { buildToan1to4, isSmallGrade, toanCount, toanMinutes } from "./exam5/toan1to4";
 import { buildTiengViet5, passagesFor } from "./exam5/tiengViet5";
 import { LTVC_BY_KIND, LTVC_TOPIC_NAMES } from "./exam5/tvContent";
 
@@ -39,7 +41,7 @@ export function examKindLabel(kind: ExamKind): string {
 /** Chủ đề (id trong MATH_LESSONS) của từng kì, theo lớp. Cuối kì gồm cả phần giữa kì. */
 export const MATH_SCOPE: Record<number, Record<ExamKind, string[]>> = {
   1: {
-    "giua-hk1": ["toan-1-cac-so-0-10"],
+    "giua-hk1": ["toan-1-cac-so-0-10", "toan-1-cong-tru-pv10"],
     "cuoi-hk1": ["toan-1-cac-so-0-10", "toan-1-cong-tru-pv10"],
     "giua-hk2": ["toan-1-so-den-100"],
     "cuoi-hk2": ["toan-1-so-den-100", "toan-1-cong-tru-pv100", "toan-1-thoi-gian"],
@@ -70,13 +72,6 @@ export const MATH_SCOPE: Record<number, Record<ExamKind, string[]>> = {
   },
 };
 
-/** Số câu và thời gian (lớp 1–4): giữa kì ngắn hơn cuối kì; lớp nhỏ làm ít câu hơn. */
-function sizeOf(grade: number, kind: ExamKind): { count: number; minutes: number } {
-  const final = kind.startsWith("cuoi");
-  if (grade <= 2) return final ? { count: 15, minutes: 35 } : { count: 10, minutes: 30 };
-  return final ? { count: 20, minutes: 40 } : { count: 15, minutes: 35 };
-}
-
 export interface QuickExamSpec {
   /** Khoá trong URL: "toan-3-cuoi-hk1", "tieng-viet-5-giua-hk2". */
   id: string;
@@ -93,31 +88,16 @@ export interface QuickExamSpec {
   paper: (seed: string) => ExamPaper;
 }
 
+/** Dòng cuối phần "Nội dung kiểm tra" của đề Toán lớp 1–4. */
+const FIGURE_NOTE: Record<1 | 2 | 3 | 4, string> = {
+  1: "Có câu hình vẽ (đếm hình, đo bằng thước, xem đồng hồ) và viết phép tính thích hợp như đề thật",
+  2: "Có câu hình vẽ (đồng hồ, đường gấp khúc, tiền, đếm hình), đặt tính và bài giải như đề thật",
+  3: "Có câu hình vẽ (hình tròn, chu vi – diện tích, đồng hồ, tiền), đặt tính và bài giải như đề thật",
+  4: "Có câu hình vẽ (góc, hình bình hành – hình thoi, biểu đồ cột, phân số), đặt tính và bài giải như đề thật",
+};
+
 const SUBJECT_SLUG: Record<string, string> = { "Toán": "toan", "Tiếng Việt": "tieng-viet" };
 const lowerFirst = (s: string) => s.replace(/^./, (c) => c.toLowerCase());
-
-/**
- * Lớp 1–4: câu tự sinh xếp thành tờ đề — trắc nghiệm trước (0,5 điểm/câu), tự luận sau,
- * chia đều phần điểm còn lại theo bậc 0,25 sao cho tổng đúng 10 điểm.
- */
-function paperFromRows(title: string, grade: number, kind: ExamKind, minutes: number, rows: GenQuestionRow[]): ExamPaper {
-  const mcq = rows.filter((r) => r.type === "mcq");
-  const open = rows.filter((r) => r.type !== "mcq");
-  const split = (total: number, n: number) => {
-    const each = Math.floor((total / n) * 4) / 4;
-    return Array.from({ length: n }, (_, i) => (i === n - 1 ? Math.round((total - each * (n - 1)) * 100) / 100 : each));
-  };
-  const mcqPts = open.length ? mcq.map(() => 0.5) : split(10, mcq.length);
-  const openPts = open.length ? split(10 - mcqPts.reduce((a, b) => a + b, 0), open.length) : [];
-  const wordProblem = (r: GenQuestionRow) => /Trả lời: ___ .+\.$/.test(r.content);
-  const sections: PaperSection[] = [];
-  if (mcq.length) sections.push({ title: "PHẦN I. TRẮC NGHIỆM", note: "Khoanh vào chữ đặt trước câu trả lời đúng.", label: "Câu", items: mcq.map((row, i) => ({ row, points: mcqPts[i] })) });
-  if (open.length) sections.push({
-    title: mcq.length ? "PHẦN II. TỰ LUẬN" : "TỰ LUẬN", label: "Bài",
-    items: open.map((row, i) => ({ row, points: openPts[i], ...(wordProblem(row) ? { work: "bai-giai" as const, lines: 4 } : {}) })),
-  });
-  return { title, subject: "Toán", grade, kindLabel: examKindLabel(kind), minutes, sections };
-}
 
 /** Đề tạo được cho (lớp, môn, kì); null khi môn đó chưa có bộ sinh câu hỏi. */
 export function getQuickExam(grade: number, subject: string, kind: ExamKind): QuickExamSpec | null {
@@ -155,13 +135,11 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
       paper: (seed) => buildToan5(kind, kindLabel, seed),
     };
   }
-  const { count, minutes } = sizeOf(grade, kind);
+  if (!isSmallGrade(grade)) return null;
   return {
-    ...base, scope: topics.map((t) => t.title), count, minutes,
-    paper: (seed) => {
-      const rows = buildWorksheetQuestions(topics, count, `de|${base.id}|${seed}`);
-      return paperFromRows(title, grade, kind, minutes, [...rows.filter((r) => r.type === "mcq"), ...rows.filter((r) => r.type !== "mcq")]);
-    },
+    ...base, scope: [...topics.map((t) => t.title), FIGURE_NOTE[grade]],
+    count: toanCount(grade, kind), minutes: toanMinutes(grade),
+    paper: (seed) => buildToan1to4(grade, kind, kindLabel, seed),
   };
 }
 

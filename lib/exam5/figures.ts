@@ -204,3 +204,220 @@ export function fanTrianglesSvg(k: number): string {
 }
 
 export const fanTriangleCount = (k: number) => ((k + 2) * (k + 1)) / 2;
+
+/* ═════════════ Hình cho đề lớp 1–4 ═════════════ */
+
+export type FlatShape = "tron" | "vuong" | "chunhat" | "tamgiac";
+
+/** Các hình phẳng rời nhau xếp thành hàng (lớp 1: "Hình bên có mấy hình tam giác?"). */
+export function flatShapesSvg(items: FlatShape[]): string {
+  const cols = Math.min(6, items.length), cell = 62;
+  const rows = Math.ceil(items.length / cols);
+  const body = items.map((s, i) => {
+    const cx = 16 + (i % cols) * cell + cell / 2, cy = 14 + Math.floor(i / cols) * cell + cell / 2;
+    switch (s) {
+      case "tron": return `<circle cx="${cx}" cy="${cy}" r="19" fill="none" stroke="${STROKE}" stroke-width="1.8"/>`;
+      case "vuong": return `<rect x="${cx - 18}" y="${cy - 18}" width="36" height="36" fill="none" stroke="${STROKE}" stroke-width="1.8"/>`;
+      case "chunhat": return `<rect x="${cx - 26}" y="${cy - 14}" width="52" height="28" fill="none" stroke="${STROKE}" stroke-width="1.8"/>`;
+      case "tamgiac": return poly([{ x: cx, y: cy - 20 }, { x: cx + 22, y: cy + 17 }, { x: cx - 22, y: cy + 17 }]);
+    }
+  }).join("");
+  return svg(32 + cols * cell, 28 + rows * cell, body);
+}
+
+/** Mặt đồng hồ đen trắng (đề in photo được): kim giờ ngắn, đậm; kim phút dài, mảnh. */
+export function clockFaceSvg(h: number, m: number): string {
+  const c = { x: 85, y: 85 }, R = 72;
+  const at = (deg: number, len: number) => {
+    const a = (deg * Math.PI) / 180;
+    return { x: c.x + len * Math.sin(a), y: c.y - len * Math.cos(a) };
+  };
+  let body = `<circle cx="${c.x}" cy="${c.y}" r="${R}" fill="none" stroke="${STROKE}" stroke-width="2.4"/>`;
+  for (let i = 0; i < 60; i++) {
+    const big = i % 5 === 0;
+    body += line(at(i * 6, R - (big ? 9 : 5)), at(i * 6, R), false, big ? 1.8 : 0.8);
+  }
+  for (let i = 1; i <= 12; i++) body += text(at(i * 30, R - 21), String(i), 15);
+  const hand = (cls: string, p: Pt, w: number) =>
+    `<line class="${cls}" x1="${c.x}" y1="${c.y}" x2="${fx(p.x)}" y2="${fx(p.y)}" stroke="${STROKE}" stroke-width="${w}" stroke-linecap="round"/>`;
+  body += hand("kim-gio", at(((h % 12) + m / 60) * 30, 36), 5) + hand("kim-phut", at(m * 6, 56), 2.4);
+  body += `<circle cx="${c.x}" cy="${c.y}" r="4" fill="${STROKE}"/>`;
+  return svg(170, 170, body);
+}
+
+/** Đo độ dài bằng thước: vật đặt sát vạch 0 của thước kẻ (đơn vị cm). */
+export const RULER_CM = 24;
+export function rulerSvg(len: number, what: string): string {
+  const x0 = 24, n = Math.max(len + 2, 8), W = x0 * 2 + n * RULER_CM;
+  let body = `<rect class="vat" x="${x0}" y="16" width="${len * RULER_CM}" height="22" rx="4" fill="#e5e5e5" stroke="${STROKE}" stroke-width="1.6"/>` +
+    text({ x: x0 + (len * RULER_CM) / 2, y: 27 }, what, 13) +
+    line({ x: x0 + len * RULER_CM, y: 38 }, { x: x0 + len * RULER_CM, y: 52 }, true, 1) +
+    `<rect x="${x0 - 10}" y="52" width="${n * RULER_CM + 20}" height="44" fill="none" stroke="${STROKE}" stroke-width="1.6"/>`;
+  for (let i = 0; i <= n * 2; i++) {
+    const x = x0 + (i * RULER_CM) / 2;
+    body += line({ x, y: 52 }, { x, y: 52 + (i % 2 ? 7 : 14) }, false, i % 2 ? 0.8 : 1.2);
+    if (i % 2 === 0) body += text({ x, y: 76 }, String(i / 2), 12);
+  }
+  body += text({ x: x0 + n * RULER_CM - 2, y: 89 }, "cm", 11, "end", true);
+  return svg(W, 108, body);
+}
+
+/** Đường gấp khúc ABCD… đi lên, đi xuống xen kẽ; số đo ghi cạnh từng đoạn. */
+export function polylineSvg(segs: { label: string; val: number }[]): string {
+  const lens = scale(segs.map((s) => s.val), 70, 130);
+  const ang = (34 * Math.PI) / 180;
+  const pts: Pt[] = [{ x: 0, y: 0 }];
+  lens.forEach((L, i) => {
+    const p = pts[i];
+    pts.push({ x: p.x + L * Math.cos(ang), y: p.y + (i % 2 === 0 ? -1 : 1) * L * Math.sin(ang) });
+  });
+  const minY = Math.min(...pts.map((p) => p.y)), maxY = Math.max(...pts.map((p) => p.y));
+  const P = pts.map((p) => ({ x: p.x + 40, y: p.y - minY + 34 }));
+  let body = `<polyline points="${P.map((p) => `${fx(p.x)},${fx(p.y)}`).join(" ")}" fill="none" stroke="${STROKE}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  P.forEach((p, i) => {
+    body += `<circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="2.5" fill="${STROKE}"/>`;
+    const top = i > 0 ? P[i - 1].y > p.y : P[1].y > p.y;
+    body += text({ x: p.x, y: p.y + (top ? -14 : 16) }, "ABCDEF"[i]);
+  });
+  segs.forEach((s, i) => {
+    const a = P[i], b = P[i + 1], mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const up = b.y < a.y;
+    body += text({ x: mid.x + (up ? -10 : 10), y: mid.y - 10 }, s.label, 14, up ? "end" : "start", true);
+  });
+  return svg(fx(P[P.length - 1].x + 50), fx(maxY - minY + 70), body);
+}
+
+/** Các tờ tiền (vẽ đơn giản: khung chữ nhật, mệnh giá ở giữa), tối đa 3 tờ một hàng. */
+export function moneySvg(notes: number[]): string {
+  const w = 128, h = 60, gap = 14, per = Math.min(3, notes.length);
+  const label = (v: number) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const body = notes.map((v, i) => {
+    const x = 12 + (i % per) * (w + gap), y = 12 + Math.floor(i / per) * (h + gap);
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#f2f2f2" stroke="${STROKE}" stroke-width="1.6"/>` +
+      `<rect x="${x + 5}" y="${y + 5}" width="${w - 10}" height="${h - 10}" rx="3" fill="none" stroke="${STROKE}" stroke-width="0.7"/>` +
+      `<text class="tien" x="${x + w / 2}" y="${y + h / 2}" font-size="17" font-weight="bold" text-anchor="middle" dominant-baseline="central" ${FONT}>${label(v)} đồng</text>`;
+  }).join("");
+  return svg(24 + per * w + (per - 1) * gap, 24 + Math.ceil(notes.length / per) * (h + gap) - gap, body);
+}
+
+/** `groups` cái đĩa, mỗi đĩa `per` chấm tròn (bảng nhân lớp 2). */
+export function groupsSvg(groups: number, per: number): string {
+  const R = 30, cell = 76;
+  const SPOTS: Record<number, [number, number][]> = {
+    1: [[0, 0]], 2: [[-9, 0], [9, 0]], 3: [[-10, 7], [10, 7], [0, -10]], 4: [[-9, -9], [9, -9], [-9, 9], [9, 9]],
+    5: [[-11, -11], [11, -11], [0, 0], [-11, 11], [11, 11]],
+  };
+  const body = Array.from({ length: groups }, (_, g) => {
+    const cx = 14 + g * cell + cell / 2, cy = 52;
+    return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${STROKE}" stroke-width="1.6"/>` +
+      SPOTS[per].map(([dx, dy]) => `<circle class="cham" cx="${cx + dx}" cy="${cy + dy}" r="5.5" fill="${STROKE}"/>`).join("");
+  }).join("");
+  return svg(28 + groups * cell, 104, body);
+}
+
+/** Hình chữ nhật (hoặc hình vuông) ABCD, số đo ghi ở cạnh DC và BC; góc vuông đánh dấu. */
+export function rectSvg(o: { l: string; w?: string; lVal: number; wVal: number }): string {
+  const [L, W] = o.lVal === o.wVal ? [130, 130] : scale([o.lVal, o.wVal], 60, 220);
+  const A = { x: 40, y: 30 }, B = { x: 40 + L, y: 30 }, C = { x: 40 + L, y: 30 + W }, D = { x: 40, y: 30 + W };
+  return svg(L + 120, W + 70,
+    poly([A, B, C, D]) +
+    rightAngle(A, { x: 1, y: 0 }, { x: 0, y: 1 }) + rightAngle(B, { x: -1, y: 0 }, { x: 0, y: 1 }) +
+    rightAngle(C, { x: -1, y: 0 }, { x: 0, y: -1 }) + rightAngle(D, { x: 1, y: 0 }, { x: 0, y: -1 }) +
+    text({ x: A.x - 12, y: A.y - 8 }, "A") + text({ x: B.x + 12, y: B.y - 8 }, "B") +
+    text({ x: C.x + 12, y: C.y + 8 }, "C") + text({ x: D.x - 12, y: D.y + 8 }, "D") +
+    text({ x: (D.x + C.x) / 2, y: D.y + 16 }, o.l, 14, "middle", true) +
+    (o.w ? text({ x: B.x + 8, y: (B.y + C.y) / 2 }, o.w, 14, "start", true) : ""),
+  );
+}
+
+/**
+ * Hình chữ nhật dài được chia bởi `k` đoạn thẳng đứng thành k + 1 ô (ô nào cũng dài hơn
+ * rộng, để không ai cãi "đó là hình vuông"). Số hình chữ nhật = (k + 1)(k + 2) / 2.
+ */
+export function stripRectsSvg(k: number): string {
+  const x0 = 24, y0 = 20, W = 90 * (k + 1), H = 56;
+  let body = poly([{ x: x0, y: y0 }, { x: x0 + W, y: y0 }, { x: x0 + W, y: y0 + H }, { x: x0, y: y0 + H }]);
+  for (let i = 1; i <= k; i++) body += line({ x: x0 + (W * i) / (k + 1), y: y0 }, { x: x0 + (W * i) / (k + 1), y: y0 + H });
+  return svg(W + 48, H + 40, body);
+}
+
+export const stripRectCount = (k: number) => ((k + 1) * (k + 2)) / 2;
+
+/** Góc đỉnh O, cạnh OA (nằm ngang) và OB, có cung nhỏ (góc vuông thì vẽ kí hiệu vuông). */
+export function angleSvg(deg: number): string {
+  const O = { x: 150, y: 120 }, L = 115;
+  const A = { x: O.x + L, y: O.y };
+  const a = (deg * Math.PI) / 180;
+  const B = { x: O.x + L * Math.cos(a), y: O.y - L * Math.sin(a) };
+  const r = 22, e = { x: O.x + r * Math.cos(a), y: O.y - r * Math.sin(a) };
+  const mark = deg === 90
+    ? rightAngle(O, { x: 1, y: 0 }, { x: 0, y: -1 }, 14)
+    : `<path d="M${O.x + r},${O.y} A${r},${r} 0 0 0 ${fx(e.x)},${fx(e.y)}" fill="none" stroke="${STROKE}" stroke-width="1.1"/>`;
+  return svg(300, deg > 90 ? 150 : 145,
+    line(O, A, false, 1.8) + line(O, B, false, 1.8) + mark +
+    text({ x: O.x, y: O.y + 16 }, "O") + text({ x: A.x + 12, y: A.y }, "A") +
+    text({ x: B.x + (deg > 100 ? -10 : 10), y: B.y - (deg === 180 ? -2 : 10) }, "B"),
+  );
+}
+
+export type QuadKind = "binhhanh" | "thoi" | "thang" | "tugiac" | "tamgiac" | "vuong" | "chunhat";
+
+/** Đỉnh các hình nhận dạng trong ô 110 × 100. Hình thoi có hai đường chéo khác nhau (không phải hình vuông xoay). */
+export const QUAD_POINTS: Record<QuadKind, [number, number][]> = {
+  binhhanh: [[32, 25], [104, 25], [78, 80], [6, 80]],
+  thoi: [[55, 8], [100, 50], [55, 92], [10, 50]],
+  thang: [[32, 28], [78, 28], [104, 82], [6, 82]],
+  tugiac: [[14, 36], [82, 14], [104, 86], [30, 74]],
+  tamgiac: [[55, 14], [102, 86], [8, 86]],
+  vuong: [[22, 20], [86, 20], [86, 84], [22, 84]],
+  chunhat: [[8, 30], [102, 30], [102, 78], [8, 78]],
+};
+
+/** Một hàng hình đánh số "Hình 1", "Hình 2"… để hỏi "hình nào là hình bình hành?". */
+export function shapesRowSvg(kinds: QuadKind[]): string {
+  const cell = 128;
+  const body = kinds.map((k, i) => {
+    const ox = 14 + i * cell, oy = 12;
+    return poly(QUAD_POINTS[k].map(([x, y]) => ({ x: ox + x, y: oy + y }))) + text({ x: ox + 55, y: oy + 112 }, `Hình ${i + 1}`, 14);
+  }).join("");
+  return svg(28 + kinds.length * cell, 140, body);
+}
+
+/** Biểu đồ cột: số liệu ghi trên đầu mỗi cột (chữ đậm), trục đứng chia vạch theo `step`. */
+export function barChartSvg(o: { title: string; labels: string[]; values: number[]; unit: string; step: number }): string {
+  const top = Math.ceil(Math.max(...o.values) / o.step) * o.step;
+  const x0 = 56, y0 = 200, H = 150, bw = 44, gap = 30;
+  const y = (v: number) => y0 - (v / top) * H;
+  let body = text({ x: x0 + (o.labels.length * (bw + gap)) / 2, y: 16 }, o.title, 14);
+  for (let v = 0; v <= top; v += o.step) {
+    body += line({ x: x0, y: y(v) }, { x: x0 + o.labels.length * (bw + gap) + 10, y: y(v) }, v !== 0, v === 0 ? 1.6 : 0.6) +
+      text({ x: x0 - 6, y: y(v) }, String(v), 11, "end");
+  }
+  body += line({ x: x0, y: y0 }, { x: x0, y: y0 - H - 14 }, false, 1.6) + text({ x: x0 - 6, y: y0 - H - 24 }, o.unit, 11, "middle", true);
+  o.values.forEach((v, i) => {
+    const bx = x0 + gap / 2 + i * (bw + gap) + 6;
+    body += `<rect x="${fx(bx)}" y="${fx(y(v))}" width="${bw}" height="${fx(y0 - y(v))}" fill="#cfcfcf" stroke="${STROKE}" stroke-width="1.2"/>` +
+      `<text x="${fx(bx + bw / 2)}" y="${fx(y(v) - 9)}" font-size="13" font-weight="bold" text-anchor="middle" dominant-baseline="central" ${FONT}>${v}</text>` +
+      text({ x: bx + bw / 2, y: y0 + 15 }, o.labels[i], 13);
+  });
+  return svg(x0 + o.labels.length * (bw + gap) + 30, y0 + 32, body);
+}
+
+/** Hình chữ nhật chia `d` phần bằng nhau (hoặc hình tròn chia `d` phần), tô các phần `shaded`. */
+export function fractionSvg(d: number, shaded: number[], kind: "rect" | "circle"): string {
+  const SHADE = "#bdbdbd";
+  const on = new Set(shaded);
+  if (kind === "rect") {
+    const w = Math.min(60, 300 / d), H = 60, x0 = 20, y0 = 16;
+    const body = Array.from({ length: d }, (_, i) =>
+      `<rect x="${fx(x0 + i * w)}" y="${y0}" width="${fx(w)}" height="${H}" fill="${on.has(i) ? SHADE : "#fff"}" stroke="${STROKE}" stroke-width="1.6"/>`).join("");
+    return svg(fx(x0 * 2 + d * w), H + 32, body);
+  }
+  const c = { x: 80, y: 80 }, R = 64;
+  const body = Array.from({ length: d }, (_, i) => {
+    const a0 = (i / d) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / d) * 2 * Math.PI - Math.PI / 2;
+    const p0 = { x: c.x + R * Math.cos(a0), y: c.y + R * Math.sin(a0) }, p1 = { x: c.x + R * Math.cos(a1), y: c.y + R * Math.sin(a1) };
+    return `<path d="M${c.x},${c.y} L${fx(p0.x)},${fx(p0.y)} A${R},${R} 0 0 1 ${fx(p1.x)},${fx(p1.y)} Z" fill="${on.has(i) ? SHADE : "#fff"}" stroke="${STROKE}" stroke-width="1.6"/>`;
+  }).join("");
+  return svg(160, 160, body);
+}
