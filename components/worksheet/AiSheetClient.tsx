@@ -1,5 +1,6 @@
 "use client";
 
+import { Printer } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { AI_GRADES, aiGrade, buildAiSheetHtml } from "@/lib/aiSheets";
@@ -31,14 +32,14 @@ export default function AiSheetClient() {
   }
 
   const chip = (active: boolean, disabled = false) =>
-    `rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors ${
+    `min-h-10 rounded-xl border-2 px-4 py-1.5 text-sm font-bold transition-colors ${
       disabled ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
-        : active ? "bg-indigo-600 border-transparent text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+        : active ? "border-primary-500 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600 hover:border-primary-200"
     }`;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-7 space-y-5">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-5 sm:p-7 space-y-5">
         <p className="text-sm text-gray-600">
           Phiếu cho <b>12 tiết AI cốt lõi</b> theo Quyết định 2422/QĐ-BGDĐT. Mỗi phiếu một tiết, làm trên giấy,
           không cần máy tính; trang dành cho thầy cô có mục tiêu, tiến trình 35 phút và đáp án.
@@ -89,7 +90,8 @@ export default function AiSheetClient() {
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button onClick={openPdf} disabled={sheets.length === 0}
-            className="rounded-2xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-gray-900 shadow hover:bg-yellow-300 disabled:opacity-40">
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2 disabled:pointer-events-none disabled:opacity-40">
+            <Printer className="h-5 w-5" aria-hidden />
             In / lưu PDF {sheets.length > 0 ? `(${sheets.length} phiếu)` : ""}
           </button>
         </div>
@@ -98,7 +100,7 @@ export default function AiSheetClient() {
         </p>
       </div>
 
-      <div className="mt-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-3 sm:p-5">
+      <div className="mt-6 bg-white rounded-3xl border border-slate-200 shadow-soft p-3 sm:p-5">
         <div className="flex flex-wrap items-center gap-2 px-2 pb-3">
           <h2 className="font-extrabold text-gray-800 mr-2">Xem trước</h2>
           <select value={previewNo} onChange={(e) => setPreviewNo(Number(e.target.value))}

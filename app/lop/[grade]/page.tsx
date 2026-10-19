@@ -117,13 +117,13 @@ export default async function GradePage({
         {/* Tiêu đề: ô số lớp tô màu lớp, phần còn lại trung tính */}
         <div className="mb-6 flex items-center gap-4">
           <span
-            className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl ${theme.soft} ${theme.text} text-3xl font-bold tabular-nums`}
+            className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border-b-4 ${theme.edge} ${theme.soft} ${theme.text} text-4xl font-black tabular-nums`}
             aria-hidden
           >
             {grade}
           </span>
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {activeView === "exam" ? "Đề kiểm tra" : "Bài tập"} {activeSubject ?? "Toán"}
               <span className="text-slate-400 font-medium"> · Lớp {grade}</span>
             </h1>
@@ -138,16 +138,16 @@ export default async function GradePage({
         {GAME_BLURB[gradeNum] && (
           <Link
             href={`/lop/${gradeNum}/tro-choi`}
-            className="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 mb-6 hover:border-slate-300 transition-colors"
+            className="group mb-6 flex items-center gap-3 rounded-2xl border border-star-200 bg-gradient-to-r from-star-50 to-white px-4 py-3 shadow-soft transition-all hover:border-star-300 motion-safe:hover:-translate-y-0.5"
           >
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600" aria-hidden>
-              <Gamepad2 className="h-5 w-5" />
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-star-400 text-white shadow-sm" aria-hidden>
+              <Gamepad2 className="h-6 w-6" />
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold text-slate-900">Vừa học vừa chơi</span>
-              <span className="block text-sm text-slate-500 truncate">{GAME_BLURB[gradeNum]}</span>
+              <span className="block text-sm font-extrabold text-slate-900">Vừa học vừa chơi</span>
+              <span className="block text-sm text-slate-600 truncate">{GAME_BLURB[gradeNum]}</span>
             </span>
-            <span className="inline-flex items-center gap-0.5 text-sm font-medium text-blue-600">
+            <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-star-200">
               Chơi
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </span>
@@ -155,7 +155,7 @@ export default async function GradePage({
         )}
 
         {/* Bài tập / Đề kiểm tra: nút chuyển dạng segmented */}
-        <div className="inline-flex mb-6 rounded-lg bg-slate-200/70 p-1">
+        <div className="inline-flex mb-6 rounded-xl bg-slate-200/70 p-1">
           {[
             { key: "baitap", label: "Bài tập", href: `/lop/${grade}${subjectParam ? `?subject=${encodeURIComponent(subjectParam)}` : ""}` },
             { key: "exam", label: "Đề kiểm tra", href: `/lop/${grade}?${subjectParam ? `subject=${encodeURIComponent(subjectParam)}&` : ""}view=exam` },
@@ -164,8 +164,8 @@ export default async function GradePage({
               key={t.key}
               href={t.href}
               aria-current={activeView === t.key ? "page" : undefined}
-              className={`text-sm font-medium px-4 py-1.5 rounded-md transition-colors ${
-                activeView === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+              className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors ${
+                activeView === t.key ? "bg-white text-primary-700 shadow-sm" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               {t.label}
@@ -178,7 +178,7 @@ export default async function GradePage({
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
             {chapters.length === 0 ? (
-              <div className="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center">
+              <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
                 <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
                   {activeView === "exam" ? <FileText className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
                 </span>

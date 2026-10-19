@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Link from "next/link";
+import { FileText, Pencil, Printer } from "lucide-react";
 import WorksheetClient from "@/components/worksheet/WorksheetClient";
 import DailySheetClient from "@/components/worksheet/DailySheetClient";
 import AiSheetClient from "@/components/worksheet/AiSheetClient";
@@ -48,25 +49,36 @@ const TABS = [
 export default async function WorksheetPage({ searchParams }: { searchParams: Promise<{ loai?: string }> }) {
   const tab = tabOf((await searchParams).loai);
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header />
-      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="max-w-3xl mx-auto px-4 pt-10 pb-6 text-center">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight">Phiếu bài tập in được</h1>
-          <p className="text-sm text-blue-100 sm:text-base">
+      {/* Nền pastel kẻ ô như giấy học sinh, thêm bút chì và tờ giấy mờ — không còn khối xanh đậm. */}
+      <section className="relative overflow-hidden border-b border-primary-100 bg-gradient-to-br from-sky-50 via-primary-50 to-star-50">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(#dbeafe_1px,transparent_1px),linear-gradient(90deg,#dbeafe_1px,transparent_1px)] [background-size:24px_24px]"
+          aria-hidden
+        />
+        <Pencil className="pointer-events-none absolute -left-4 top-6 h-28 w-28 -rotate-12 text-star-300/50 sm:left-8" aria-hidden />
+        <FileText className="pointer-events-none absolute -right-6 bottom-2 h-32 w-32 rotate-12 text-primary-200/70 sm:right-10" aria-hidden />
+        <div className="relative max-w-3xl mx-auto px-4 pt-10 pb-6 text-center">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-soft ring-1 ring-primary-100" aria-hidden>
+            <Printer className="h-6 w-6" />
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-black mb-2 tracking-tight text-slate-900">Phiếu bài tập in được</h1>
+          <p className="text-sm text-slate-600 sm:text-base">
             Chọn loại phiếu, bấm tạo phiếu rồi tải Word hoặc in PDF cho bé làm trên giấy.
           </p>
-          <div className="mt-6 grid grid-cols-3 gap-1 sm:gap-2 rounded-2xl bg-white/10 p-1">
+          <div className="mt-6 grid grid-cols-3 gap-1 sm:gap-2 rounded-2xl bg-white/80 p-1.5 shadow-soft ring-1 ring-primary-100 backdrop-blur">
             {TABS.map((t) => (
               <Link
                 key={t.key}
                 href={META[t.key].url}
+                aria-current={tab === t.key ? "page" : undefined}
                 className={`rounded-xl px-2 sm:px-3 py-2 text-left sm:text-center transition-colors ${
-                  tab === t.key ? "bg-white text-blue-700" : "text-white hover:bg-white/10"
+                  tab === t.key ? "bg-primary-600 text-white shadow-sm" : "text-slate-700 hover:bg-primary-50"
                 }`}
               >
-                <span className="block text-sm font-bold">{t.label}</span>
-                <span className={`block text-[11px] ${tab === t.key ? "text-blue-500" : "text-blue-100"}`}>{t.sub}</span>
+                <span className="block text-sm font-extrabold">{t.label}</span>
+                <span className={`block text-[11px] ${tab === t.key ? "text-primary-100" : "text-slate-500"}`}>{t.sub}</span>
               </Link>
             ))}
           </div>

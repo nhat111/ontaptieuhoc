@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
 
 const config: Config = {
   content: [
@@ -11,8 +12,35 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // Biến CSS do next/font đặt ở app/layout.tsx.
-        sans: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],
+        // Biến CSS do next/font đặt ở app/layout.tsx (Nunito: nét bo tròn, đủ dấu tiếng Việt).
+        sans: ["var(--font-nunito)", "system-ui", "sans-serif"],
+      },
+      // Design system (xem .claude/ai-context/ui-rules.md): tên theo vai trò, không theo màu.
+      colors: {
+        /** Xanh chàm thân thiện: nút chính, liên kết, ô đang chọn. */
+        primary: colors.indigo,
+        /** Vàng rực: sao, điểm thưởng, huy chương. */
+        star: colors.amber,
+        /** Xanh ngọc: câu đúng, hoàn thành. */
+        success: colors.emerald,
+        /** Coral dịu mắt — thay cho đỏ gắt (lớp 1, môn Toán lớp 1). */
+        coral: {
+          50: "#fff5f2",
+          100: "#ffe7e0",
+          200: "#ffcfc1",
+          300: "#ffad97",
+          400: "#fb8a6e",
+          500: "#f26d50",
+          600: "#d9533a",
+          700: "#b4412d",
+          800: "#913628",
+          900: "#772f25",
+        },
+      },
+      boxShadow: {
+        /** Bóng mềm cho thẻ nổi (thẻ lớp, thẻ trò chơi, khung làm thử). */
+        soft: "0 1px 2px rgba(30, 41, 59, 0.04), 0 8px 24px -12px rgba(30, 41, 59, 0.18)",
+        pop: "0 2px 4px rgba(30, 41, 59, 0.06), 0 16px 32px -14px rgba(79, 70, 229, 0.35)",
       },
       // Lắc nhẹ khi bé chọn sai (components/games/GameShell.tsx).
       // Hiệu ứng "2.5D" của trò chơi lớp 1 — chỉ CSS, không thư viện.
@@ -57,6 +85,13 @@ const config: Config = {
           "40%": { transform: "scale(1)", opacity: "1" },
           "100%": { transform: "scale(0.9)", opacity: "0.9" },
         },
+        // Bật nhẹ khi chọn đúng (khung "Làm thử một câu").
+        boing: {
+          "0%": { transform: "scale(1)" },
+          "35%": { transform: "scale(1.12)" },
+          "65%": { transform: "scale(0.96)" },
+          "100%": { transform: "scale(1)" },
+        },
         sway: {
           "0%, 100%": { transform: "translateX(-6px) rotate(-3deg)" },
           "50%": { transform: "translateX(6px) rotate(3deg)" },
@@ -73,6 +108,7 @@ const config: Config = {
         spinout: "spinout 0.6s ease-in-out",
         zoomin: "zoomin 0.9s ease-out both",
         sway: "sway 2.4s ease-in-out infinite",
+        boing: "boing 0.45s ease-out",
       },
     },
   },

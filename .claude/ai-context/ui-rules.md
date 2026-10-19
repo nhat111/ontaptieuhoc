@@ -1,26 +1,23 @@
 # UI Rules
 
 ## Design
-- Minimal, clean, educational — mobile-first
-- **Icon: Lucide (`lucide-react`), không dùng emoji làm biểu tượng** ở phần khung (header, trang chủ, trang lớp, trò chơi hub, đề thi, hướng dẫn, kết quả). Icon nét 2px, thường đặt trong ô `rounded-lg` 40–44px nền nhạt. Emoji chỉ còn trong *nội dung* trò chơi của bé (hình để đếm, con vật…).
-- Thẻ phẳng: `bg-white border border-slate-200 rounded-xl`, không `shadow-lg`, không gradient, không viền đáy dày kiểu nút 3D (cái đó chỉ còn trong trò chơi). Hover: `hover:border-slate-300`.
-- Nút chính `rounded-lg bg-blue-600 hover:bg-blue-700`; nút phụ viền `border-slate-300`; "Đăng nhập" `bg-slate-900`. Chuyển chế độ (Bài tập/Đề kiểm tra, chọn lớp trò chơi) dùng segmented `bg-slate-200/70 p-1`, ô đang chọn `bg-white shadow-sm`.
+- Tươi sáng, thân thiện, gamified nhẹ (kiểu Duolingo / Khan Academy Kids) — đối tượng chính là bé lớp 1–5 và phụ huynh. Mobile-first.
+- **Icon: Lucide (`lucide-react`), không dùng emoji làm biểu tượng** ở phần khung. Hình minh hoạ là SVG nội tuyến (`HeroArt`, `GameArt`, `CuteAvatar`), không tải ảnh, không thư viện 3D.
+- Thẻ: `bg-white rounded-2xl shadow-soft` (viền `border-slate-200` hoặc trắng), hover `shadow-pop` + nhấc nhẹ `motion-safe:hover:-translate-y-1`. Gradient chỉ dạng pastel nhạt (hero, banner phiếu, đầu bảng xếp hạng) — không khối màu đậm gắt.
+- Nút chính: `rounded-2xl bg-primary-600 border-b-4 border-primary-800 font-extrabold`, bấm thì lún (`active:border-b-2`); nút phụ `border-2 border-slate-200` hoặc `border-primary-200`. Ô chọn (chip): `border-2`, đang chọn `border-primary-500 bg-primary-50 text-primary-700`. Thẻ checkbox (chủ đề phiếu): cả thẻ bấm được, có icon, chọn thì viền primary + dấu tích.
+- Phản hồi đúng/sai: đúng `success-*` + `animate-boing`/`Burst`; sai rung nhẹ `animate-shake` + tông `coral` dịu, không đỏ gắt.
 - Toàn bộ copy user-facing: **tiếng Việt**
 
-## Color system
-- Primary: `blue-600` / `indigo-600` (logo, CTA đăng nhập)
-- Per-grade accents — chỉ là điểm nhấn (ô số lớp, tab môn đang chọn, thanh tiến độ); không tô cả thẻ/dải theo màu lớp, không emoji cho lớp (hiện chính số lớp):
-  - Lớp 1: rose/red
-  - Lớp 2: orange
-  - Lớp 3: emerald/green
-  - Lớp 4: blue
-  - Lớp 5: violet/purple
-- `/de-thi` dùng `GRADE_COLOR` map tương tự
-- Màu theo lớp dùng chung ở `lib/gradeTheme.ts` (`gradeTheme(grade)` → solid/soft/border/text): tab môn, nút Bài tập/Đề kiểm tra, số thứ tự bài, thanh tiến độ, dải tiêu đề trang lớp, màn bắt đầu làm bài. Class phải viết nguyên văn trong file đó — `tailwind.config.ts` có quét `./lib/**` nên Tailwind mới sinh CSS cho chúng.
+## Color system (tailwind.config.ts)
+- `primary` = indigo (nút chính, liên kết, ô đang chọn) · `star` = amber #F59E0B (sao, điểm, huy chương) · `success` = emerald #10B981 (đúng, hoàn thành) · `coral` (đỏ dịu, thay rose cho lớp 1 / nhấn ấm).
+- Per-grade accents — chỉ là điểm nhấn (ô số lớp, tab môn đang chọn dạng nền nhạt + chữ màu lớp, số thứ tự bài); không tô cả thẻ theo màu lớp:
+  - Lớp 1: coral · Lớp 2: orange · Lớp 3: emerald · Lớp 4: blue · Lớp 5: violet
+- Màu theo lớp dùng chung ở `lib/gradeTheme.ts` (`gradeTheme(grade)` → solid/soft/border/text/edge). Class phải viết nguyên văn trong file đó — `tailwind.config.ts` có quét `./lib/**`.
+- Thanh tiến độ chương: `bg-success-500`, hiện số "x/y bài".
 
 ## Layout
 - Page bg: `bg-slate-50`; hero/đầu trang `bg-white border-b border-slate-200`
-- Cards: `bg-white border border-slate-200 rounded-xl`
+- Cards: `bg-white border border-slate-200 rounded-2xl shadow-soft`
 - Content width: `max-w-6xl mx-auto px-4`
 - Touch targets ≥ ~44px cho nút chính
 
@@ -30,7 +27,7 @@
 - Trong DB giữ LaTeX raw — render ở consumer
 
 ## Typography
-- Tiêu đề trang: `text-2xl`–`text-3xl font-bold tracking-tight text-slate-900`
+- Font Nunito (bo tròn), body `leading-relaxed`. Tiêu đề trang: `text-3xl`–`text-4xl font-black tracking-tight text-slate-900`
 - Breadcrumb: `text-xs text-slate-400` + `ChevronRight` (Lucide)
 - Badge: `rounded-full px-4 py-1.5 text-sm font-semibold`
 
