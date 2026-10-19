@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import QuizClient from "@/components/quiz/QuizClient";
 import { getQuestionsFromDB, getLessonMetaFromDB } from "@/lib/db";
-import { buildQuickExamRows, cleanSeed, quickExamById, quickExamHref, rowToQuestion } from "@/lib/quickExam";
+import { cleanSeed, quickExamById, quickExamHref, rowToQuestion } from "@/lib/quickExam";
+import { paperRows } from "@/lib/exam5/paper";
 
 interface Props {
   searchParams: Promise<{ lessonId?: string; de?: string; seed?: string }>;
@@ -56,10 +57,12 @@ export default async function QuizPage({ searchParams }: Props) {
   const quick = quickExamOf(sp);
   const lessonId = Number(sp.lessonId ?? "1");
 
-  const [questions, lesson] = quick
+  const paper = quick ? quick.spec.paper(quick.seed) : null;
+  const [questions, lesson] = quick && paper
     ? [
-        buildQuickExamRows(quick.spec, quick.seed).map((r, i) => rowToQuestion(r, i + 1)),
+        paperRows(paper).map((r, i) => rowToQuestion(r, i + 1)),
         {
+          reading: paper.reading ? { title: paper.reading.title, text: paper.reading.text } : undefined,
           id: 0,
           title: quick.spec.title,
           grade: quick.spec.grade,

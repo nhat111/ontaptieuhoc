@@ -69,7 +69,8 @@ const STEPS: GuideStep[] = [
     title: "Tạo đề giữa kì, cuối kì",
     points: [
       <>Vào <b>Tạo đề nhanh</b>, chọn lớp, loại đề (<b>Giữa học kì I</b>, <b>Cuối học kì I</b>, <b>Giữa học kì II</b>, <b>Cuối học kì II</b>) và môn, rồi bấm <b>Tạo đề</b>.</>,
-      <>Hiện máy tạo được đề <b>Toán lớp 1–5</b>; môn khác ghi <b>Sắp có</b> và có nút xem các đề đã soạn sẵn của môn đó.</>,
+      <>Hiện máy tạo được đề <b>Toán lớp 1–5</b> và <b>Tiếng Việt lớp 5</b>; môn khác ghi <b>Sắp có</b> và có nút xem các đề đã soạn sẵn của môn đó.</>,
+      <>Đề <b>lớp 5</b> theo cấu trúc đề giấy: Toán có câu hình vẽ, đặt tính, tìm x, bài toán có lời văn; Tiếng Việt có bài đọc hiểu, luyện từ và câu và đề tập làm văn. Bản in có ô Điểm – Nhận xét, điểm từng câu và hướng dẫn chấm ở trang cuối. Câu viết câu, viết đoạn và bài tập làm văn chấm trên giấy, không chấm trên máy.</>,
       <>Có đề rồi: bấm <b>Làm bài trên máy</b> để bé làm và được chấm ngay, hoặc <b>In / lưu PDF</b>, <b>Tải Word (.doc)</b> để làm trên giấy. Bấm <b>Đổi đề khác</b> để ra đề mới.</>,
       <>Bấm <b>Xem đề và đáp án (dành cho phụ huynh)</b> để xem đáp án ngay trên trang. Đề tạo nhanh không được lưu vào tiến độ học tập.</>,
     ],

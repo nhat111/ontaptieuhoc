@@ -5,6 +5,7 @@ import Link from "next/link";
 import { QuizResult, scoreAnswer } from "@/lib/quizData";
 import Header from "@/components/Header";
 import ResultSummary from "@/components/result/ResultSummary";
+import ReadingCard from "@/components/quiz/ReadingCard";
 import ResultItem from "@/components/result/ResultItem";
 import { createClient } from "@/lib/supabase/client";
 import { readAloudEnabled } from "@/lib/readAloud";
@@ -34,7 +35,7 @@ export default function ResultPage() {
     );
   }
 
-  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref } = result;
+  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, reading } = result;
   // Đề tự sinh ("Tạo đề nhanh") không nằm trong DB: làm lại bằng chính link của nó,
   // quay về trang tạo đề thay vì danh sách bài, và không mời đăng nhập để "lưu tiến độ".
   const quick = !!retryHref;
@@ -98,6 +99,11 @@ export default function ResultPage() {
           total={questions.length}
         />
 
+        {reading && (
+          <div className="mb-5">
+            <ReadingCard reading={reading} defaultOpen={false} />
+          </div>
+        )}
         <h2 className="text-base font-bold text-gray-700 mb-3">Chi tiết từng câu</h2>
         <div className="space-y-3 mb-8">
           {questions.map((q, i) => (

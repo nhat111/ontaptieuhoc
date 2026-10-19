@@ -32,7 +32,11 @@ export type LessonMeta = {
   grade?: number | null;
   subjectName?: string | null;
   durationMinutes?: number;
+  /** Bài đọc chung cho các câu hỏi (đề Tiếng Việt: phần đọc hiểu). */
+  reading?: Reading;
 };
+
+export type Reading = { title: string; text: string };
 
 export type QuizResult = {
   questions: Question[];
@@ -45,6 +49,7 @@ export type QuizResult = {
   subjectName?: string | null;
   /** Đề tự sinh (/quiz?de=…&seed=…): link làm lại đúng đề đó; không có lessonId thật. */
   retryHref?: string;
+  reading?: Reading;
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;
