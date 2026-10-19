@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 import LessonItem, { Lesson } from "./LessonItem";
 import { gradeTheme } from "@/lib/gradeTheme";
 
@@ -30,36 +31,35 @@ export default function ChapterItem({
   }, [chapter.lessons]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left gap-4"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-left gap-4"
       >
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-gray-800 truncate">{chapter.title}</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h3 className="text-sm font-semibold text-slate-900 truncate">{chapter.title}</h3>
+          <p className="text-xs text-slate-400 mt-0.5">
             {chapter.lessons.length} {viewType === "exam" ? "đề" : "bài học"} · {chapter.questionCount} câu hỏi
           </p>
-          <div className="mt-2 h-1.5 bg-gray-100 rounded-full w-48 max-w-full">
+          <div className="mt-2.5 h-1 bg-slate-100 rounded-full w-48 max-w-full">
             <div
-              className={`h-1.5 ${theme.solid} rounded-full transition-all`}
+              className={`h-1 ${theme.solid} rounded-full transition-all`}
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-gray-400 font-medium">{completed}/{chapter.lessons.length}</span>
-          <span className={`text-gray-400 transition-transform duration-200 text-lg ${open ? "rotate-180" : ""}`}>
-            ▾
-          </span>
+          <span className="text-xs text-slate-400 font-medium tabular-nums">{completed}/{chapter.lessons.length}</span>
+          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden />
         </div>
       </button>
 
       {/* Lessons */}
       {open && (
-        <div className="px-4 pt-3 pb-2 border-t border-gray-50">
+        <div className="px-4 pt-3 pb-2 border-t border-slate-100">
           {chapter.lessons.map((lesson, i) => (
             <LessonItem
               key={lesson.id}

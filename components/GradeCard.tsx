@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { gradeTheme } from "@/lib/gradeTheme";
 
 interface GradeCardProps {
@@ -9,9 +10,8 @@ interface GradeCardProps {
 }
 
 /**
- * Thẻ chọn lớp ở trang chủ. Màu, biểu tượng lấy từ lib/gradeTheme.ts để đồng
- * bộ với trang lớp. Điện thoại: một hàng ngang (các thẻ xếp dọc gọn gàng, không
- * lệch cột); màn rộng: thẻ đứng, mỗi cấp học một hàng (trang chủ chia cột).
+ * Thẻ chọn lớp ở trang chủ: ô số lớp tô màu nhẹ theo lib/gradeTheme.ts (đồng bộ
+ * với trang lớp), còn lại trung tính. Điện thoại: một hàng ngang; màn rộng: thẻ đứng.
  */
 export default function GradeCard({ grade, subjects, stats }: GradeCardProps) {
   const theme = gradeTheme(grade);
@@ -23,27 +23,25 @@ export default function GradeCard({ grade, subjects, stats }: GradeCardProps) {
   return (
     <Link
       href={`/lop/${grade}`}
-      className={`group flex items-center gap-4 rounded-3xl border-2 border-b-[6px] ${theme.border} ${theme.edge} bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:border-b-2 lg:flex-col lg:items-stretch lg:gap-3 lg:p-5`}
+      className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 lg:flex-col lg:items-stretch lg:gap-4 lg:p-5"
     >
       <span
-        className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ${theme.soft} text-3xl transition-transform group-hover:scale-110 lg:h-16 lg:w-16 lg:text-4xl`}
+        className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg ${theme.soft} ${theme.text} text-2xl font-bold tabular-nums`}
         aria-hidden
       >
-        {theme.emoji}
+        {grade}
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className={`block text-2xl font-extrabold leading-tight ${theme.text}`}>Lớp {grade}</span>
-        <span className={`mt-0.5 block text-sm font-semibold ${hasContent ? "text-slate-700" : "text-slate-400"}`}>
-          {counts}
-        </span>
-        <span className="mt-0.5 block truncate text-xs text-slate-400">{subjects.join(" · ")}</span>
+        <span className="block text-base font-semibold text-slate-900">Lớp {grade}</span>
+        <span className={`mt-0.5 block text-sm ${hasContent ? "text-slate-600" : "text-slate-400"}`}>{counts}</span>
+        <span className="mt-1 block truncate text-xs text-slate-400">{subjects.join(" · ")}</span>
       </span>
 
-      {/* Mũi tên ở hàng ngang (điện thoại), nút "Vào học" ở thẻ đứng (màn rộng) */}
-      <span className={`text-2xl font-bold ${theme.text} lg:hidden`} aria-hidden>›</span>
-      <span className={`hidden rounded-xl ${theme.solid} py-2 text-center text-sm font-bold text-white lg:block`}>
-        Vào học →
+      <ChevronRight className="h-5 w-5 flex-shrink-0 text-slate-300 transition-colors group-hover:text-slate-500 lg:hidden" aria-hidden />
+      <span className="hidden items-center gap-1 text-sm font-medium text-blue-600 lg:inline-flex">
+        Vào học
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
       </span>
     </Link>
   );

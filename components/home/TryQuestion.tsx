@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Burst, Mascot, type Mood } from "@/components/games/Fx";
+import { ArrowRight, Check, RotateCw, X } from "lucide-react";
+import { Burst } from "@/components/games/Fx";
 
 // "Làm thử một câu" ở trang chủ: phụ huynh hiểu web làm gì trong vài giây —
 // bấm là chấm, không cần đăng ký. Câu mẫu viết sẵn (không lấy từ DB) để trang
@@ -18,7 +19,7 @@ export default function TryQuestion() {
   const [i, setI] = useState(1);
   const [wrong, setWrong] = useState<string[]>([]);
   const [done, setDone] = useState(false);
-  const [mood, setMood] = useState<Mood>("idle");
+  const [lastWrong, setLastWrong] = useState(false);
   const [beat, setBeat] = useState(0);
   const q = SAMPLES[i];
 
@@ -27,10 +28,10 @@ export default function TryQuestion() {
     setBeat((b) => b + 1);
     if (o === q.answer) {
       setDone(true);
-      setMood("happy");
+      setLastWrong(false);
     } else {
       setWrong([...wrong, o]);
-      setMood("sad");
+      setLastWrong(true);
     }
   }
 
@@ -38,19 +39,24 @@ export default function TryQuestion() {
     setI((i + 1) % SAMPLES.length);
     setWrong([]);
     setDone(false);
-    setMood("idle");
+    setLastWrong(false);
     setBeat((b) => b + 1);
   }
 
-  const bubble = done ? "Đúng rồi! Giỏi quá!" : mood === "sad" ? "Chưa đúng, thử lại nhé!" : "Bé thử câu này nhé!";
-
   return (
-    <div className="relative rounded-3xl border border-amber-100 bg-white p-5 shadow-[0_8px_30px_-12px_rgba(180,120,20,0.25)] sm:p-6">
+    <div className="relative rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-16px_rgba(15,23,42,0.18)] sm:p-6">
       {done && <Burst key={beat} id={beat} />}
-      <Mascot mood={mood} text={bubble} beat={beat} />
-
-      <p className="text-xs font-bold uppercase tracking-wide text-amber-600">Làm thử · Lớp {q.grade}</p>
-      <p className="mt-1 text-xl font-extrabold text-slate-800 sm:text-2xl">{q.question}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-500">Làm thử một câu · Lớp {q.grade}</p>
+        <p
+          aria-live="polite"
+          className={`inline-flex items-center gap-1 text-xs font-medium ${done ? "text-green-600" : lastWrong ? "text-rose-600" : "text-transparent"}`}
+        >
+          {done ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+          {done ? "Đúng rồi!" : "Chưa đúng, thử lại"}
+        </p>
+      </div>
+      <p className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{q.question}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-2.5">
         {q.options.map((o) => {
@@ -61,12 +67,12 @@ export default function TryQuestion() {
               key={o}
               onClick={() => pick(o)}
               disabled={isWrong || done}
-              className={`rounded-2xl border-2 px-3 py-3 text-lg font-bold transition-all ${
+              className={`rounded-lg border px-3 py-3 text-lg font-semibold transition-colors ${
                 isRight
-                  ? "border-green-500 bg-green-50 text-green-700 border-b-[6px]"
+                  ? "border-green-500 bg-green-50 text-green-700 ring-1 ring-green-500"
                   : isWrong
-                    ? "border-slate-100 bg-slate-50 text-slate-300"
-                    : "border-slate-200 border-b-[6px] bg-white text-slate-800 hover:border-blue-400 active:translate-y-1 active:border-b-2"
+                    ? "border-slate-100 bg-slate-50 text-slate-300 line-through"
+                    : "border-slate-200 bg-white text-slate-800 hover:border-blue-500 hover:bg-blue-50/40"
               } ${isWrong && beat ? "motion-safe:animate-shake" : ""}`}
             >
               {o}
@@ -76,12 +82,14 @@ export default function TryQuestion() {
       </div>
 
       <div className="mt-4 flex items-center justify-between text-sm">
-        <button onClick={next} className="font-semibold text-slate-500 hover:text-blue-600">
-          ↻ Câu khác
+        <button onClick={next} className="inline-flex items-center gap-1.5 font-medium text-slate-500 hover:text-slate-900">
+          <RotateCw className="h-3.5 w-3.5" aria-hidden />
+          Câu khác
         </button>
         {done && (
-          <Link href={`/lop/${q.grade}`} className="font-bold text-blue-600 hover:underline">
-            Làm tiếp bài lớp {q.grade} →
+          <Link href={`/lop/${q.grade}`} className="inline-flex items-center gap-1 font-medium text-blue-600 hover:text-blue-700">
+            Làm tiếp bài lớp {q.grade}
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
       </div>

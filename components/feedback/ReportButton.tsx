@@ -1,4 +1,5 @@
 "use client";
+import { Flag } from "lucide-react";
 import { useState } from "react";
 import { MAX_MESSAGE, REPORT_REASONS, type ReportReason } from "@/lib/feedback";
 
@@ -9,7 +10,7 @@ interface Props {
 }
 
 /**
- * "🚩 Báo lỗi câu này" ở trang kết quả: chọn lý do + ghi chú, gửi kèm bài và
+ * "Báo lỗi câu này" (icon cờ) ở trang kết quả: chọn lý do + ghi chú, gửi kèm bài và
  * số câu để người soạn biết ngay chỗ cần sửa. Gọn trong chính thẻ câu hỏi,
  * không mở trang mới.
  */
@@ -52,9 +53,10 @@ export default function ReportButton({ lessonId, questionIndex, questionText }: 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 text-xs font-semibold text-gray-400 hover:text-red-500"
+        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-rose-600"
       >
-        🚩 Báo lỗi câu này
+        <Flag className="h-3.5 w-3.5" aria-hidden />
+        Báo lỗi câu này
       </button>
     );
   }
