@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -62,8 +62,14 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    // iOS không nhận SVG làm biểu tượng màn hình chính.
+    apple: "/icons/apple-touch-icon.png",
   },
+  appleWebApp: { capable: true, title: "Ôn Tập", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({
