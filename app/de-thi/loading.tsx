@@ -3,15 +3,15 @@ import Spinner from "@/components/Spinner";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header />
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-14 text-center">
-          <div className="h-7 w-44 bg-white/20 rounded-md mx-auto mb-3 animate-pulse" />
-          <div className="h-4 w-56 bg-white/15 rounded-md mx-auto animate-pulse" />
+      <div className="border-b border-slate-200 bg-gradient-to-br from-primary-50 via-white to-amber-50/60">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div className="mb-3 h-9 w-64 animate-pulse rounded-lg bg-slate-200/70" />
+          <div className="h-4 w-80 max-w-full animate-pulse rounded-md bg-slate-200/60" />
         </div>
       </div>
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="mx-auto max-w-6xl px-4 py-12">
         <Spinner label="Đang tải đề kiểm tra…" />
       </div>
     </div>
