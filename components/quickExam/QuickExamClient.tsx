@@ -198,7 +198,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             <p className="text-xs leading-relaxed text-slate-500">
               {spec.subject === "Tiếng Việt"
                 ? "Bài đọc và câu hỏi do Ôn Tập Phổ Thông tự soạn theo chủ điểm sách giáo khoa; mỗi lần bấm chọn bài đọc, câu hỏi và đề văn khác. Câu viết và bài tập làm văn chấm trên giấy."
-                : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Nội dung theo thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
+                : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Đề theo cấu trúc đề giấy (trắc nghiệm, tự luận, có hình vẽ) và thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
             </p>
           </>
         ) : (

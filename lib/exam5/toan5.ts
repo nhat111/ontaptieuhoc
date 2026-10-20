@@ -83,9 +83,9 @@ export function asChoice(d: Draft, r: Rng): Draft | null {
 }
 
 /** Sinh lại tới khi `ok` đúng — dùng để giới hạn một dạng bài vào nội dung của kì. */
-const only = (g: Generator, ok: (d: Draft) => boolean): Generator => (r) => retry(() => { const d = g(r); return ok(d) ? d : null; });
+export const only = (g: Generator, ok: (d: Draft) => boolean): Generator => (r) => retry(() => { const d = g(r); return ok(d) ? d : null; });
 const choice = (g: Generator): Generator => (r) => retry(() => asChoice(g(r), r));
-const either = (...gs: Generator[]): Generator => (r) => pick(r, gs)(r);
+export const either = (...gs: Generator[]): Generator => (r) => pick(r, gs)(r);
 
 const VOLUME = /m³|dm³|cm³/;
 const doiDonViHK1 = only(LOP5.doiDonVi, (d) => !VOLUME.test(d.question));
@@ -530,7 +530,7 @@ export function texFrac(s: string): string {
 }
 
 /** Phân số trong đề và lựa chọn trắc nghiệm hiện dạng đứng; đáp án gõ (short) giữ nguyên "3/4". */
-function prettyRow(row: GenQuestionRow): GenQuestionRow {
+export function prettyRow(row: GenQuestionRow): GenQuestionRow {
   if (row.type === "mcq") {
     const options = row.options.map(texFrac);
     return { ...row, content: texFrac(row.content), options, correct_answer: texFrac(row.correct_answer) };
