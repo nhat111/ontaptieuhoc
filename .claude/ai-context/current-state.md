@@ -7,7 +7,8 @@ _Last synced with codebase: May 2026_
 ### Browse & quiz
 - Home: thẻ lớp 1–5, link `/de-thi`
 - `/lop/[grade]`: tab môn (`?subject=`), toggle bài tập / đề KT (`?view=lesson|exam`), accordion chương, sidebar bảng xếp hạng (top 10 theo tổng điểm, mỗi bài lấy lần tốt nhất; email mask `abc***yz`)
-- `/de-thi`: list động `lessons` với `type='exam'`
+- `/de-thi`: Kho đề kiểm tra — đề thật từ DB, lọc lớp / môn / tìm tên (URL `?lop=&mon=&q=`), thẻ đề có nút Làm bài, trống thì gợi ý Tạo đề nhanh
+- `/tao-de`: Tạo đề nhanh — Toán lớp 1–5 và Tiếng Việt lớp 5 theo cấu trúc đề giấy, có hình vẽ (`lib/exam5/`); chi tiết + lộ trình ở `feature-specs/quick-exam.md`
 - `/quiz`: Start screen → timer theo `duration_minutes` → 4 loại câu → palette → nộp
 - **Tải đề để in**: nút Word (.doc) / PDF / +Đáp án ở màn hình đầu, **mở cho mọi người** — mục đích là để phụ huynh in cho bé làm trên giấy
 - **Trộn thứ tự**: 2 tuỳ chọn ở màn hình đầu (trộn câu hỏi / trộn đáp án), lưu localStorage (`lib/quizPrefs.ts`), trộn 1 lần lúc bấm Bắt đầu
