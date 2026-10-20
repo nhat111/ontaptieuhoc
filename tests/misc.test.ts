@@ -38,3 +38,16 @@ test("nghe đọc: lớp 1–2, Tiếng Anh, hoặc đề đã gắn giọng", (
   assert.equal(canAttachVoice("Tiếng Anh"), true);
   assert.equal(canAttachVoice("Toán"), false);
 });
+
+test("lượt dùng: chỉ nhận tên trong danh sách, lớp 1–9, chuỗi phụ ngắn", async () => {
+  const { parseUsageEvent, gradeFromPath, MAX_DETAIL } = await import("../lib/usage");
+  assert.deepEqual(parseUsageEvent({ name: "quiz_start", grade: 3, detail: " Toán · #12 " }), { name: "quiz_start", grade: 3, detail: "Toán · #12" });
+  assert.equal(parseUsageEvent({ name: "drop_table" }), null);
+  assert.equal(parseUsageEvent({ name: "toString" }), null); // không lọt qua prototype
+  assert.equal(parseUsageEvent(null), null);
+  assert.equal(parseUsageEvent({ name: "game_start", grade: 12 })?.grade, null);
+  assert.equal(parseUsageEvent({ name: "game_start", grade: "3" })?.grade, null);
+  assert.equal(parseUsageEvent({ name: "game_start", detail: "x".repeat(500) })?.detail?.length, MAX_DETAIL);
+  assert.equal(gradeFromPath("/lop/3/tro-choi/dua-xe"), 3);
+  assert.equal(gradeFromPath("/tao-de"), null);
+});

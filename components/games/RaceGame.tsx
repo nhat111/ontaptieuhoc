@@ -11,6 +11,7 @@ import { addStars } from "@/lib/games";
 import { sfx } from "@/lib/sfx";
 import { submitRecord, useRecord } from "@/lib/gameRecords";
 import { ArcadeHeader, BigButton, Chip, ResultCard, Stat, secs } from "./Arcade";
+import { gradeFromPath, track } from "@/lib/usage";
 
 const GOAL = 12;
 const STUN_MS = 800;
@@ -100,6 +101,7 @@ export default function RaceGame({ backHref }: { backHref: string }) {
   }
 
   function start() {
+    track("game_start", { grade: gradeFromPath(location.pathname), detail: location.pathname });
     clearTimers();
     sfx.tick(); // gọi trong cú chạm: mở khoá âm thanh trên iOS
     setPhase("countdown");

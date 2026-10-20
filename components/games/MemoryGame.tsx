@@ -10,6 +10,7 @@ import { addStars } from "@/lib/games";
 import { sfx } from "@/lib/sfx";
 import { submitRecord, useRecord } from "@/lib/gameRecords";
 import { ArcadeHeader, BigButton, Chip, ResultCard, Stat, secs } from "./Arcade";
+import { gradeFromPath, track } from "@/lib/usage";
 
 const SIZES = [
   { pairs: 4, label: "Dễ · 8 thẻ" },
@@ -57,6 +58,7 @@ export default function MemoryGame({ backHref }: { backHref: string }) {
   }, [phase, startAt]);
 
   function start() {
+    track("game_start", { grade: gradeFromPath(location.pathname), detail: location.pathname });
     if (timer.current) clearTimeout(timer.current);
     sfx.flip(); // trong cú chạm: mở khoá âm thanh trên iOS
     setDeck(makeMemoryDeck(kind, pairs));

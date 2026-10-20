@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { gradeTheme } from "@/lib/gradeTheme";
+import { track } from "@/lib/usage";
 
 const GRADES = [...new Set(MATH_LESSONS.map((l) => l.grade))].sort((a, b) => a - b) as MathGrade[];
 const COUNTS = [10, 15, 20];
@@ -61,6 +62,7 @@ export default function WorksheetClient() {
   }
 
   function downloadDoc() {
+    track("worksheet_word", { grade, detail: topicIds.join(",") });
     const blob = new Blob([html(false)], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -73,6 +75,7 @@ export default function WorksheetClient() {
   }
 
   function openPdf() {
+    track("worksheet_print", { grade, detail: topicIds.join(",") });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html(true));

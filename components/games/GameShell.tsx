@@ -6,6 +6,7 @@ import { useRecordedClips } from "@/lib/recordedClips";
 import { addStars, pick } from "@/lib/games";
 import { isAutoVoice, setAutoVoice, subscribeAutoVoice } from "@/lib/gameVoice";
 import { Burst, Mascot, type Mood } from "./Fx";
+import { gradeFromPath, track } from "@/lib/usage";
 
 export type GameRound = {
   /** Câu đọc thành tiếng khi ra câu hỏi, và khi bấm 🔊 nghe lại. */
@@ -171,6 +172,7 @@ export default function GameShell({
   }
 
   function start(levelId: string) {
+    track("game_start", { grade: gradeFromPath(location.pathname), detail: `${location.pathname} · ${levelId}` });
     if (timer.current) clearTimeout(timer.current);
     seen.current.clear();
     const first = fresh(levelId, null);

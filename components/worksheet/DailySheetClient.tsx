@@ -2,6 +2,7 @@
 
 import { Download, Printer, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { track } from "@/lib/usage";
 import {
   MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
   type DailyGrade, type DailySubject, type MathRange,
@@ -56,6 +57,7 @@ export default function DailySheetClient() {
   }
 
   function downloadDoc() {
+    track("daily_word", { grade, detail: subject });
     const blob = new Blob([html(false)], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -68,6 +70,7 @@ export default function DailySheetClient() {
   }
 
   function openPdf() {
+    track("daily_print", { grade, detail: subject });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html(true));

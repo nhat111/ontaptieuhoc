@@ -1,6 +1,6 @@
 // scripts/exam5-check.ts — kiểm tra đề lớp 5 theo cấu trúc đề thật (lib/exam5).
 //
-// Tiếng Việt (nội dung viết tay, lib/exam5/tvContent.ts):
+// Tiếng Việt lớp 4 và 5 (nội dung viết tay, lib/exam5/tvContent.ts, tvContent4.ts):
 //   • mỗi câu trắc nghiệm 4 lựa chọn khác nhau, đáp án nằm trong lựa chọn;
 //   • câu hỏi và lời giải trích bài đọc (“…”) thì phần trích phải có nguyên văn trong bài;
 //   • kì nào cũng có bài đọc, đủ câu luyện từ và câu, đề tập làm văn; không dùng " thẳng.
@@ -12,7 +12,8 @@
 // Chạy: npx tsx scripts/exam5-check.ts
 
 import { EXAM_KINDS } from "../lib/quickExam";
-import { PASSAGES, LTVC_BANK, LTVC_BY_KIND, WRITING_PROMPTS, type TvMcq } from "../lib/exam5/tvContent";
+import { type TvMcq } from "../lib/exam5/tvContent";
+import { TV_CONTENT } from "../lib/exam5/tiengViet";
 import { buildToan5 } from "../lib/exam5/toan5";
 import { isGroup, sectionPoints, type PaperQuestion } from "../lib/exam5/paper";
 
@@ -40,28 +41,36 @@ function checkQuotes(s: string, text: string, where: string) {
   }
 }
 
-for (const p of PASSAGES) {
-  if (/"/.test(p.text)) fail(`${p.id}: bài đọc dùng ngoặc kép thẳng`);
-  if (p.questions.length !== 6) fail(`${p.id}: cần 6 câu đọc hiểu, có ${p.questions.length}`);
-  for (const m of [...p.questions, p.ltvc]) {
-    checkMcq(m, p.id);
-    checkQuotes(m.q, p.text, p.id);
-    checkQuotes(m.explain, p.text, p.id);
+for (const tv of Object.values(TV_CONTENT)) {
+  const g = `lớp ${tv.grade}`;
+  for (const p of tv.passages) {
+    const where = `${g} ${p.id}`;
+    if (/"/.test(p.text)) fail(`${where}: bài đọc dùng ngoặc kép thẳng`);
+    if (p.questions.length !== 6) fail(`${where}: cần 6 câu đọc hiểu, có ${p.questions.length}`);
+    for (const m of [...p.questions, p.ltvc]) {
+      checkMcq(m, where);
+      checkQuotes(m.q, p.text, where);
+      checkQuotes(m.explain, p.text, where);
+    }
+    if (!p.open.q.trim() || !p.open.hint.trim()) fail(`${where}: thiếu câu hỏi mở hoặc gợi ý`);
+    const words = p.text.split(/\s+/).length;
+    const [lo, hi] = tv.words;
+    if (words < lo || words > hi) fail(`${where}: bài đọc ${words} tiếng — nên ${lo}–${hi} tiếng cho ${g}`);
   }
-  if (!p.open.q.trim() || !p.open.hint.trim()) fail(`${p.id}: thiếu câu hỏi mở hoặc gợi ý`);
-  const words = p.text.split(/\s+/).length;
-  if (words < 150 || words > 330) fail(`${p.id}: bài đọc ${words} tiếng — nên 150–330 tiếng cho lớp 5`);
-}
-for (const [topic, items] of Object.entries(LTVC_BANK)) {
-  if (items.length < 4) fail(`ngân hàng ${topic}: chỉ có ${items.length} câu`);
-  items.forEach((m) => checkMcq(m, `ngân hàng ${topic}`));
-  const qs = items.map((m) => m.q);
-  if (new Set(qs).size !== qs.length) fail(`ngân hàng ${topic}: câu hỏi trùng`);
-}
-for (const k of EXAM_KINDS) {
-  if (!PASSAGES.some((p) => p.kinds.includes(k.key))) fail(`${k.key}: chưa có bài đọc`);
-  for (const t of LTVC_BY_KIND[k.key]) if (!LTVC_BANK[t]?.length) fail(`${k.key}: chủ đề ${t} rỗng`);
-  if (!WRITING_PROMPTS[k.key]?.length) fail(`${k.key}: chưa có đề tập làm văn`);
+  const ids = tv.passages.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) fail(`${g}: trùng id bài đọc`);
+  for (const [topic, items] of Object.entries(tv.ltvcBank)) {
+    if (items.length < 4) fail(`${g} ngân hàng ${topic}: chỉ có ${items.length} câu`);
+    items.forEach((m) => checkMcq(m, `${g} ngân hàng ${topic}`));
+    const qs = items.map((m) => m.q);
+    if (new Set(qs).size !== qs.length) fail(`${g} ngân hàng ${topic}: câu hỏi trùng`);
+    if (!tv.topicNames[topic]) fail(`${g} ngân hàng ${topic}: thiếu tên chủ đề`);
+  }
+  for (const k of EXAM_KINDS) {
+    if (!tv.passages.some((p) => p.kinds.includes(k.key))) fail(`${g} ${k.key}: chưa có bài đọc`);
+    for (const t of tv.ltvcByKind[k.key]) if (!tv.ltvcBank[t]?.length) fail(`${g} ${k.key}: chủ đề ${t} rỗng`);
+    if (!tv.writing[k.key]?.length) fail(`${g} ${k.key}: chưa có đề tập làm văn`);
+  }
 }
 
 /* ───────────── Toán ───────────── */
@@ -158,4 +167,7 @@ if (errors.length) {
   console.error(`✗ exam5: ${errors.length} lỗi\n  ` + errors.join("\n  "));
   process.exit(1);
 }
-console.log(`✓ exam5: ${PASSAGES.length} bài đọc, ${Object.values(LTVC_BANK).flat().length} câu luyện từ và câu ổn; tính lại ${checked} câu Toán khớp đáp án`);
+const tvSummary = Object.values(TV_CONTENT)
+  .map((tv) => `lớp ${tv.grade}: ${tv.passages.length} bài đọc, ${Object.values(tv.ltvcBank).flat().length} câu luyện từ và câu`)
+  .join("; ");
+console.log(`✓ exam5: Tiếng Việt ${tvSummary} ổn; tính lại ${checked} câu Toán khớp đáp án`);
