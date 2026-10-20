@@ -34,6 +34,20 @@ export interface TvPassage {
   open: { q: string; hint: string };
 }
 
+/** Trọn bộ nội dung Tiếng Việt của một lớp — lớp 5 ở file này, lớp 4 ở ./tvContent4.ts. */
+export interface TvContent {
+  grade: number;
+  passages: TvPassage[];
+  /** Ngân hàng câu 8, câu 9 theo chủ đề luyện từ và câu. */
+  ltvcBank: Record<string, TvMcq[]>;
+  topicNames: Record<string, string>;
+  /** Chủ đề của câu 8 và câu 9 theo kì. */
+  ltvcByKind: Record<ExamKind, [string, string]>;
+  writing: Record<ExamKind, string[]>;
+  /** Độ dài bài đọc hợp với lớp (số tiếng), scripts/exam5-check.ts soát. */
+  words: [number, number];
+}
+
 const P = (p: TvPassage) => p;
 
 export const PASSAGES: TvPassage[] = [
@@ -226,7 +240,8 @@ Cuối năm, cô hiệu trưởng khen ngợi lớp 5C trước toàn trường.
 
 export type LtvcTopic = "dong-nghia" | "da-nghia" | "dai-tu" | "ket-tu" | "cau-ghep" | "lien-ket" | "dau-gach-ngang";
 
-const M = (q: string, answer: string, wrong: string[], explain: string): TvMcq => ({ q, options: [answer, ...wrong], answer, explain });
+/** Câu trắc nghiệm: đáp án đúng viết trước, ba đáp án nhiễu sau (tờ đề tự xáo). */
+export const M = (q: string, answer: string, wrong: string[], explain: string): TvMcq => ({ q, options: [answer, ...wrong], answer, explain });
 
 export const LTVC_BANK: Record<LtvcTopic, TvMcq[]> = {
   "dong-nghia": [
@@ -324,4 +339,9 @@ export const WRITING_PROMPTS: Record<ExamKind, string[]> = {
     "Viết bài văn tả một cảnh đẹp mà em đã được ngắm nhìn trong dịp hè hoặc trong một chuyến tham quan.",
     "Viết bài văn kể lại một câu chuyện về lòng biết ơn, trong đó có thêm những chi tiết sáng tạo của em.",
   ],
+};
+
+export const TV5: TvContent = {
+  grade: 5, passages: PASSAGES, ltvcBank: LTVC_BANK, topicNames: LTVC_TOPIC_NAMES,
+  ltvcByKind: LTVC_BY_KIND, writing: WRITING_PROMPTS, words: [150, 330],
 };

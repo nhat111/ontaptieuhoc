@@ -2,8 +2,8 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 5, đều theo cấu
-// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet5.ts). Mỗi đề là
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 4–5, đều theo cấu
+// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts). Mỗi đề là
 // một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
 // mở lại đúng đề đó (server và trình duyệt trùng nhau).
@@ -18,8 +18,7 @@ import type { Question, QImage } from "./quizData";
 import { paperRows, type ExamPaper } from "./exam5/paper";
 import { buildToan5 } from "./exam5/toan5";
 import { buildToan1to4, isSmallGrade, toanCount, toanMinutes } from "./exam5/toan1to4";
-import { buildTiengViet5, passagesFor } from "./exam5/tiengViet5";
-import { LTVC_BY_KIND, LTVC_TOPIC_NAMES } from "./exam5/tvContent";
+import { TV_CONTENT, buildTiengViet, passagesFor } from "./exam5/tiengViet";
 
 export const EXAM_KINDS = [
   { key: "giua-hk1", label: "Giữa học kì I", short: "Giữa HK I" },
@@ -109,18 +108,19 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
   const base = { id: `${slug}-${grade}-${kind}`, grade, subject, kind, title };
 
   if (subject === "Tiếng Việt") {
-    if (grade !== 5) return null;
-    const [t8, t9] = LTVC_BY_KIND[kind];
+    const tv = TV_CONTENT[grade];
+    if (!tv) return null;
+    const [t8, t9] = tv.ltvcByKind[kind];
     return {
       ...base,
       scope: [
-        `Đọc hiểu: một bài đọc mới (${passagesFor(kind).map((p) => `“${p.title}”`).join(" hoặc ")}) và 6 câu hỏi`,
-        `Luyện từ và câu: ${[...new Set([t8, t9])].map((t) => LTVC_TOPIC_NAMES[t]).join(", ")}`,
+        `Đọc hiểu: một bài đọc mới (${passagesFor(tv, kind).map((p) => `“${p.title}”`).join(" hoặc ")}) và 6 câu hỏi`,
+        `Luyện từ và câu: ${[...new Set([t8, t9])].map((t) => tv.topicNames[t]).join(", ")}`,
         "Câu hỏi viết 1–2 câu (chấm trên giấy)",
         "Kiểm tra viết: một đề tập làm văn (in kèm, chấm trên giấy)",
       ],
       count: 9, minutes: 35,
-      paper: (seed) => buildTiengViet5(kind, kindLabel, seed),
+      paper: (seed) => buildTiengViet(tv, kind, kindLabel, seed),
     };
   }
 
