@@ -203,3 +203,18 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;  -- không có policy: anon không đọc/ghi được, chỉ service role
+
+-- ============================================================
+-- ĐẾM LƯỢT DÙNG (lib/usage.ts → POST /api/usage), xem ở /import/thong-ke
+-- Không định danh: không IP, không tài khoản. Chỉ service role đọc/ghi.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS usage_events (
+  id         BIGSERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name       TEXT NOT NULL,            -- quiz_start | quick_exam_create | game_start … (USAGE_EVENTS)
+  grade      SMALLINT,                 -- lớp 1–9, NULL nếu không gắn lớp
+  detail     TEXT                      -- môn / loại đề / đường dẫn trò chơi
+);
+CREATE INDEX IF NOT EXISTS idx_usage_events_created ON usage_events(created_at DESC);
+ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;  -- không có policy: chỉ service role
+-- Dọn bớt khi bảng lớn: DELETE FROM usage_events WHERE created_at < NOW() - INTERVAL '180 days';

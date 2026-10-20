@@ -12,6 +12,7 @@ import { addStars } from "@/lib/games";
 import { sfx } from "@/lib/sfx";
 import { submitRecord, useRecord } from "@/lib/gameRecords";
 import { ArcadeHeader, BigButton, Chip, ResultCard, Stat } from "./Arcade";
+import { gradeFromPath, track } from "@/lib/usage";
 
 const DURATION_MS = 45_000;
 const HEARTS = 3;
@@ -77,6 +78,7 @@ export default function BalloonGame({ backHref }: { backHref: string }) {
   }, [phase, mode]);
 
   function start() {
+    track("game_start", { grade: gradeFromPath(location.pathname), detail: location.pathname });
     sfx.pop(); // trong cú chạm: mở khoá âm thanh trên iOS
     slow.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 1.6 : 1;
     hits.current = 0;

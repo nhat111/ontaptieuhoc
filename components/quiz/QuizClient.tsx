@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { saveLessonResult } from "@/lib/lessonProgress";
+import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
 import QuestionCard from "./QuestionCard";
@@ -67,7 +68,14 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
 
   // Trộn đúng một lần lúc bấm Bắt đầu, không trộn lại giữa chừng — nếu không
   // câu hỏi sẽ nhảy lung tung dưới tay bé đang làm.
+  // Gắn vào mỗi lượt đếm (lib/usage.ts): môn + bài nào, hay đề tự sinh.
+  const usage = () => ({
+    grade: lesson.grade ?? null,
+    detail: `${lesson.subjectName ?? "?"} · ${quickExamHref ? "đề nhanh" : `#${lessonId}`}`,
+  });
+
   function start() {
+    track("quiz_start", usage());
     if (shuffleQ || shuffleO) {
       setQuestions(shuffleQuiz(initialQuestions, { questions: shuffleQ, options: shuffleO }));
     }
@@ -194,6 +202,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   const submit = (finalAnswers: (string | null)[]) => {
     const score = finalAnswers.filter((a, i) => scoreAnswer(questions[i], a)).length;
     const total = questions.length;
+    track("quiz_submit", usage());
 
     // keepalive: trang chuyển sang /result ngay sau dòng này; thiếu nó trình
     // duyệt thường huỷ request giữa chừng và kết quả không bao giờ được lưu.
@@ -259,6 +268,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   // bé làm trên giấy, nên dựng rào ở đây là chặn đúng người cần dùng.
 
   function downloadDoc(withAnswers: boolean) {
+    track("lesson_print", usage());
     const html = buildExamHtml(lesson, questions, { withAnswers });
     const blob = new Blob([html], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
@@ -272,6 +282,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   }
 
   function openPdf(withAnswers: boolean) {
+    track("lesson_print", usage());
     // autoPrint script in the document waits for images to load before
     // opening the print dialog, so figures aren't blank in the PDF.
     const html = buildExamHtml(lesson, questions, { withAnswers, autoPrint: true });

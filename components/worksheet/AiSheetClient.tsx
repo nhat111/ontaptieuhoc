@@ -4,6 +4,7 @@ import { Printer } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { AI_GRADES, aiGrade, buildAiSheetHtml } from "@/lib/aiSheets";
+import { track } from "@/lib/usage";
 
 const ALL_GRADES = [1, 2, 3, 4, 5];
 
@@ -23,6 +24,7 @@ export default function AiSheetClient() {
   }
 
   function openPdf() {
+    track("ai_sheet_print", { grade, detail: `${sheets.length} phiếu` });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(buildAiSheetHtml(grade, sheets, {

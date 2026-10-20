@@ -9,6 +9,7 @@ import { answerText, type AnswerMode } from "@/lib/worksheetExport";
 import { paperRows } from "@/lib/exam5/paper";
 import { buildPaperHtml, schoolYearOf } from "@/lib/exam5/print";
 import { gradeTheme } from "@/lib/gradeTheme";
+import { track } from "@/lib/usage";
 import MathText from "@/components/MathText";
 
 const ANSWER_MODES: { value: AnswerMode; label: string }[] = [
@@ -52,6 +53,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   }
 
   async function downloadDoc() {
+    track("quick_exam_word", { grade, detail: `${subject} · ${kind}` });
     // Word không hiện ảnh SVG nhúng — đổi hình vẽ sang PNG trước khi ghi file.
     const svgs = [...new Set(paper!.sections.flatMap((s) => s.items).flatMap((it) => ("parts" in it ? it.parts : [it]))
       .flatMap((q) => { try { return (JSON.parse(q.row.explanation).images ?? []).map((i: { url: string }) => i.url); } catch { return []; } })
@@ -70,6 +72,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   }
 
   function openPdf() {
+    track("quick_exam_print", { grade, detail: `${subject} · ${kind}` });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html({ autoPrint: true }));
@@ -136,7 +139,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             </div>
 
             <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-              <button onClick={() => setSeed(newSeed())}
+              <button onClick={() => { setSeed(newSeed()); track("quick_exam_create", { grade, detail: `${subject} · ${kind}` }); }}
                 className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-6 text-base font-extrabold transition-all active:translate-y-0.5 ${
                   seed
                     ? "border-2 border-slate-200 bg-white text-slate-700 hover:border-primary-300"
