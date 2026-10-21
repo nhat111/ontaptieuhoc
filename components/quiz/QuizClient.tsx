@@ -7,6 +7,7 @@ import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/li
 import { saveLessonResult } from "@/lib/lessonProgress";
 import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
+import { buildWordDoc } from "@/lib/wordDoc";
 import Header from "@/components/Header";
 import PdfPreview from "@/components/PdfPreview";
 import QuestionCard from "./QuestionCard";
@@ -270,10 +271,10 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   // Tải đề mở cho tất cả mọi người: mục đích của nó là để phụ huynh in ra cho
   // bé làm trên giấy, nên dựng rào ở đây là chặn đúng người cần dùng.
 
-  function downloadDoc(withAnswers: boolean) {
+  async function downloadDoc(withAnswers: boolean) {
     track("lesson_print", usage());
-    const html = buildExamHtml(lesson, questions, { withAnswers });
-    const blob = new Blob([html], { type: "application/msword" });
+    // Nhúng ảnh vào file: Word không tự tải ảnh qua link hay đọc ảnh data:.
+    const blob = await buildWordDoc(buildExamHtml(lesson, questions, { withAnswers }));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

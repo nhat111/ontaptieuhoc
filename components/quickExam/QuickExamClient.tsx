@@ -8,6 +8,7 @@ import { EXAM_KINDS, getQuickExam, hasQuickExam, quickExamHref, type ExamKind } 
 import { answerText, type AnswerMode } from "@/lib/worksheetExport";
 import { paperRows } from "@/lib/exam5/paper";
 import { buildPaperHtml, schoolYearOf } from "@/lib/exam5/print";
+import { buildWordDoc } from "@/lib/wordDoc";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { track } from "@/lib/usage";
 import MathText from "@/components/MathText";
@@ -50,19 +51,14 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   function pickKind(k: ExamKind) { setKind(k); setSeed(null); }
   function pickSubject(s: string) { setSubject(s); setSeed(null); }
 
-  function html(o: { autoPrint?: boolean; forWord?: boolean; imageFor?: (url: string) => string }) {
+  function html(o: { autoPrint?: boolean; forWord?: boolean }) {
     return buildPaperHtml(paper!, { answers, schoolYear: schoolYearOf(new Date()), ...o });
   }
 
   async function downloadDoc() {
     track("quick_exam_word", { grade, detail: `${subject} · ${kind}` });
-    // Word không hiện ảnh SVG nhúng — đổi hình vẽ sang PNG trước khi ghi file.
-    const svgs = [...new Set(paper!.sections.flatMap((s) => s.items).flatMap((it) => ("parts" in it ? it.parts : [it]))
-      .flatMap((q) => { try { return (JSON.parse(q.row.explanation).images ?? []).map((i: { url: string }) => i.url); } catch { return []; } })
-      .filter((u: string) => u.startsWith("data:image/svg")))];
-    const png = new Map<string, string>();
-    await Promise.all(svgs.map(async (u) => png.set(u, await svgToPng(u))));
-    const blob = new Blob([html({ forWord: true, imageFor: (u) => png.get(u) ?? u })], { type: "application/msword" });
+    // Word không đọc ảnh SVG/data: — buildWordDoc vẽ lại hình thành PNG và nhúng vào file.
+    const blob = await buildWordDoc(html({ forWord: true }));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -249,24 +245,4 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       {children}
     </section>
   );
-}
-
-/** Vẽ ảnh SVG (data URI) lên canvas, trả về PNG data URI; lỗi thì trả lại SVG. */
-function svgToPng(url: string): Promise<string> {
-  return new Promise((resolve) => {
-    const im = new Image();
-    im.onload = () => {
-      const k = 2;
-      const c = document.createElement("canvas");
-      c.width = im.naturalWidth * k;
-      c.height = im.naturalHeight * k;
-      const ctx = c.getContext("2d");
-      if (!ctx) return resolve(url);
-      ctx.scale(k, k);
-      ctx.drawImage(im, 0, 0);
-      resolve(c.toDataURL("image/png"));
-    };
-    im.onerror = () => resolve(url);
-    im.src = url;
-  });
 }

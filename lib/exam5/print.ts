@@ -20,8 +20,6 @@ export interface PrintOptions {
   schoolYear: string;
   forWord?: boolean;
   autoPrint?: boolean;
-  /** Thay ảnh (SVG → PNG cho Word). */
-  imageFor?: (url: string) => string;
 }
 
 const LETTERS = "ABCDEF";
@@ -57,7 +55,7 @@ function printable(content: string, work: PaperQuestion["work"]): string {
   return s.replace(/___/g, "……");
 }
 
-const img = (url: string, o: PrintOptions) => `<p class="img"><img src="${escapeHtml(o.imageFor ? o.imageFor(url) : url)}" alt=""/></p>`;
+const img = (url: string) => `<p class="img"><img src="${escapeHtml(url)}" alt=""/></p>`;
 
 function optionsTable(options: string[], o: PrintOptions): string {
   const longest = Math.max(...options.map((x) => latexToPlain(x).length));
@@ -94,7 +92,7 @@ function itemHtml(it: PaperItem, label: string, o: PrintOptions): string {
     }
     return head + parts.map((p) => `<p class="part">${p}</p>${lines(2)}`).join("");
   }
-  const imgs = imagesOf(it).map((u) => img(u, o)).join("");
+  const imgs = imagesOf(it).map((u) => img(u)).join("");
   const text = rich(printable(it.row.content, it.work), o);
   return `<p class="q"><b>${label}.</b> <i>(${pointsText(it.points)})</i> ${text}</p>` + imgs +
     (it.row.type === "mcq" ? optionsTable(it.row.options, o) : workHtml(it));

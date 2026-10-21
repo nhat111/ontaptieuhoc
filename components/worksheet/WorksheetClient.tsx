@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { MATH_LESSONS, buildWorksheetQuestions, type MathGrade } from "@/lib/mathGen";
 import { buildWorksheetHtml, answerText, type AnswerMode, type WorksheetVersion } from "@/lib/worksheetExport";
+import { buildWordDoc } from "@/lib/wordDoc";
 import { latexToPlain } from "@/lib/exportLesson";
 import type { GenQuestionRow } from "@/lib/mathGen";
 import {
@@ -61,9 +62,10 @@ export default function WorksheetClient() {
     });
   }
 
-  function downloadDoc() {
+  async function downloadDoc() {
     track("worksheet_word", { grade, detail: topicIds.join(",") });
-    const blob = new Blob([html(false)], { type: "application/msword" });
+    // Mặt đồng hồ là SVG — Word chỉ hiện khi đã vẽ lại thành PNG và nhúng vào file.
+    const blob = await buildWordDoc(html(false));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
