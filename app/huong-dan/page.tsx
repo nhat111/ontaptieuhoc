@@ -60,6 +60,7 @@ const STEPS: GuideStep[] = [
     title: "Tải đề về in cho con làm trên giấy",
     points: [
       <>Ở màn đầu của mỗi bài, mục <b>Tải đề để in</b>: chọn <b>Word (.doc)</b> hoặc <b>PDF</b>.</>,
+      <>Bấm <b>PDF</b>: máy tạo file PDF, tự tải về và hiện từng trang để xem ngay. Trong khung xem có <b>Tải file PDF</b> (tải lại nếu không thấy file) và <b>In</b>.</>,
       <>Bấm <b>+ Đáp án</b> để tải bản có đáp án cho phụ huynh chấm.</>,
       <>Tải đề miễn phí, không cần đăng nhập.</>,
     ],
@@ -71,7 +72,7 @@ const STEPS: GuideStep[] = [
       <>Vào <b>Tạo đề nhanh</b>, chọn lớp, loại đề (<b>Giữa học kì I</b>, <b>Cuối học kì I</b>, <b>Giữa học kì II</b>, <b>Cuối học kì II</b>) và môn, rồi bấm <b>Tạo đề</b>.</>,
       <>Hiện máy tạo được đề <b>Toán lớp 1–5</b> và <b>Tiếng Việt lớp 4–5</b>; môn khác ghi <b>Sắp có</b> và có nút xem các đề đã soạn sẵn của môn đó.</>,
       <>Mọi đề theo cấu trúc đề giấy: Phần I trắc nghiệm, Phần II tự luận, tổng 10 điểm. Toán có câu hình vẽ (lớp 1: đếm hình, thước đo, đồng hồ; lớp 2–3: đồng hồ, tiền, đường gấp khúc, chu vi – diện tích; lớp 4: góc, hình bình hành – hình thoi, biểu đồ cột, phân số; lớp 5: hình tam giác, hình thang, hình tròn, hình hộp, biểu đồ quạt), đặt tính và bài toán có lời văn (lớp 1 viết phép tính thích hợp); Tiếng Việt lớp 4–5 có bài đọc hiểu, luyện từ và câu và đề tập làm văn. Bản in có ô Điểm – Nhận xét, điểm từng câu và hướng dẫn chấm ở trang cuối. Câu viết câu, viết đoạn và bài tập làm văn chấm trên giấy, không chấm trên máy.</>,
-      <>Có đề rồi: bấm <b>Làm bài trên máy</b> để bé làm và được chấm ngay, hoặc <b>In / lưu PDF</b>, <b>Tải Word (.doc)</b> để làm trên giấy. Bấm <b>Đổi đề khác</b> để ra đề mới.</>,
+      <>Có đề rồi: bấm <b>Làm bài trên máy</b> để bé làm và được chấm ngay, hoặc <b>Xem & tải PDF</b> (tải file PDF về và xem từng trang ngay trên trang, có nút <b>In</b>), <b>Tải Word (.doc)</b> để làm trên giấy. Bấm <b>Đổi đề khác</b> để ra đề mới.</>,
       <>Bấm <b>Xem đề và đáp án (dành cho phụ huynh)</b> để xem đáp án ngay trên trang. Đề tạo nhanh không được lưu vào tiến độ học tập.</>,
     ],
     cta: { href: "/tao-de", label: "Tạo đề nhanh" },

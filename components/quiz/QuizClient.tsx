@@ -8,6 +8,7 @@ import { saveLessonResult } from "@/lib/lessonProgress";
 import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
 import Header from "@/components/Header";
+import PdfPreview from "@/components/PdfPreview";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
@@ -58,6 +59,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   const totalSeconds = durationMinutes * 60;
 
   const [started, setStarted] = useState(false);
+  // HTML của đề đang xem trước dạng PDF (null = đóng khung xem).
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(questions.length).fill(null));
   const [current, setCurrent] = useState(0);
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
@@ -281,11 +284,15 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
     URL.revokeObjectURL(url);
   }
 
-  function openPdf(withAnswers: boolean) {
+  function openPdf() {
     track("lesson_print", usage());
+    setPdfHtml(buildExamHtml(lesson, questions));
+  }
+
+  function printExam() {
     // autoPrint script in the document waits for images to load before
     // opening the print dialog, so figures aren't blank in the PDF.
-    const html = buildExamHtml(lesson, questions, { withAnswers, autoPrint: true });
+    const html = buildExamHtml(lesson, questions, { autoPrint: true });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html);
@@ -431,7 +438,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
                   Word (.doc)
                 </button>
                 <button
-                  onClick={() => openPdf(false)}
+                  onClick={openPdf}
                   className="text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg px-3 py-1.5 transition-colors"
                 >
                   PDF
@@ -474,6 +481,15 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
             </div>
           </div>
         </div>
+        {pdfHtml && (
+          <PdfPreview
+            html={pdfHtml}
+            fileName={safeName || `de-${lessonId}`}
+            title={lesson.title}
+            onPrint={printExam}
+            onClose={() => setPdfHtml(null)}
+          />
+        )}
       </div>
     );
   }

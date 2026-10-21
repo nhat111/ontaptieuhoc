@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Clock, Download, ListChecks, MonitorPlay, Printer, RefreshCw, Sparkles } from "lucide-react";
+import { BookOpen, Clock, Download, FileText, ListChecks, MonitorPlay, RefreshCw, Sparkles } from "lucide-react";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
 import { EXAM_KINDS, getQuickExam, hasQuickExam, quickExamHref, type ExamKind } from "@/lib/quickExam";
 import { answerText, type AnswerMode } from "@/lib/worksheetExport";
@@ -11,6 +11,7 @@ import { buildPaperHtml, schoolYearOf } from "@/lib/exam5/print";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { track } from "@/lib/usage";
 import MathText from "@/components/MathText";
+import PdfPreview from "@/components/PdfPreview";
 
 const ANSWER_MODES: { value: AnswerMode; label: string }[] = [
   { value: "solutions", label: "Đáp án + lời giải" },
@@ -33,6 +34,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
   const [answers, setAnswers] = useState<AnswerMode>("solutions");
   // Câu hỏi chỉ sinh sau khi bấm "Tạo đề" (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
 
   const spec = useMemo(() => getQuickExam(grade, subject, kind), [grade, subject, kind]);
   const paper = useMemo(() => (spec && seed ? spec.paper(seed) : null), [spec, seed]);
@@ -73,6 +75,10 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
 
   function openPdf() {
     track("quick_exam_print", { grade, detail: `${subject} · ${kind}` });
+    setPdfHtml(html({}));
+  }
+
+  function printExam() {
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html({ autoPrint: true }));
@@ -161,8 +167,8 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
                   </Link>
                   <button onClick={openPdf}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
-                    <Printer className="h-4 w-4" aria-hidden />
-                    In / lưu PDF
+                    <FileText className="h-4 w-4" aria-hidden />
+                    Xem & tải PDF
                   </button>
                   <button onClick={downloadDoc}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
@@ -220,6 +226,15 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
           </div>
         )}
       </div>
+      {pdfHtml && spec && (
+        <PdfPreview
+          html={pdfHtml}
+          fileName={`${spec.id}-${seed}`}
+          title={spec.title}
+          onPrint={printExam}
+          onClose={() => setPdfHtml(null)}
+        />
+      )}
     </div>
   );
 }
