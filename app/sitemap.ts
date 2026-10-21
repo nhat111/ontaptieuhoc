@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getIndexableLessonIds } from "@/lib/db";
 import { SITE_URL } from "@/lib/siteUrl";
+import { GUIDES } from "@/lib/lamVan";
 import { GRADES, SUBJECTS_BY_GRADE, getDefaultSubject } from "@/lib/subjects";
 
 // Lessons are created through /import at runtime, so the sitemap has to be
@@ -21,6 +22,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/phieu-bai-tap?loai=hang-ngay`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/phieu-bai-tap?loai=ai`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/huong-dan`, lastModified, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/lam-van/lop-5`, lastModified, changeFrequency: "monthly", priority: 0.7 },
+    ...GUIDES.map((g) => ({ url: `${SITE_URL}/lam-van/lop-5/${g.id}`, lastModified, changeFrequency: "monthly" as const, priority: 0.6 })),
     { url: `${SITE_URL}/huong-dan/soan-de`, lastModified, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/gop-y`, lastModified, changeFrequency: "yearly", priority: 0.3 },
     // Trò chơi lớp 1–5 (câu hỏi sinh trên trình duyệt, nội dung trang cố định).

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, FileText, Gamepad2, Inbox, Plus, Sparkles } from "lucide-react";
+import { ChevronRight, FileText, Gamepad2, Inbox, PenLine, Plus, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
@@ -170,6 +170,26 @@ export default async function GradePage({
             </span>
             <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-primary-200">
               Tạo đề
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </span>
+          </Link>
+        )}
+
+        {/* Tiếng Việt lớp 5: hướng dẫn phần Kiểm tra viết (lib/lamVan.ts). */}
+        {gradeNum === 5 && activeSubject === "Tiếng Việt" && (
+          <Link
+            href="/lam-van/lop-5"
+            className="group mb-6 flex items-center gap-3 rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white px-4 py-3 shadow-soft transition-all hover:border-violet-300 motion-safe:hover:-translate-y-0.5"
+          >
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white shadow-sm" aria-hidden>
+              <PenLine className="h-6 w-6" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-extrabold text-slate-900">Hướng dẫn làm văn</span>
+              <span className="block text-sm text-slate-600">Tả cảnh, tả người, kể chuyện sáng tạo, nêu ý kiến — dàn ý và bài tham khảo</span>
+            </span>
+            <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-violet-200">
+              Xem
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </span>
           </Link>

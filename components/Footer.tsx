@@ -15,6 +15,7 @@ const GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/tao-de", label: "Tạo đề giữa kì, cuối kì" },
       { href: "/lop/1/tro-choi", label: "Trò chơi lớp 1–5" },
       { href: "/phieu-bai-tap", label: "Phiếu bài tập in được" },
+      { href: "/lam-van/lop-5", label: "Hướng dẫn làm văn lớp 5" },
       { href: "/progress", label: "Tiến độ học tập" },
     ],
   },
