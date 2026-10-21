@@ -218,6 +218,7 @@ Bài luyện tập Toán lớp 1–5 sinh bằng code — **không gọi AI hay 
 
 ## Conventions
 
+- **Never push to `master`.** Work on a new branch and open a pull request for the owner to review — `master` deploys straight to the live site.
 - All files use 2-space indent.
 - `getSupabaseServer()` calls and `try/catch` returning a safe default (`[] / null`) is the established pattern for SSR data fetches — failures should not crash the page.
 - Vietnamese is the source of truth for user-facing strings, including error messages from API routes.
