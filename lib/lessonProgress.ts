@@ -79,7 +79,8 @@ export function getProgress(): LessonProgressMap {
 
 export const getServerProgress = () => EMPTY;
 
-export function saveLessonResult(lessonId: number, score: number, total: number) {
+/** `lessonId`: id bài trong DB, hoặc khoá chuỗi của bài tự sinh (VD `kntt-toan-3-15`, lib/sgk). */
+export function saveLessonResult(lessonId: number | string, score: number, total: number) {
   const all = getProgress();
   const next = { ...all, [lessonId]: addAttempt(all[lessonId], score, total) };
   try {

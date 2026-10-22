@@ -49,6 +49,9 @@ export type QuizResult = {
   subjectName?: string | null;
   /** Đề tự sinh (/quiz?de=…&seed=…): link làm lại đúng đề đó; không có lessonId thật. */
   retryHref?: string;
+  /** Nút thứ hai và mục đường dẫn của trang kết quả (bài tự sinh theo sách, lib/sgk). */
+  backHref?: string;
+  backLabel?: string;
   reading?: Reading;
 };
 

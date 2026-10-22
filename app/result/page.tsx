@@ -35,7 +35,7 @@ export default function ResultPage() {
     );
   }
 
-  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, reading } = result;
+  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, backHref, backLabel, reading } = result;
   // Đề tự sinh ("Tạo đề nhanh") không nằm trong DB: làm lại bằng chính link của nó,
   // quay về trang tạo đề thay vì danh sách bài, và không mời đăng nhập để "lưu tiến độ".
   const quick = !!retryHref;
@@ -54,7 +54,10 @@ export default function ResultPage() {
       href: grade ? `/lop/${grade}?subject=${encodeURIComponent(subjectName)}` : "/de-thi",
     });
   }
-  if (quick) crumbs.push({ label: "Tạo đề nhanh", href: grade ? `/tao-de?lop=${grade}` : "/tao-de" });
+  const tryOther = backHref && backLabel
+    ? { href: backHref, label: backLabel }
+    : { href: grade ? `/tao-de?lop=${grade}` : "/tao-de", label: "Tạo đề nhanh" };
+  if (quick) crumbs.push(tryOther);
   crumbs.push({ label: title, href: quizHref });
 
   const { correct, wrong, unanswered } = questions.reduce(
@@ -131,13 +134,13 @@ export default function ResultPage() {
             onClick={() => router.push(quizHref)}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
           >
-            Làm lại
+            {backHref ? "Làm bộ câu mới" : "Làm lại"}
           </button>
           <button
             onClick={() =>
               router.push(
                 quick
-                  ? grade ? `/tao-de?lop=${grade}` : "/tao-de"
+                  ? tryOther.href
                   : grade
                     ? `/lop/${grade}${subjectName ? `?subject=${encodeURIComponent(subjectName)}` : ""}`
                     : "/"
@@ -145,7 +148,7 @@ export default function ResultPage() {
             }
             className="flex-1 bg-white text-gray-700 font-bold py-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
           >
-            {quick ? "Tạo đề khác" : "Quay lại danh sách"}
+            {quick ? (backHref ? "Chọn bài khác" : "Tạo đề khác") : "Quay lại danh sách"}
           </button>
         </div>
       </div>
