@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scoreAnswer, shuffleQuiz, type Question } from "../lib/quizData";
+import { displayAnswer, scoreAnswer, shuffleQuiz, type Question } from "../lib/quizData";
 
 const q = (type: Question["type"], correctAnswer: string, options: string[] = []): Question => ({
   id: 1, type, question: "?", options, correctAnswer,
@@ -91,4 +91,17 @@ test("shuffleQuiz không làm đổi điểm và không đụng vào mảng gố
     }
   }
   assert.equal(JSON.stringify(questions), before);
+});
+
+test("displayAnswer: đáp án hiện cho người xem, và nó được chấm là đúng", () => {
+  const cases = [
+    q("mcq", "B", ["A", "B"]),
+    q("multi", JSON.stringify(["A", "C"]), ["A", "B", "C"]),
+    q("short", "5.000|5000|5 000"),
+    q("numeric", "3,5"),
+  ];
+  assert.deepEqual(cases.map(displayAnswer), ["B", "A; C", "5.000", "3,5"]);
+  for (const c of cases) {
+    if (c.type !== "multi") assert.equal(scoreAnswer(c, displayAnswer(c)), true);
+  }
 });

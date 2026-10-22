@@ -89,6 +89,7 @@ export default async function SgkLessonPage({ params, searchParams }: Props) {
         quickExamHref={sgkToanHref(grade, lesson.so)}
         progressKey={sgkProgressKey(grade, lesson.so)}
         backLink={{ href: listHref, label: `Toán ${grade} theo bài` }}
+        practice
       />
     </Suspense>
   );
