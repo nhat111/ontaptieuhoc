@@ -5,3 +5,4 @@
 export { KNTT3 } from "./lop3";
 export { KNTT1 } from "./lop1";
 export { KNTT2 } from "./lop2";
+export { KNTT4 } from "./lop4";
