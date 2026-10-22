@@ -54,17 +54,16 @@ export default async function HomePage() {
               Lớp 1–9 · Theo sách giáo khoa mới
             </p>
             <h1 className="text-balance text-4xl font-black leading-[1.12] tracking-tight text-slate-900 sm:text-5xl lg:text-[56px]">
-              Ôn bài <span className="whitespace-nowrap text-primary-600">15 phút</span> mỗi ngày,{" "}
+              Mỗi ngày <span className="whitespace-nowrap text-primary-600">15 phút</span>, con{" "}
               <span className="relative whitespace-nowrap">
-                vui như chơi
+                vững bài trên lớp
                 <svg viewBox="0 0 200 12" className="absolute -bottom-2 left-0 h-3 w-full text-star-400" preserveAspectRatio="none" aria-hidden>
                   <path d="M2 9 Q50 1 100 7 T198 5" stroke="currentColor" strokeWidth="5" fill="none" strokeLinecap="round" />
                 </svg>
               </span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Bài tập và đề kiểm tra lớp 1 đến lớp 9. Làm trên web, chấm điểm ngay, có lời giải — hoặc
-              tải đề về in cho con làm trên giấy.
+              Bài tập và đề kiểm tra lớp 1–9. Chấm điểm ngay, có lời giải, tải về in được.
             </p>
             <div id="hero-cta" className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <a
