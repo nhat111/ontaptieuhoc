@@ -13,6 +13,7 @@ import PdfPreview from "@/components/PdfPreview";
 import QuestionCard from "./QuestionCard";
 import QuestionPalette from "./QuestionPalette";
 import VoicePicker from "./VoicePicker";
+import NoVoiceNotice from "@/components/NoVoiceNotice";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { canAttachVoice, readAloudEnabled } from "@/lib/readAloud";
 import {
@@ -201,6 +202,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
       ) : (
         <span className="text-gray-400">Đọc bằng giọng máy của thiết bị.</span>
       )}
+      {!hasAudioFiles && <NoVoiceNotice className="mt-2" />}
     </div>
   );
 

@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { stopSpeaking, isSpeechSupported, speakSegments, type SpeakSegment } from "@/lib/speech";
+import {
+  detectLang,
+  isSpeechSupported,
+  missingVoice,
+  speakSegments,
+  stopSpeaking,
+  subscribeVoice,
+  type SpeakSegment,
+} from "@/lib/speech";
 import { speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 
 interface Props {
@@ -33,13 +41,21 @@ export default function SpeakButton({ segments, audioUrl, label, className = "" 
     () => false
   );
 
+  // Máy không có giọng cho mọi đoạn (vd không có giọng Việt) thì speakSegments
+  // bỏ hết — nút bấm sẽ không ra tiếng, nên ẩn đi.
+  const noVoice = useSyncExternalStore(
+    subscribeVoice,
+    () => segments.length > 0 && segments.every((s) => missingVoice(s.lang ?? detectLang(s.text))),
+    () => false
+  );
+
   // Dừng đọc khi component biến mất (chuyển câu, rời trang).
   useEffect(() => () => { stopSpeaking(); stopAudioFiles(); }, []);
 
   const useFile = !!audioUrl && !fileFailed;
 
   // File audio phát được cả khi máy không có speechSynthesis.
-  if (!supported && !useFile) return null;
+  if ((!supported || noVoice) && !useFile) return null;
 
   function handleClick() {
     if (speaking) {

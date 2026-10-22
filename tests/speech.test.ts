@@ -6,7 +6,7 @@ import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { fake } from "./fakeSpeech";
-import { speakSegments, stopSpeaking } from "../lib/speech";
+import { detectLang, missingVoice, speakSegments, stopSpeaking } from "../lib/speech";
 
 const spoken = fake.spoken;
 
@@ -57,4 +57,41 @@ test("lượt đọc mới kết thúc lượt cũ và báo onEnd cho nút cũ",
   finishCurrent();
   assert.deepEqual(spoken, ["A1", "B1", "B2"]);
   assert.equal(firstEnded, 1);
+});
+
+test("detectLang nhận chữ Việt gõ kiểu Unicode tổ hợp (NFD)", () => {
+  assert.equal(detectLang("Con mèo".normalize("NFD")), "vi-VN");
+  assert.equal(detectLang("Bạn ăn gì?".normalize("NFD")), "vi-VN");
+  assert.equal(detectLang("What is this?"), "en-US");
+});
+
+test("chưa biết danh sách giọng thì vẫn đọc tiếng Việt như cũ", () => {
+  assert.equal(missingVoice("vi-VN"), false);
+  speakSegments([{ text: "Con mèo" }]);
+  assert.deepEqual(spoken, ["Con mèo"]);
+});
+
+// Hai test cuối đổi danh sách giọng của máy giả — giữ ở cuối file.
+test("máy không có giọng Việt: bỏ đoạn tiếng Việt, không để giọng Anh đọc sai dấu", () => {
+  fake.voices = [{ name: "Samantha", lang: "en-US", voiceURI: "sam" }];
+  let ended = 0;
+  speakSegments(
+    [{ text: "Câu 1", lang: "vi-VN" }, { text: "What is this?" }, { text: "Con mèo" }],
+    { onEnd: () => ended++ }
+  );
+  finishCurrent();
+  assert.equal(missingVoice("vi-VN"), true);
+  assert.equal(missingVoice("en-US"), false);
+  assert.deepEqual(spoken, ["What is this?"]);
+  assert.equal(ended, 1);
+});
+
+test("máy có giọng Việt (lang viết vi_VN) thì đọc bình thường", () => {
+  fake.voices = [
+    { name: "Samantha", lang: "en-US", voiceURI: "sam" },
+    { name: "Linh", lang: "vi_VN", voiceURI: "linh" },
+  ];
+  speakSegments([{ text: "Con mèo" }]);
+  assert.equal(missingVoice("vi-VN"), false);
+  assert.deepEqual(spoken, ["Con mèo"]);
 });
