@@ -126,6 +126,24 @@ viết mới; **in** = bài thực hành (vẽ, đo thật) — chỉ làm phi�
 
 Mục lục 10 chủ đề, 41 bài, đối chiếu với kế hoạch dạy học Toán 1 Kết nối tri thức (HoaTieu.vn). **39/41 bài làm được trên máy**; bài 8 (thực hành lắp ghép, xếp hình) và bài 27 (thực hành ước lượng, đo độ dài) là bài thực hành. Dạng mới `KNTT1`: nhiều hơn – ít hơn – bằng nhau (bài 3), đồ vật có dạng hình gì (7), vị trí trong không gian (15), dài hơn – ngắn hơn có hình băng giấy (25), cộng trừ không nhớ tách theo từng bài 29–32. Còn lại dùng `LOP1`, dạng có hình của đề in và `KNTT3` (khối hộp, tờ lịch).
 
+## Toán 2 (10/2026)
+
+Mục lục 14 chủ đề, 75 bài (tập một: chủ đề 1–7, bài 1–36; tập hai: chủ đề 8–14), đối chiếu với kế hoạch dạy học Toán 2 Kết nối tri thức (HoaTieu.vn). **71/75 bài làm được trên máy**; bài 17 (trải nghiệm ki-lô-gam, lít), 27 (gấp, cắt, ghép hình, vẽ đoạn thẳng), 57 (đo độ dài) và 67 (thu thập số liệu) là bài thực hành. Dạng mới `KNTT2` (`lib/mathGen/kntt/lop2.ts`), mỗi dạng một bài trở lên:
+
+- tia số có hình (bài 2), tên gọi thành phần phép cộng, trừ (3), hơn kém nhau bao nhiêu (4);
+- thêm, bớt và nhiều hơn, ít hơn qua 10 (9, 13); ki-lô-gam (15), lít (16);
+- cộng, trừ có nhớ tách theo từng bài 19, 20, 22, 23;
+- điểm, đoạn thẳng, ba điểm thẳng hàng có hình (25);
+- ngày – giờ, giờ – phút (29); ngày – tháng (30);
+- phép nhân là tổng các số hạng bằng nhau (37), thừa số – tích (38), phép chia (41), số bị chia – số chia – thương (42), bảng chia 2, 5 (43, 44);
+- khối trụ, khối cầu (46);
+- đơn vị, chục, trăm, nghìn (48), số tròn trăm, tròn chục (49, 50), đọc – viết số có ba chữ số (51), viết số thành tổng (52);
+- chọn đơn vị đo độ dài, so sánh số đo khác đơn vị (55);
+- cộng, trừ trong phạm vi 1000 không nhớ / có nhớ đúng một lần (59–62);
+- kiểm đếm (64), biểu đồ tranh (65).
+
+Còn lại dùng `LOP1`, `LOP2`, `KNTT1` (cộng trừ không nhớ, bài 5), `KNTT3` (tờ lịch, khối hộp, khả năng xảy ra) và các dạng có hình của đề in: đồng hồ, đường gấp khúc, đếm tứ giác, tiền, nhóm đồ vật.
+
 ## Tiến độ
 
 - **10/2026 — đã làm (lớp 3):** trang `/lop/3/toan` và `/lop/3/toan/bai-<n>`, dữ liệu `lib/sgk/toan3.ts`. **63/81 bài làm được trên máy**: 34 bài "có", thêm 8 bài nhờ dạng mới (25 chia hết – có dư, 39 số lớn gấp mấy lần số bé, 45–46 các số đến 10 000, 54–57 phép tính trong phạm vi 10 000; 23, 26 có dạng riêng thay vì lọc), và các bài luyện tập / ôn tập trộn được.
@@ -138,7 +156,7 @@ Mục lục 10 chủ đề, 41 bài, đối chiếu với kế hoạch dạy h�
 2. **Trang:** `/lop/3/toan/bai-<n>` — tên bài, bài luyện 10 câu sinh theo seed (dùng lại `QuizClient` như Tạo đề nhanh, không cần DB), nút "Làm bộ khác", "In phiếu"; trang mục lục `/lop/3/toan` theo chủ đề. Tab Toán của `/lop/3` có lối vào.
 3. **Generator:** gắn 34 bài có ngay trước, rồi 15 bài một phần, rồi 7 bài thiếu. Mỗi dạng mới được kiểm tra trong `scripts/gen-math-check.ts` như các dạng cũ.
 4. **Kiểm tra:** `scripts/sgk-toan-check.ts` — đủ 81 bài, số bài liên tục, bài nào cũng sinh được 10 câu chấm đúng, bài trộn chỉ trỏ tới bài đứng trước.
-5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5.
+5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5. **Đã xong lớp 1, 2, 3; tiếp theo lớp 4, rồi lớp 5.**
 
 Câu hỏi cần chủ site chốt: URL `/lop/3/toan/bai-15` hay `/toan-3/bai-15`; trang bài có lưu
 tiến độ vào `localStorage` như bài trong DB không.
