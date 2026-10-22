@@ -13,6 +13,7 @@ import type { AnswerMode } from "../worksheetExport";
 import {
   type ExamPaper, type PaperItem, type PaperQuestion, isGroup, pointsText, questionsOf,
 } from "./paper";
+import { RUBRIC, formOfPrompt, guideForPrompt } from "../lamVan";
 
 export interface PrintOptions {
   answers: AnswerMode;
@@ -166,9 +167,14 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
   }
 
   if (p.writing) {
-    html += `<h3>B. KIỂM TRA VIẾT (${p.writing.points} điểm)</h3>` +
-      `<p>Gợi ý biểu điểm: Mở bài đúng yêu cầu 1,5 điểm; Thân bài đủ ý, có trình tự, có hình ảnh và cảm xúc 5 điểm; ` +
-      `Kết bài 1,5 điểm; Chữ viết rõ ràng, đúng chính tả 0,5 điểm; Dùng từ, đặt câu đúng 0,5 điểm; Bài viết có sáng tạo 1 điểm.</p>`;
+    const rubric = RUBRIC[formOfPrompt(p.writing.prompt)].map(([label, pts]) => `${label} ${pointsText(pts)}`).join("; ");
+    html += `<h3>B. KIỂM TRA VIẾT (${p.writing.points} điểm)</h3><p>Gợi ý biểu điểm: ${escapeHtml(rubric)}.</p>`;
+    // Lớp 5: kèm dàn ý của dạng bài (trang /lam-van/lop-5) để phụ huynh chấm có căn cứ.
+    const guide = p.grade === 5 ? guideForPrompt(p.writing.prompt) : undefined;
+    if (guide) {
+      html += `<p><b>Dàn ý gợi ý (${escapeHtml(guide.title.replace(/^Viết /, "").toLowerCase())}):</b></p>` +
+        guide.outline.map((o) => `<p><b>${escapeHtml(o.part)}:</b> ${escapeHtml(o.points.join(" "))}</p>`).join("");
+    }
   }
   return html + `</div>`;
 }

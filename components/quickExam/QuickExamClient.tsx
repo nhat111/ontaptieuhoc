@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Clock, Download, FileText, ListChecks, MonitorPlay, RefreshCw, Sparkles } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Download, FileText, ListChecks, MonitorPlay, PenLine, RefreshCw, Sparkles } from "lucide-react";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
 import { EXAM_KINDS, getQuickExam, hasQuickExam, quickExamHref, type ExamKind } from "@/lib/quickExam";
 import { answerText, type AnswerMode } from "@/lib/worksheetExport";
@@ -205,6 +205,17 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
                 ? "Bài đọc và câu hỏi do Ôn Tập Phổ Thông tự soạn theo chủ điểm sách giáo khoa; mỗi lần bấm chọn bài đọc, câu hỏi và đề văn khác. Câu viết và bài tập làm văn chấm trên giấy."
                 : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Đề theo cấu trúc đề giấy (trắc nghiệm, tự luận, có hình vẽ) và thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
             </p>
+            {spec.subject === "Tiếng Việt" && grade === 5 && (
+              <Link href="/lam-van/lop-5"
+                className="group flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 transition-colors hover:border-violet-300">
+                <PenLine className="h-5 w-5 flex-shrink-0 text-violet-600" aria-hidden />
+                <span className="min-w-0 flex-1 text-sm">
+                  <span className="block font-extrabold text-slate-900">Hướng dẫn làm văn lớp 5</span>
+                  <span className="block text-slate-600">Dàn ý, mở bài – kết bài mẫu, bài tham khảo cho phần Kiểm tra viết</span>
+                </span>
+                <ChevronRight className="h-4 w-4 flex-shrink-0 text-violet-600 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+            )}
           </>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
