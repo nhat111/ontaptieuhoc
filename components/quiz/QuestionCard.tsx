@@ -1,4 +1,5 @@
-import { Question } from "@/lib/quizData";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { Question, displayAnswer, scoreAnswer } from "@/lib/quizData";
 import AnswerOption from "./AnswerOption";
 import MathText from "@/components/MathText";
 import SpeakButton from "@/components/SpeakButton";
@@ -11,6 +12,12 @@ interface QuestionCardProps {
   onSelect: (answer: string) => void;
   /** Hiện nút Nghe (lớp 1–2, đề Tiếng Anh — xem lib/readAloud.ts). Mặc định có. */
   speak?: boolean;
+  /**
+   * Chế độ luyện tập (bài Toán theo sách): đã chọn đáp án thì có nút "Kiểm tra"; bấm rồi
+   * câu bị khoá, hiện đúng/sai, đáp án đúng và lời giải. `undefined` = không có nút.
+   */
+  checked?: boolean;
+  onCheck?: () => void;
 }
 
 const TYPE_BADGE: Record<Question["type"], string> = {
@@ -20,7 +27,10 @@ const TYPE_BADGE: Record<Question["type"], string> = {
   numeric: "Trả lời số",
 };
 
-export default function QuestionCard({ question, index, selectedAnswer, onSelect, speak = true }: QuestionCardProps) {
+export default function QuestionCard({ question, index, selectedAnswer, onSelect, speak = true, checked, onCheck }: QuestionCardProps) {
+  // Đã kiểm tra thì khoá câu: đổi đáp án sau khi xem lời giải là tự chấm cho mình.
+  const locked = !!checked;
+  const select = (answer: string) => { if (!locked) onSelect(answer); };
   // For "multi", selectedAnswer is JSON-stringified string[] of chosen option texts.
   let multiSelected: Set<string> = new Set();
   if (question.type === "multi" && selectedAnswer) {
@@ -34,7 +44,7 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
     const next = new Set(multiSelected);
     if (next.has(opt)) next.delete(opt);
     else next.add(opt);
-    onSelect(JSON.stringify([...next]));
+    select(JSON.stringify([...next]));
   }
 
   // Normalize images so legacy `imageUrl` (without `images` array) still renders.
@@ -114,7 +124,8 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
                   index={i}
                   isSelected={isSelected}
                   variant={question.type === "multi" ? "checkbox" : "radio"}
-                  onSelect={() => (question.type === "multi" ? toggleMulti(opt) : onSelect(opt))}
+                  disabled={locked}
+                  onSelect={() => (question.type === "multi" ? toggleMulti(opt) : select(opt))}
                 />
               );
             })}
@@ -126,7 +137,8 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
             <input
               type="text"
               value={selectedAnswer ?? ""}
-              onChange={(e) => onSelect(e.target.value)}
+              onChange={(e) => select(e.target.value)}
+              readOnly={locked}
               placeholder="Nhập câu trả lời của bạn..."
               className="w-full max-w-md border-2 border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
@@ -142,7 +154,8 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
               type="text"
               inputMode="decimal"
               value={selectedAnswer ?? ""}
-              onChange={(e) => onSelect(e.target.value)}
+              onChange={(e) => select(e.target.value)}
+              readOnly={locked}
               placeholder="Nhập số (vd: 42, 3.14)"
               className="w-full max-w-xs border-2 border-gray-200 rounded-2xl px-4 py-3 text-lg font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
@@ -152,6 +165,42 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           </div>
         )}
       </div>
+
+      {onCheck && !checked && selectedAnswer !== null && (
+        <button
+          type="button"
+          onClick={onCheck}
+          className="mt-4 inline-flex min-h-11 items-center rounded-xl border-2 border-primary-200 bg-white px-4 text-sm font-bold text-primary-700 hover:bg-primary-50"
+        >
+          Kiểm tra
+        </button>
+      )}
+      {checked && <CheckResult question={question} answer={selectedAnswer} />}
+    </div>
+  );
+}
+
+function CheckResult({ question, answer }: { question: Question; answer: string | null }) {
+  const right = scoreAnswer(question, answer);
+  return (
+    <div className="mt-4 space-y-2" role="status">
+      <p className={`flex items-center gap-1.5 text-sm font-bold ${right ? "text-success-700" : "text-coral-700"}`}>
+        {right ? <CheckCircle2 className="h-5 w-5" aria-hidden /> : <XCircle className="h-5 w-5" aria-hidden />}
+        {right ? "Đúng rồi!" : "Chưa đúng."}
+        {!right && (
+          <span className="font-semibold text-slate-700">
+            Đáp án đúng: <MathText text={displayAnswer(question)} />
+          </span>
+        )}
+      </p>
+      {question.explanation?.trim() && (
+        <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-slate-700">
+          <p className="mb-0.5 text-xs font-semibold text-amber-700">Lời giải</p>
+          <div className="whitespace-pre-wrap leading-relaxed">
+            <MathText text={question.explanation} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
