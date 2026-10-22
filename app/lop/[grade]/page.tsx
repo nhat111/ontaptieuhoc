@@ -11,6 +11,8 @@ import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { hasQuickExam } from "@/lib/quickExam";
 import { hidesOldLessons, sgkBook, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
+import { tvGuide } from "@/lib/tvGuide";
+import TvChuDiemList from "@/components/tvGuide/TvChuDiemList";
 
 export async function generateMetadata({
   params,
@@ -87,6 +89,8 @@ export default async function GradePage({
 
   // Toán lớp có sách (lib/sgk): tab Bài tập chỉ hiện các chủ đề của sách, không hiện bài cũ trong DB.
   const book = activeView !== "exam" && hidesOldLessons(gradeNum, activeSubject) ? sgkBook(gradeNum) : null;
+  // Tiếng Việt lớp có hướng dẫn (lib/tvGuide): tab Bài tập hiện các chủ điểm sách kèm cách làm bài, trên các chương trong DB.
+  const guide = activeView !== "exam" && activeSubject === "Tiếng Việt" ? tvGuide(gradeNum) : null;
   const chapters =
     activeSubject && !book
       ? await getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
@@ -220,6 +224,7 @@ export default async function GradePage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
+            {guide && <TvChuDiemList guide={guide} />}
             {book ? (
               <div className="overflow-hidden rounded-2xl border border-success-200 bg-white shadow-soft">
                 <Link href={sgkToanHref(gradeNum)} className="group flex items-center gap-3 border-b border-success-100 bg-gradient-to-r from-success-50 to-white px-4 py-3">
@@ -251,6 +256,7 @@ export default async function GradePage({
                 </ul>
               </div>
             ) : chapters.length === 0 ? (
+              guide ? null : (
               <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
                 <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
                   {activeView === "exam" ? <FileText className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
@@ -270,6 +276,7 @@ export default async function GradePage({
                   </a>
                 )}
               </div>
+              )
             ) : (
               chapters.map((chapter, i) => (
                 <ChapterItem
