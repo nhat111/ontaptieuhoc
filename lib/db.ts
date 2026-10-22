@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { getSupabaseServer } from './supabase/server'
 import type { Question as QuizQuestion, LessonMeta, QType } from './quizData'
 
@@ -110,59 +111,71 @@ async function fetchAllResults(sb: ReturnType<typeof getSupabaseServer>, lessonI
  */
 export async function getLeaderboardByGrade(grade: number): Promise<LeaderboardEntry[]> {
   try {
-    const sb = getSupabaseServer()
-
-    const { data: chapters } = await sb
-      .from('chapters')
-      .select('id, subjects!inner(grade)')
-      .eq('subjects.grade', grade)
-    if (!chapters?.length) return []
-
-    const { data: lessons } = await sb.from('lessons').select('id').in('chapter_id', chapters.map((c: any) => c.id))
-    if (!lessons?.length) return []
-
-    const results = await fetchAllResults(sb, lessons.map((l: any) => l.id))
-    if (!results.length) return []
-
-    // Điểm tốt nhất (thang 100) của mỗi (người, bài)
-    const userBest = new Map<string, Map<number, number>>()
-    for (const r of results) {
-      if (!r.user_id || !(r.total > 0)) continue
-      const pct = Math.min(100, Math.max(0, (r.score / r.total) * 100))
-      if (!userBest.has(r.user_id)) userBest.set(r.user_id, new Map())
-      const lm = userBest.get(r.user_id)!
-      if (!lm.has(r.lesson_id) || pct > lm.get(r.lesson_id)!) lm.set(r.lesson_id, pct)
-    }
-
-    const stats = [...userBest.entries()]
-      .map(([userId, lm]) => {
-        const scores = [...lm.values()]
-        const sum = scores.reduce((a, b) => a + b, 0)
-        return { userId, lessonCount: scores.length, points: Math.round(sum), avgScore: Math.round(sum / scores.length) }
-      })
-      .sort((a, b) => b.points - a.points || b.avgScore - a.avgScore || b.lessonCount - a.lessonCount)
-      .slice(0, 10)
-
-    // Chỉ tra email của ≤10 người trong bảng, thay vì listUsers (chỉ lấy được
-    // 1000 người đầu, quá số đó thì tên hiện "user").
-    const emails = await Promise.all(
-      stats.map(async (s) => {
-        const { data } = await sb.auth.admin.getUserById(s.userId)
-        return data?.user?.email ?? ''
-      })
-    )
-
-    return stats.map((s, i) => ({
-      rank: i + 1,
-      name: maskEmail(emails[i] || 'user'),
-      points: s.points,
-      avgScore: s.avgScore,
-      lessonCount: s.lessonCount,
-    }))
+    return await cachedLeaderboard(grade)
   } catch (e) {
     console.error('[getLeaderboardByGrade]', e)
     return []
   }
+}
+
+/**
+ * Cache 5 phút, dùng chung mọi lượt xem: tính bảng xếp hạng phải đọc HẾT
+ * quiz_results của lớp rồi tra email từng người — mỗi lượt là vài vòng tới
+ * Supabase, trước đây lặp lại ở mỗi lần mở /lop/[grade]. Lỗi được ném ra
+ * (không trả []) để unstable_cache không giữ một bảng rỗng suốt 5 phút.
+ */
+const cachedLeaderboard = unstable_cache(computeLeaderboard, ['leaderboard-by-grade'], {
+  revalidate: 300,
+})
+
+async function computeLeaderboard(grade: number): Promise<LeaderboardEntry[]> {
+  const sb = getSupabaseServer()
+
+  const { data: lessons, error: lessonErr } = await sb
+    .from('lessons')
+    .select('id, chapters!inner(subjects!inner(grade))')
+    .eq('chapters.subjects.grade', grade)
+  if (lessonErr) throw lessonErr
+  if (!lessons?.length) return []
+
+  const results = await fetchAllResults(sb, lessons.map((l: any) => l.id))
+  if (!results.length) return []
+
+  // Điểm tốt nhất (thang 100) của mỗi (người, bài)
+  const userBest = new Map<string, Map<number, number>>()
+  for (const r of results) {
+    if (!r.user_id || !(r.total > 0)) continue
+    const pct = Math.min(100, Math.max(0, (r.score / r.total) * 100))
+    if (!userBest.has(r.user_id)) userBest.set(r.user_id, new Map())
+    const lm = userBest.get(r.user_id)!
+    if (!lm.has(r.lesson_id) || pct > lm.get(r.lesson_id)!) lm.set(r.lesson_id, pct)
+  }
+
+  const stats = [...userBest.entries()]
+    .map(([userId, lm]) => {
+      const scores = [...lm.values()]
+      const sum = scores.reduce((a, b) => a + b, 0)
+      return { userId, lessonCount: scores.length, points: Math.round(sum), avgScore: Math.round(sum / scores.length) }
+    })
+    .sort((a, b) => b.points - a.points || b.avgScore - a.avgScore || b.lessonCount - a.lessonCount)
+    .slice(0, 10)
+
+  // Chỉ tra email của ≤10 người trong bảng, thay vì listUsers (chỉ lấy được
+  // 1000 người đầu, quá số đó thì tên hiện "user").
+  const emails = await Promise.all(
+    stats.map(async (s) => {
+      const { data } = await sb.auth.admin.getUserById(s.userId)
+      return data?.user?.email ?? ''
+    })
+  )
+
+  return stats.map((s, i) => ({
+    rank: i + 1,
+    name: maskEmail(emails[i] || 'user'),
+    points: s.points,
+    avgScore: s.avgScore,
+    lessonCount: s.lessonCount,
+  }))
 }
 
 // ---- Subjects ----
@@ -318,37 +331,31 @@ export async function getChaptersWithLessons(
   try {
     const sb = getSupabaseServer()
 
-    // `subjects!inner` makes the embedded filters actually restrict the rows,
-    // so this is one round trip instead of a subject lookup then a chapter query.
-    const { data: chapters } = await sb
+    // One round trip: `subjects!inner` makes the subject filters restrict the
+    // chapters, and the lessons are embedded. Filters/order on `lessons` only
+    // narrow the embedded rows, never the chapters (empty ones are dropped below).
+    let query = sb
       .from('chapters')
-      .select('id, title, order_index, subjects!inner(grade, name)')
+      .select(
+        'id, title, order_index, subjects!inner(grade, name), lessons(id, title, index_label, status, order_index, type, questions(count))'
+      )
       .eq('subjects.grade', grade)
       .eq('subjects.name', subjectName)
       .order('order_index')
-
-    if (!chapters?.length) return []
-
-    const chapterIds = chapters.map((c: any) => c.id)
-
-    let query = sb
-      .from('lessons')
-      .select('id, title, index_label, chapter_id, status, order_index, questions(count)')
-      .in('chapter_id', chapterIds)
-      .order('order_index')
+      .order('order_index', { referencedTable: 'lessons' })
 
     if (lessonType === 'exam') {
-      query = query.eq('type', 'exam') as typeof query
+      query = query.eq('lessons.type', 'exam') as typeof query
     } else {
-      query = query.or('type.eq.lesson,type.is.null') as typeof query
+      query = query.or('type.eq.lesson,type.is.null', { referencedTable: 'lessons' }) as typeof query
     }
 
-    const { data: lessons } = await query
+    const { data: chapters } = await query
+    if (!chapters?.length) return []
 
     return chapters
       .map((ch: any) => {
-        const chLessons: ComponentLesson[] = (lessons ?? [])
-          .filter((l: any) => l.chapter_id === ch.id)
+        const chLessons: ComponentLesson[] = ((ch.lessons ?? []) as any[])
           .map((l: any) => ({
             id: l.id,
             index: l.index_label,
@@ -426,30 +433,17 @@ export const getLessonMetaFromDB = cache(async function getLessonMetaFromDB(
   lessonId: number
 ): Promise<LessonMeta> {
   try {
-    const sb = getSupabaseServer()
-    const { data: lesson } = await sb
+    // Bài → chương → môn trong một lượt (trước đây 3 lượt nối tiếp).
+    const { data: lesson } = await getSupabaseServer()
       .from('lessons')
-      .select('id, title, chapter_id, duration_minutes')
+      .select('id, title, duration_minutes, chapters(subjects(grade, name))')
       .eq('id', lessonId)
       .single()
     if (!lesson) return { id: lessonId, title: `Bài ${lessonId}` }
 
-    const { data: chapter } = await sb
-      .from('chapters')
-      .select('subject_id')
-      .eq('id', lesson.chapter_id)
-      .single()
-
-    let grade: number | null = null
-    let subjectName: string | null = null
-    if (chapter) {
-      const { data: subject } = await sb
-        .from('subjects')
-        .select('grade, name')
-        .eq('id', chapter.subject_id)
-        .single()
-      if (subject) { grade = subject.grade; subjectName = subject.name }
-    }
+    const subject = (lesson as any).chapters?.subjects
+    const grade: number | null = subject?.grade ?? null
+    const subjectName: string | null = subject?.name ?? null
 
     return {
       id: lesson.id,
@@ -477,32 +471,17 @@ export type ExamListItem = {
 export async function getAllExams(): Promise<ExamListItem[]> {
   try {
     const sb = getSupabaseServer()
+    // Đề + chương + môn trong một lượt (trước đây 3 lượt nối tiếp).
     const { data: lessons } = await sb
       .from('lessons')
-      .select('id, title, index_label, duration_minutes, chapter_id, questions(count)')
+      .select('id, title, index_label, duration_minutes, questions(count), chapters(subjects(name, grade))')
       .eq('type', 'exam')
       .order('id', { ascending: false })
 
     if (!lessons?.length) return []
 
-    const chapterIds = [...new Set((lessons as any[]).map((l) => l.chapter_id))]
-    const { data: chapters } = await sb
-      .from('chapters')
-      .select('id, subject_id')
-      .in('id', chapterIds)
-
-    const subjectIds = [...new Set((chapters ?? []).map((c: any) => c.subject_id))]
-    const { data: subjects } = await sb
-      .from('subjects')
-      .select('id, name, grade')
-      .in('id', subjectIds)
-
-    const chapterMap = new Map((chapters ?? []).map((c: any) => [c.id, c]))
-    const subjectMap = new Map((subjects ?? []).map((s: any) => [s.id, s]))
-
     return (lessons as any[]).map((l) => {
-      const chapter = chapterMap.get(l.chapter_id)
-      const subject = chapter ? subjectMap.get((chapter as any).subject_id) : null
+      const subject = l.chapters?.subjects
       return {
         id: l.id,
         title: l.title,

@@ -19,9 +19,12 @@ const LEVELS = [
 export default function Sidebar({
   leaderboard = [],
   grade,
+  loading = false,
 }: {
   leaderboard?: LeaderboardEntry[];
   grade?: number;
+  /** Bảng xếp hạng còn đang tải (fallback của Suspense trên /lop/[grade]). */
+  loading?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -40,7 +43,16 @@ export default function Sidebar({
         </div>
 
         <div className="px-3 pb-4">
-          {leaderboard.length === 0 ? (
+          {loading ? (
+            <ol className="space-y-1.5" aria-busy="true" aria-label="Đang tải bảng xếp hạng">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="flex items-center gap-3 rounded-xl px-2.5 py-2">
+                  <span className="h-9 w-9 flex-shrink-0 rounded-full bg-slate-100 motion-safe:animate-pulse" />
+                  <span className="h-3 flex-1 rounded bg-slate-100 motion-safe:animate-pulse" />
+                </li>
+              ))}
+            </ol>
+          ) : leaderboard.length === 0 ? (
             <div className="mx-2 rounded-xl border border-dashed border-slate-200 py-6 text-center">
               <Medal className="mx-auto h-6 w-6 text-slate-300" aria-hidden />
               <p className="mt-2 text-xs text-slate-500">Chưa có ai làm bài trong lớp này.</p>
