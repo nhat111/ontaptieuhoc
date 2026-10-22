@@ -131,24 +131,26 @@ export default async function LamVanGuidePage({ params }: Props) {
         </Card>
 
         <Card id="bai-mau" title="Bài tham khảo" icon={<BookOpen className="h-4 w-4" />}>
-          <p className="text-sm text-slate-600">
-            <b>Đề:</b> {g.sample.prompt}
-          </p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             Em hãy thử lập dàn ý và viết trước, rồi mới mở bài tham khảo. Đừng học thuộc — mỗi bạn có người thân, ngôi trường, cảm xúc riêng, thầy cô thích nhất bài viết bằng lời của chính em.
           </p>
-          <details className="group mt-3 rounded-xl border border-slate-200">
-            <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-extrabold text-primary-700">
-              <span className="group-open:hidden">Mở bài tham khảo</span>
-              <span className="hidden group-open:inline">Thu gọn</span>
-            </summary>
-            <div className="space-y-3 border-t border-slate-100 px-4 py-4 text-[15px] leading-relaxed text-slate-800">
-              {g.sample.paragraphs.map((p, i) => <p key={i} className="indent-6">{p}</p>)}
-            </div>
-            <p className="mx-4 mb-4 rounded-xl bg-success-50 px-3 py-2 text-sm leading-relaxed text-success-800">
-              <b>Vì sao bài này được điểm cao?</b> {g.sample.note}
-            </p>
-          </details>
+          {g.samples.map((sm, k) => (
+            <details key={k} className="group mt-3 rounded-xl border border-slate-200">
+              <summary className="flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-4 py-2">
+                <span className="text-sm font-extrabold text-primary-700">
+                  {g.samples.length > 1 ? `Bài tham khảo ${k + 1}` : "Bài tham khảo"}
+                  <span className="font-semibold text-slate-400 group-open:hidden"> · bấm để mở</span>
+                </span>
+                <span className="text-sm text-slate-600"><b>Đề:</b> {sm.prompt}</span>
+              </summary>
+              <div className="space-y-3 border-t border-slate-100 px-4 py-4 text-[15px] leading-relaxed text-slate-800">
+                {sm.paragraphs.map((p, i) => <p key={i} className="indent-6">{p}</p>)}
+              </div>
+              <p className="mx-4 mb-4 rounded-xl bg-success-50 px-3 py-2 text-sm leading-relaxed text-success-800">
+                <b>Vì sao bài này được điểm cao?</b> {sm.note}
+              </p>
+            </details>
+          ))}
         </Card>
 
         <Card id="loi" title="Lỗi hay mắc" icon={<AlertTriangle className="h-4 w-4" />}>

@@ -8,7 +8,7 @@ import { pointsText } from "@/lib/exam5/paper";
 
 const TITLE = "Hướng dẫn làm văn lớp 5";
 const DESCRIPTION =
-  "Cách làm bài văn, đoạn văn Tiếng Việt lớp 5 cho hay và đúng ý: tả cảnh, tả người, kể chuyện sáng tạo, nêu cảm xúc về nhân vật, nêu ý kiến. Có dàn ý, mở bài, kết bài mẫu và bài tham khảo.";
+  "Cách làm bài văn, đoạn văn Tiếng Việt lớp 5 cho hay và đúng ý: tả cảnh, tả người, kể chuyện sáng tạo, nêu cảm xúc về nhân vật và sự việc, giới thiệu nhân vật, nêu ý kiến. Có dàn ý, mở bài, kết bài mẫu và bài tham khảo.";
 
 export const metadata: Metadata = {
   title: TITLE,
