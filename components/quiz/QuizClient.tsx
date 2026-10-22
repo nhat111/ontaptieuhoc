@@ -44,9 +44,13 @@ interface Props {
    * nằm trong DB nên không lưu kết quả, không ghi tiến độ, không có nút Sửa đề.
    */
   quickExamHref?: string;
+  /** Bài tự sinh theo sách (lib/sgk): khoá lưu tiến độ trên máy, dù không có trong DB. */
+  progressKey?: string;
+  /** Nút thứ hai ở trang kết quả (mặc định: Tạo đề khác → /tao-de). */
+  backLink?: { href: string; label: string };
 }
 
-export default function QuizClient({ initialQuestions, initialLesson, quickExamHref }: Props) {
+export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -75,7 +79,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   // Gắn vào mỗi lượt đếm (lib/usage.ts): môn + bài nào, hay đề tự sinh.
   const usage = () => ({
     grade: lesson.grade ?? null,
-    detail: `${lesson.subjectName ?? "?"} · ${quickExamHref ? "đề nhanh" : `#${lessonId}`}`,
+    detail: `${lesson.subjectName ?? "?"} · ${progressKey ?? (quickExamHref ? "đề nhanh" : `#${lessonId}`)}`,
   });
 
   function start() {
@@ -220,6 +224,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
       }).catch(() => {});
       // Tiến độ trên máy: trang lớp dựa vào đây để hiện Học ngay / Tiếp tục / Làm lại.
       saveLessonResult(lessonId, score, total);
+    } else if (progressKey) {
+      saveLessonResult(progressKey, score, total);
     }
 
     sessionStorage.setItem(
@@ -230,6 +236,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
         lessonId,
         lessonTitle: lesson.title,
         retryHref: quickExamHref,
+        backHref: backLink?.href,
+        backLabel: backLink?.label,
         reading: lesson.reading,
         grade: lesson.grade ?? null,
         subjectName: lesson.subjectName ?? null,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, FileText, Gamepad2, Inbox, PenLine, Plus, Sparkles } from "lucide-react";
+import { BookOpenCheck, ChevronRight, FileText, Gamepad2, Inbox, PenLine, Plus, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import SubjectTabs from "@/components/SubjectTabs";
 import ChapterItem from "@/components/ChapterItem";
@@ -9,6 +9,7 @@ import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { hasQuickExam } from "@/lib/quickExam";
+import { SGK_BOOK, hasSgkToan, sgkToanHref } from "@/lib/sgk";
 
 export async function generateMetadata({
   params,
@@ -150,6 +151,26 @@ export default async function GradePage({
             </span>
             <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-star-200">
               Chơi
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </span>
+          </Link>
+        )}
+
+        {/* Toán theo từng bài sách (lib/sgk): lớp nào có mục lục thì mời vào. */}
+        {activeView !== "exam" && activeSubject === "Toán" && hasSgkToan(gradeNum) && (
+          <Link
+            href={sgkToanHref(gradeNum)}
+            className="group mb-6 flex items-center gap-3 rounded-2xl border border-success-200 bg-gradient-to-r from-success-50 to-white px-4 py-3 shadow-soft transition-all hover:border-success-300 motion-safe:hover:-translate-y-0.5"
+          >
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-500 text-white shadow-sm" aria-hidden>
+              <BookOpenCheck className="h-6 w-6" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-extrabold text-slate-900">Toán {gradeNum} theo từng bài sách</span>
+              <span className="block text-sm text-slate-600">Đúng thứ tự bài sách {SGK_BOOK}, mỗi lần một bộ câu mới</span>
+            </span>
+            <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-success-200">
+              Vào học
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </span>
           </Link>

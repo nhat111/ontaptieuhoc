@@ -504,7 +504,7 @@ const duongGapKhuc = (asProblem: boolean): Generator => (r) => {
   };
 };
 
-const tienHinh = (set: number[], count: [number, number]): Generator => (r) => {
+export const tienHinh = (set: number[], count: [number, number]): Generator => (r) => {
   const notes = Array.from({ length: int(r, count[0], count[1]) }, () => pick(r, set)).sort((a, b) => b - a);
   const total = notes.reduce((s, x) => s + x, 0);
   const name = pick(r, NAMES);
