@@ -52,9 +52,14 @@ interface Props {
   backLink?: { href: string; label: string };
   /** Ví dụ giải mẫu hiện dưới thẻ bắt đầu (bài Toán theo sách, lib/sgk → buildSgkExamples). */
   examples?: Question[];
+  /**
+   * Chế độ luyện tập (bài Toán theo sách): mỗi câu có nút "Kiểm tra" hiện đúng/sai và lời
+   * giải ngay, câu đã kiểm tra bị khoá. Điểm khi nộp tính như thường. Đề kiểm tra không bật.
+   */
+  practice?: boolean;
 }
 
-export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples }: Props) {
+export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples, practice }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -71,6 +76,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   // HTML của đề đang xem trước dạng PDF (null = đóng khung xem).
   const [pdfHtml, setPdfHtml] = useState<string | null>(null);
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(questions.length).fill(null));
+  // Câu đã bấm "Kiểm tra" (chế độ luyện tập). Đánh theo vị trí câu sau khi trộn.
+  const [checked, setChecked] = useState<boolean[]>(() => Array(questions.length).fill(false));
   const [current, setCurrent] = useState(0);
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
 
@@ -628,6 +635,8 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
               selectedAnswer={answers[i]}
               onSelect={(answer) => handleSelect(i, answer)}
               speak={readAloud}
+              checked={practice ? checked[i] : undefined}
+              onCheck={practice ? () => setChecked((prev) => prev.map((c, j) => c || j === i)) : undefined}
             />
           ))}
         </div>

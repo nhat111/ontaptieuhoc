@@ -7,6 +7,8 @@ interface AnswerOptionProps {
   isSelected: boolean;
   onSelect: () => void;
   variant?: "radio" | "checkbox";
+  /** Câu đã kiểm tra (chế độ luyện tập): không bấm được, không hiệu ứng hover. */
+  disabled?: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ export default function AnswerOption({
   isSelected,
   onSelect,
   variant = "radio",
+  disabled = false,
 }: AnswerOptionProps) {
   const isCheckbox = variant === "checkbox";
   return (
@@ -27,9 +30,12 @@ export default function AnswerOption({
       role={isCheckbox ? "checkbox" : "radio"}
       aria-checked={isSelected}
       onClick={onSelect}
-      className={`flex w-full min-h-[52px] items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left transition-all ${
+      disabled={disabled}
+      className={`flex w-full min-h-[52px] items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left transition-all disabled:cursor-default ${
         isSelected
           ? "border-blue-500 bg-blue-50 border-b-2 translate-y-0.5"
+          : disabled
+          ? "border-gray-200 border-b-[5px] bg-white opacity-70"
           : "border-gray-200 border-b-[5px] bg-white hover:border-blue-300 active:translate-y-0.5 active:border-b-2"
       }`}
     >

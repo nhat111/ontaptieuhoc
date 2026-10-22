@@ -91,6 +91,7 @@ export default async function SgkLessonPage({ params, searchParams }: Props) {
         progressKey={sgkProgressKey(grade, lesson.so)}
         backLink={{ href: listHref, label: `Toán ${grade} theo bài` }}
         examples={examples}
+        practice
       />
     </Suspense>
   );

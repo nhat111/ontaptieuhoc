@@ -6,7 +6,8 @@ import type { Draft } from "../../mathGen/core";
 import { LOP4, LOP5, KNTT4, KNTT5 } from "../../mathGen";
 import { chia4, cong6, hinhNhanDang, tru6 } from "../../exam5/toan1to4";
 import {
-  bieuDoQuat, hieuTi, hinhHopHinh, hinhThangHinh, hinhTronHinh, phanTramBai, tamGiacHinh, tamGiacVuong, tongTi,
+  beNuoc, bieuDoQuat, hieuTi, hinhGhep, hinhHopHinh, hinhThangHinh, hinhTronHinh, muaHang, phanTramBai, quangDuongGio,
+  tamGiacHinh, tamGiacVuong, thuaRuong, tongTi,
 } from "../../exam5/toan5";
 import { type SgkBook, type SgkTopic, has, only, tagged } from "../types";
 
@@ -24,10 +25,10 @@ const hop = tagged("hình hộp chữ nhật"), lapPhuong = tagged("hình lập 
 const topics: SgkTopic[] = [
   { so: 1, tap: 1, ten: "Ôn tập và bổ sung", bai: [
     { so: 1, ten: "Ôn tập số tự nhiên", mix: [[LOP4.hangLop, 3], [LOP4.giaTriChuSo, 2], [LOP4.soSanhSoLon, 3], [LOP4.lamTron, 2]] },
-    { so: 2, ten: "Ôn tập các phép tính với số tự nhiên", mix: [[cong6, 2], [tru6, 2], [LOP4.nhanSoLon, 3], [chia4, 3]] },
+    { so: 2, ten: "Ôn tập các phép tính với số tự nhiên", mix: [[cong6, 2], [tru6, 2], [LOP4.nhanSoLon, 2], [chia4, 2], [muaHang, 2]] },
     { so: 3, ten: "Ôn tập phân số", mix: [[LOP4.rutGonPhanSo, 3], [LOP4.phanSoBangNhau, 2], [LOP4.soSanhPhanSo, 3], [KNTT4.quyDong, 2]] },
     { so: 4, ten: "Phân số thập phân", mix: [[LOP5.phanSoThapPhan, 6], [KNTT5.phanSoTP, 4]] },
-    { so: 5, ten: "Ôn tập các phép tính với phân số", mix: [[LOP4.congTruPhanSo, 5], [LOP4.nhanChiaPhanSo, 5]] },
+    { so: 5, ten: "Ôn tập các phép tính với phân số", mix: [[LOP4.congTruPhanSo, 4], [LOP4.nhanChiaPhanSo, 4], [KNTT5.lvPhanSo, 2]] },
     { so: 6, ten: "Cộng, trừ hai phân số khác mẫu số", mix: [[only(LOP4.congTruPhanSo, khacMau), 10]] },
     { so: 7, ten: "Hỗn số", mix: [[LOP5.honSo, 10]] },
     { so: 8, ten: "Ôn tập hình học và đo lường", mix: [[LOP4.doiKhoiLuong, 3], [LOP4.doiDienTich, 3], [hinhNhanDang, 1], [KNTT4.hbhThoi, 3]] },
@@ -41,23 +42,23 @@ const topics: SgkTopic[] = [
     { so: 14, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 3, tap: 1, ten: "Một số đơn vị đo diện tích", bai: [
-    { so: 15, ten: "Ki-lô-mét vuông. Héc-ta", mix: [[KNTT5.kmHa, 10]] },
+    { so: 15, ten: "Ki-lô-mét vuông. Héc-ta", mix: [[KNTT5.kmHa, 8], [KNTT5.lvHecta, 2]] },
     { so: 16, ten: "Các đơn vị đo diện tích", mix: [[only(LOP5.doiDonVi, tagged("diện tích")), 7], [LOP4.doiDienTich, 3]] },
     { so: 17, ten: "Thực hành và trải nghiệm với một số đơn vị đo đại lượng", thucHanh: true },
     { so: 18, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 4, tap: 1, ten: "Các phép tính với số thập phân", bai: [
-    { so: 19, ten: "Phép cộng số thập phân", mix: [[only(LOP5.congTruSTP, tagged("phép cộng")), 10]] },
-    { so: 20, ten: "Phép trừ số thập phân", mix: [[only(LOP5.congTruSTP, tagged("phép trừ")), 10]] },
-    { so: 21, ten: "Phép nhân số thập phân", mix: [[only(LOP5.nhanSTP, not(nhan10)), 10]] },
-    { so: 22, ten: "Phép chia số thập phân", mix: [[only(LOP5.chiaSTP, not(chia10)), 10]] },
+    { so: 19, ten: "Phép cộng số thập phân", mix: [[only(LOP5.congTruSTP, tagged("phép cộng")), 8], [KNTT5.lvCongSTP, 2]] },
+    { so: 20, ten: "Phép trừ số thập phân", mix: [[only(LOP5.congTruSTP, tagged("phép trừ")), 8], [KNTT5.lvTruSTP, 2]] },
+    { so: 21, ten: "Phép nhân số thập phân", mix: [[only(LOP5.nhanSTP, not(nhan10)), 8], [KNTT5.lvNhanSTP, 2]] },
+    { so: 22, ten: "Phép chia số thập phân", mix: [[only(LOP5.chiaSTP, not(chia10)), 8], [KNTT5.lvChiaSTP, 2]] },
     { so: 23, ten: "Nhân, chia số thập phân với 10; 100; 1 000; … hoặc với 0,1; 0,01; 0,001; …", mix: [[only(LOP5.nhanSTP, nhan10), 5], [only(LOP5.chiaSTP, chia10), 5]] },
     { so: 24, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 5, tap: 1, ten: "Một số hình phẳng. Chu vi và diện tích", bai: [
-    { so: 25, ten: "Hình tam giác. Diện tích hình tam giác", mix: [[tamGiacHinh, 4], [tamGiacVuong, 2], [only(LOP5.dienTichHinh, tagged("hình tam giác")), 4]] },
-    { so: 26, ten: "Hình thang. Diện tích hình thang", mix: [[hinhThangHinh, 5], [only(LOP5.dienTichHinh, tagged("hình thang")), 5]] },
-    { so: 27, ten: "Đường tròn. Chu vi và diện tích hình tròn", mix: [[hinhTronHinh, 4], [only(LOP5.dienTichHinh, tagged("hình tròn")), 6]] },
+    { so: 25, ten: "Hình tam giác. Diện tích hình tam giác", mix: [[tamGiacHinh, 4], [tamGiacVuong, 2], [only(LOP5.dienTichHinh, tagged("hình tam giác")), 2], [KNTT5.lvTamGiac, 2]] },
+    { so: 26, ten: "Hình thang. Diện tích hình thang", mix: [[hinhThangHinh, 4], [only(LOP5.dienTichHinh, tagged("hình thang")), 4], [thuaRuong, 2]] },
+    { so: 27, ten: "Đường tròn. Chu vi và diện tích hình tròn", mix: [[hinhTronHinh, 4], [only(LOP5.dienTichHinh, tagged("hình tròn")), 4], [hinhGhep, 2]] },
     { so: 28, ten: "Thực hành và trải nghiệm đo, vẽ, lắp ghép, tạo hình", thucHanh: true },
     { so: 29, ten: "Luyện tập chung", luyen: true },
   ] },
@@ -88,19 +89,19 @@ const topics: SgkTopic[] = [
   ] },
   { so: 9, tap: 2, ten: "Diện tích và thể tích của một số hình khối", bai: [
     { so: 49, ten: "Hình khai triển của hình lập phương, hình hộp chữ nhật và hình trụ", mix: [[KNTT5.khaiTrien, 10]] },
-    { so: 50, ten: "Diện tích xung quanh và diện tích toàn phần của hình hộp chữ nhật", mix: [[only(LOP5.theTich, all(hop, dienTich)), 7], [only(hinhHopHinh, all(hop, dienTich)), 3]] },
-    { so: 51, ten: "Diện tích xung quanh và diện tích toàn phần của hình lập phương", mix: [[only(LOP5.theTich, all(lapPhuong, dienTich)), 7], [only(hinhHopHinh, all(lapPhuong, dienTich)), 3]] },
-    { so: 52, ten: "Thể tích của hình hộp chữ nhật", mix: [[only(LOP5.theTich, all(hop, theTich)), 7], [only(hinhHopHinh, all(hop, theTich)), 3]] },
-    { so: 53, ten: "Thể tích của hình lập phương", mix: [[only(LOP5.theTich, all(lapPhuong, theTich)), 7], [only(hinhHopHinh, all(lapPhuong, theTich)), 3]] },
+    { so: 50, ten: "Diện tích xung quanh và diện tích toàn phần của hình hộp chữ nhật", mix: [[only(LOP5.theTich, all(hop, dienTich)), 5], [only(hinhHopHinh, all(hop, dienTich)), 3], [KNTT5.lvHopKhongNap, 2]] },
+    { so: 51, ten: "Diện tích xung quanh và diện tích toàn phần của hình lập phương", mix: [[only(LOP5.theTich, all(lapPhuong, dienTich)), 5], [only(hinhHopHinh, all(lapPhuong, dienTich)), 3], [KNTT5.lvLapPhuongSon, 2]] },
+    { so: 52, ten: "Thể tích của hình hộp chữ nhật", mix: [[only(LOP5.theTich, all(hop, theTich)), 5], [only(hinhHopHinh, all(hop, theTich)), 3], [beNuoc, 2]] },
+    { so: 53, ten: "Thể tích của hình lập phương", mix: [[only(LOP5.theTich, all(lapPhuong, theTich)), 5], [only(hinhHopHinh, all(lapPhuong, theTich)), 3], [KNTT5.lvLapPhuongGo, 2]] },
     { so: 54, ten: "Thực hành tính toán và ước lượng thể tích một số hình khối", thucHanh: true },
     { so: 55, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 10, tap: 2, ten: "Số đo thời gian. Vận tốc. Các bài toán liên quan đến chuyển động đều", bai: [
     { so: 56, ten: "Các đơn vị đo thời gian", mix: [[only(LOP5.thoiGian, has(/= ___/)), 6], [LOP4.thoiGian4, 4]] },
-    { so: 57, ten: "Cộng, trừ số đo thời gian", mix: [[only(LOP5.thoiGian, has(/phút [+-] \d/)), 10]] },
+    { so: 57, ten: "Cộng, trừ số đo thời gian", mix: [[only(LOP5.thoiGian, has(/phút [+-] \d/)), 8], [KNTT5.lvThoiGian, 2]] },
     { so: 58, ten: "Nhân, chia số đo thời gian với một số", mix: [[only(LOP5.thoiGian, has(/×/)), 5], [KNTT5.chiaThoiGian, 5]] },
-    { so: 59, ten: "Vận tốc của một chuyển động đều", mix: [[only(LOP5.chuyenDong, tagged("vận tốc")), 10]] },
-    { so: 60, ten: "Quãng đường, thời gian của một chuyển động đều", mix: [[only(LOP5.chuyenDong, not(tagged("vận tốc"))), 10]] },
+    { so: 59, ten: "Vận tốc của một chuyển động đều", mix: [[only(LOP5.chuyenDong, tagged("vận tốc")), 8], [KNTT5.lvVanToc, 2]] },
+    { so: 60, ten: "Quãng đường, thời gian của một chuyển động đều", mix: [[only(LOP5.chuyenDong, not(tagged("vận tốc"))), 8], [quangDuongGio, 2]] },
     { so: 61, ten: "Thực hành tính toán và ước lượng về vận tốc, quãng đường, thời gian trong chuyển động đều", thucHanh: true },
     { so: 62, ten: "Luyện tập chung", luyen: true },
   ] },

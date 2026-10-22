@@ -5,6 +5,7 @@
 //  - mỗi bài làm được sinh đúng 10 câu với 300 seed, cùng seed ra cùng bộ câu, không câu
 //    nào trùng trong một bộ; đáp án đúng chấm là đúng, đáp án nhiễu chấm là sai
 //    (bằng chính `scoreAnswer` của trang làm bài).
+//    Lời giải trình bày “Bài giải” phải kết thúc bằng “Đáp số: <đáp án> …”.
 //  - ví dụ giải mẫu: bài làm được có 1..MAX_EXAMPLES ví dụ, không trùng, cố định, có lời giải,
 //    đáp án đúng chấm là đúng.
 //  - dạng câu viết riêng theo sách (lib/mathGen/kntt, KNTT<N>): tính lại đáp án độc lập,
@@ -81,6 +82,8 @@ for (const book of SGK_BOOKS) {
           for (const o of row.options) if (o !== row.correct_answer && scoreAnswer(q, o)) fail(`${tag}: nhiễu "${o}" cũng được tính đúng — ${row.content}`);
         }
         if (/undefined|NaN|\[object/.test(row.content + row.options.join())) fail(`${tag}: chuỗi lỗi — ${row.content}`);
+        const sol = q.explanation ?? "";
+        if (sol.startsWith("Bài giải") && !sol.match(/\nĐáp số: (.+)\.$/)?.[1].startsWith(right)) fail(`${tag}: “Đáp số” không khớp đáp án ${right} — ${row.content}`);
       });
     }
   }
@@ -717,6 +720,56 @@ function recheck5(name: string, d: Draft): string | null {
     case "tiSoLanLap": {
       const [t, s] = [N[N.length - 2], N[N.length - 1]];
       return want(`${s}/${t}`, "tỉ số số lần");
+    }
+    // Bài toán có lời văn: tính lại từ số liệu trong đề (số thập phân đọc kiểu Việt Nam).
+    case "lvPhanSo": {
+      m = q.match(/chứa ([\d.]+) lít nước\. .*dùng (\d+)\/(\d+) lượng .*dùng (\d+)\/(\d+) lượng/)!;
+      const T = vn(m[1]), d1 = (T * +m[2]) / +m[3], d2 = (T * +m[4]) / +m[5];
+      if (!Number.isInteger(d1) || !Number.isInteger(d2)) return "phần đã dùng không là số tự nhiên";
+      return want(T - d1 - d2, "phân số của một số");
+    }
+    case "lvHecta": {
+      m = q.match(/chiều dài ([\d.]+) m, chiều rộng ([\d.]+) m/)!;
+      return want((vn(m[1]) * vn(m[2])) / 10000, "m² → ha");
+    }
+    case "lvCongSTP": {
+      m = q.match(/cân nặng ([\d.,]+) kg, .* hơn bao thứ nhất ([\d.,]+) kg/)!;
+      return want(2 * vn(m[1]) + vn(m[2]), "cộng số thập phân");
+    }
+    case "lvTruSTP": {
+      m = q.match(/có ([\d.,]+) lít dầu\. .*lấy ra ([\d.,]+) lít, .*lấy ra ([\d.,]+) lít/)!;
+      return want(vn(m[1]) - vn(m[2]) - vn(m[3]), "trừ số thập phân");
+    }
+    case "lvNhanSTP": {
+      m = q.match(/cân nặng ([\d,]+) kg\. Một can rỗng cân nặng ([\d,]+) kg\. .*đựng (\d+) lít/)!;
+      return want(vn(m[1]) * +m[3] + vn(m[2]), "nhân số thập phân");
+    }
+    case "lvChiaSTP": {
+      m = q.match(/^Có ([\d.,]+) kg đường chia đều vào (\d+) túi\. Hỏi (\d+) túi/)!;
+      return want((vn(m[1]) / +m[2]) * +m[3], "chia số thập phân");
+    }
+    case "lvTamGiac": {
+      m = q.match(/đáy là (\d+) m, chiều cao bằng (\d+)\/(\d+) độ dài đáy/)!;
+      const a2 = +m[1], h = (a2 * +m[2]) / +m[3];
+      return Number.isInteger(h) ? want((a2 * h) / 2, "diện tích tam giác") : "chiều cao không là số tự nhiên";
+    }
+    case "lvHopKhongNap": {
+      m = q.match(/chiều dài (\d+) dm, chiều rộng (\d+) dm, chiều cao (\d+) dm/)!;
+      return want((+m[1] + +m[2]) * 2 * +m[3] + +m[1] * +m[2], "hộp không nắp");
+    }
+    case "lvLapPhuongSon":
+      return want(5 * Number(q.match(/cạnh (\d+) dm/)![1]) ** 2, "thùng lập phương không nắp");
+    case "lvLapPhuongGo": {
+      m = q.match(/cạnh (\d+) dm\. Mỗi .* nặng ([\d,]+) kg/)!;
+      return want(Number(m[1]) ** 3 * vn(m[2]), "khối gỗ lập phương");
+    }
+    case "lvThoiGian": case "lvVanToc": {
+      const mins = (t: string) => { const x = t.match(/^(?:(\d+) giờ)? ?(?:(\d+) phút)?$/)!; return +(x[1] ?? 0) * 60 + +(x[2] ?? 0); };
+      const [t1, t2] = [...q.matchAll(/lúc (\d+ giờ(?: \d+ phút)?)/g)].map((x) => mins(x[1]));
+      if (name === "lvVanToc") return want(vn(q.match(/dài ([\d.,]+) km/)![1]) / ((t2 - t1) / 60), "vận tốc");
+      const t = t2 - t1 - +q.match(/nghỉ (\d+) phút/)![1];
+      if (opts.filter((o) => mins(o) === t).length !== 1) return "nhiễu bằng giá trị đáp án";
+      return mins(a) === t ? null : `thời gian đi: ${t} phút ≠ ${a}`;
     }
   }
   return `chưa có cách tính lại dạng ${name}`;

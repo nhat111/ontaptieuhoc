@@ -1,19 +1,6 @@
 import { CheckCircle2, ChevronDown, Lightbulb } from "lucide-react";
 import MathText from "@/components/MathText";
-import type { Question } from "@/lib/quizData";
-
-/** Đáp án đúng để hiện cho người xem (multi: nhiều đáp án; short: cách viết đầu tiên). */
-function answerText(q: Question): string {
-  if (q.type === "multi") {
-    try {
-      return (JSON.parse(q.correctAnswer) as string[]).join("; ");
-    } catch {
-      return q.correctAnswer;
-    }
-  }
-  if (q.type === "short") return q.correctAnswer.split("|")[0];
-  return q.correctAnswer;
-}
+import { displayAnswer, type Question } from "@/lib/quizData";
 
 /**
  * "Cách làm · Ví dụ giải mẫu" trên màn hình bắt đầu của bài Toán theo sách: mỗi dạng câu
@@ -58,7 +45,7 @@ export default function WorkedExamples({ examples }: { examples: Question[] }) {
               {(q.type === "mcq" || q.type === "multi") && q.options.length > 0 && (
                 <ul className="grid gap-1.5 sm:grid-cols-2">
                   {q.options.map((o, oi) => {
-                    const right = q.type === "multi" ? answerText(q).split("; ").includes(o) : o === q.correctAnswer;
+                    const right = q.type === "multi" ? displayAnswer(q).split("; ").includes(o) : o === q.correctAnswer;
                     return (
                       <li
                         key={oi}
@@ -76,7 +63,7 @@ export default function WorkedExamples({ examples }: { examples: Question[] }) {
               )}
               <p>
                 <span className="font-semibold text-success-700">Đáp án: </span>
-                <MathText text={answerText(q)} />
+                <MathText text={displayAnswer(q)} />
               </p>
               {q.explanation?.trim() && (
                 <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
