@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
-import type { WritingGuide } from "@/lib/lamVan";
+import type { GuideForm, SampleBlock, WritingGuide } from "@/lib/lamVan";
 
 // Mảnh dùng chung cho /lam-van/lop-5 và /lam-van/lop-5/[dang].
 
@@ -36,11 +36,48 @@ export function Card({ id, title, icon, children }: { id?: string; title: string
   );
 }
 
-export function FormBadge({ form }: { form: WritingGuide["form"] }) {
+export const FORM_LABEL: Record<GuideForm, string> = { "bai-van": "Bài văn", "doan-van": "Đoạn văn", "van-ban": "Văn bản" };
+
+export function FormBadge({ form }: { form: GuideForm }) {
   return (
     <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-bold text-violet-700 ring-1 ring-violet-200">
-      {form === "doan-van" ? "Đoạn văn" : "Bài văn"}
+      {FORM_LABEL[form]}
     </span>
+  );
+}
+
+/** "Tập một, Bài 9–16…" — bài tương ứng trong Tiếng Việt 5 Kết nối tri thức. */
+export const sgkText = (g: WritingGuide) => `Tập ${g.sgk.tap === 1 ? "một" : "hai"}, ${g.sgk.bai}`;
+
+/**
+ * Thân bài tham khảo. Bài văn, đoạn văn: các đoạn thụt đầu dòng. Văn bản (báo cáo,
+ * chương trình): dòng căn giữa / căn phải, gạch đầu dòng không thụt, và bảng.
+ */
+export function SampleBody({ blocks, form }: { blocks: SampleBlock[]; form: GuideForm }) {
+  return (
+    <div className="space-y-3 border-t border-slate-100 px-4 py-4 text-[15px] leading-relaxed text-slate-800">
+      {blocks.map((b, i) => {
+        if (typeof b === "string") {
+          return <p key={i} className={form === "van-ban" ? (/^[0-9IVX]+\./.test(b) ? "font-bold" : "") : "indent-6"}>{b}</p>;
+        }
+        if ("center" in b) return <p key={i} className="whitespace-pre-line text-center font-bold">{b.center}</p>;
+        if ("right" in b) return <p key={i} className="ml-auto w-fit whitespace-pre-line text-center italic">{b.right}</p>;
+        return (
+          <div key={i} className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>{b.head.map((h) => <th key={h} className="border border-slate-300 bg-slate-50 px-2 py-1.5 text-left font-bold">{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {b.rows.map((r, k) => (
+                  <tr key={k}>{r.map((c, j) => <td key={j} className="border border-slate-300 px-2 py-1.5 align-top">{c}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

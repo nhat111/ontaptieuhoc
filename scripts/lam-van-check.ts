@@ -2,7 +2,8 @@
 // Chạy: npx tsx scripts/lam-van-check.ts
 //  - mọi đề viết lớp 5 trong WRITING_PROMPTS thuộc đúng một dạng bài có hướng dẫn;
 //  - dạng nào cũng có ít nhất một đề; đề luyện thêm và đề của từng bài tham khảo nhận về đúng dạng;
-//  - đoạn văn mẫu là một đoạn, 8–10 câu; bài văn mẫu có ít nhất 3 đoạn;
+//  - đoạn văn mẫu là một đoạn, 8–10 câu; bài văn mẫu có ít nhất 3 đoạn; văn bản có bảng;
+//  - dạng nào cũng ghi bài tương ứng trong SGK, xếp đúng thứ tự tập một → tập hai;
 //  - biểu điểm cộng đủ 10; không có ngoặc kép thẳng.
 
 import { WRITING_PROMPTS } from "../lib/exam5/tvContent";
@@ -23,7 +24,8 @@ for (const g of GUIDES) {
   for (const ep of g.extraPrompts ?? []) {
     if (guideForPrompt(ep)?.id !== g.id) fail(`${g.id}: đề luyện thêm không nhận về đúng dạng: ${ep}`);
   }
-  if (g.outline.length !== 3) fail(`${g.id}: dàn ý phải có 3 phần`);
+  if (g.outline.length < 3) fail(`${g.id}: dàn ý phải có ít nhất 3 phần`);
+  if (!/^Bài \d/.test(g.sgk.bai)) fail(`${g.id}: thiếu bài tương ứng trong SGK`);
   for (const k of ["tips", "openings", "endings", "words", "mistakes", "check"] as const) {
     if (g[k].length < 2) fail(`${g.id}: ${k} quá ít`);
   }
@@ -32,15 +34,25 @@ for (const g of GUIDES) {
   for (const [i, sm] of g.samples.entries()) {
     const tag = `${g.id} bài tham khảo ${i + 1}`;
     if (guideForPrompt(sm.prompt)?.id !== g.id) fail(`${tag}: đề không nhận về đúng dạng`);
-    if (g.form === "doan-van") {
+    if (g.form === "van-ban") {
+      if (!sm.paragraphs.some((b) => typeof b === "object" && "head" in b)) fail(`${tag}: văn bản mẫu cần có bảng`);
+      for (const b of sm.paragraphs) {
+        if (typeof b === "object" && "head" in b && b.rows.some((r) => r.length !== b.head.length)) fail(`${tag}: bảng lệch cột`);
+      }
+    } else if (sm.paragraphs.some((b) => typeof b !== "string")) {
+      fail(`${tag}: bài văn, đoạn văn chỉ gồm các đoạn chữ`);
+    } else if (g.form === "doan-van") {
       if (sm.paragraphs.length !== 1) fail(`${tag}: đoạn văn mẫu phải là một đoạn`);
-      const n = sentences(sm.paragraphs[0]);
+      const n = sentences(sm.paragraphs[0] as string);
       if (n < 8 || n > 10) fail(`${tag}: đoạn văn mẫu có ${n} câu (cần 8–10)`);
     } else if (sm.paragraphs.length < 3) {
       fail(`${tag}: bài văn mẫu cần ít nhất 3 đoạn`);
     }
   }
 }
+
+const taps = GUIDES.map((g) => g.sgk.tap);
+if (taps.some((t, i) => i > 0 && t < taps[i - 1])) fail("GUIDES phải xếp theo sách: tập một trước, tập hai sau");
 
 for (const [form, rows] of Object.entries(RUBRIC)) {
   const sum = rows.reduce((s, [, p]) => s + p, 0);
