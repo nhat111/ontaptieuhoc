@@ -17,6 +17,15 @@ export const SGK_BOOKS: SgkBook[] = [TOAN1, TOAN2, TOAN3, TOAN4, TOAN5];
 
 export const QUESTIONS_PER_LESSON = 10;
 
+/**
+ * Môn của lớp đã có sách ở đây thì tab "Bài tập" của môn đó trên /lop/[grade] không hiện
+ * các bài nhập tay cũ trong DB nữa (chủ site thấy lộn xộn), chỉ mời vào học theo từng bài
+ * sách. Bài cũ không bị xoá: link /quiz?lessonId= đã chia sẻ vẫn mở được; đề kiểm tra
+ * (type 'exam') không bị ảnh hưởng. Bỏ ẩn = cho hàm này trả về false.
+ */
+export const hidesOldLessons = (grade: number, subject: string | null | undefined) =>
+  !!subject && SGK_BOOKS.some((b) => b.grade === grade && b.subject === subject);
+
 export const sgkBook = (grade: number, slug = "toan") => SGK_BOOKS.find((b) => b.grade === grade && b.slug === slug) ?? null;
 export const hasSgkToan = (grade: number) => !!sgkBook(grade);
 export const sgkToanHref = (grade: number, so?: number) => `/lop/${grade}/toan${so ? `/bai-${so}` : ""}`;

@@ -9,7 +9,7 @@ import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { hasQuickExam } from "@/lib/quickExam";
-import { sgkBook, sgkToanHref } from "@/lib/sgk";
+import { hidesOldLessons, sgkBook, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
 
 export async function generateMetadata({
   params,
@@ -84,8 +84,10 @@ export default async function GradePage({
   const subjects = getSubjects(gradeNum);
   const activeSubject = resolveSubject(gradeNum, subjectParam);
 
+  // Toán lớp có sách (lib/sgk): tab Bài tập chỉ hiện các chủ đề của sách, không hiện bài cũ trong DB.
+  const book = activeView !== "exam" && hidesOldLessons(gradeNum, activeSubject) ? sgkBook(gradeNum) : null;
   const [chapters, leaderboard] = await Promise.all([
-    activeSubject
+    activeSubject && !book
       ? getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
       : Promise.resolve([]),
     getLeaderboardByGrade(gradeNum),
@@ -156,26 +158,6 @@ export default async function GradePage({
           </Link>
         )}
 
-        {/* Toán theo từng bài sách (lib/sgk): lớp nào có mục lục thì mời vào. */}
-        {activeView !== "exam" && activeSubject === "Toán" && sgkBook(gradeNum) && (
-          <Link
-            href={sgkToanHref(gradeNum)}
-            className="group mb-6 flex items-center gap-3 rounded-2xl border border-success-200 bg-gradient-to-r from-success-50 to-white px-4 py-3 shadow-soft transition-all hover:border-success-300 motion-safe:hover:-translate-y-0.5"
-          >
-            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-500 text-white shadow-sm" aria-hidden>
-              <BookOpenCheck className="h-6 w-6" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-extrabold text-slate-900">Toán {gradeNum} theo từng bài sách</span>
-              <span className="block text-sm text-slate-600">Đúng thứ tự bài sách {sgkBook(gradeNum)!.book}, mỗi lần một bộ câu mới</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-success-200">
-              Vào học
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-            </span>
-          </Link>
-        )}
-
         {/* Môn có đề tự sinh (lib/quickExam.ts): mời tạo đề giữa kì / cuối kì ngay. */}
         {activeView === "exam" && activeSubject && hasQuickExam(gradeNum, activeSubject) && (
           <Link
@@ -239,7 +221,37 @@ export default async function GradePage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
-            {chapters.length === 0 ? (
+            {book ? (
+              <div className="overflow-hidden rounded-2xl border border-success-200 bg-white shadow-soft">
+                <Link href={sgkToanHref(gradeNum)} className="group flex items-center gap-3 border-b border-success-100 bg-gradient-to-r from-success-50 to-white px-4 py-3">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-500 text-white shadow-sm" aria-hidden>
+                    <BookOpenCheck className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-extrabold text-slate-900">Toán {gradeNum} theo từng bài sách</span>
+                    <span className="block text-sm text-slate-600">
+                      {book.book} · {sgkLessons(gradeNum).filter((x) => sgkReady(gradeNum, x.lesson)).length} bài luyện trên máy, mỗi lần một bộ câu mới
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-success-200">
+                    Vào học
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </span>
+                </Link>
+                <ul className="divide-y divide-slate-100">
+                  {book.topics.map((t) => (
+                    <li key={t.so}>
+                      <Link href={sgkToanHref(gradeNum)} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-50">
+                        <span className="w-[4.75rem] flex-shrink-0 whitespace-nowrap font-bold text-slate-400">Chủ đề {t.so}</span>
+                        <span className="min-w-0 flex-1 font-semibold text-slate-800">{t.ten}</span>
+                        <span className="flex-shrink-0 text-xs font-semibold text-slate-400">{t.bai.length} bài</span>
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 text-slate-300" aria-hidden />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : chapters.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
                 <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
                   {activeView === "exam" ? <FileText className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
