@@ -18,6 +18,8 @@ export type TvSkill = {
   viDu?: { de: string; cau?: string; dapAn: string };
   /** Lỗi các con hay mắc. */
   loi?: string;
+  /** Trang hướng dẫn chi tiết hơn trong site (VD: /lam-van/lop-5/<dạng>). */
+  link?: { href: string; label: string };
 };
 
 export type TvBaiRef = { ten: string; ky: string };

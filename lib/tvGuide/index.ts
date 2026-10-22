@@ -2,11 +2,12 @@
 // Trang /lop/[grade] (tab Tiếng Việt, Bài tập) chỉ đọc danh sách này.
 
 import { TV_GUIDE_4 } from "./lop4";
+import { TV_GUIDE_5 } from "./lop5";
 import type { TvBai, TvChuDiem, TvGuide, TvSkill } from "./types";
 
 export type { TvBai, TvChuDiem, TvGuide, TvSkill } from "./types";
 
-export const TV_GUIDES: TvGuide[] = [TV_GUIDE_4];
+export const TV_GUIDES: TvGuide[] = [TV_GUIDE_4, TV_GUIDE_5];
 
 export function tvGuide(grade: number): TvGuide | null {
   return TV_GUIDES.find((g) => g.grade === grade) ?? null;
