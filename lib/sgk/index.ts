@@ -3,13 +3,14 @@
 // Kế hoạch và đối chiếu từng bài: .claude/ai-context/feature-specs/toan-kntt.md.
 
 import { buildWorksheetQuestions, type GenQuestionRow, type MathGrade, type MathLessonSpec } from "../mathGen";
+import { TOAN1 } from "./books/toan1";
 import { TOAN3 } from "./books/toan3";
 import type { SgkBook, SgkLesson, SgkTopic } from "./types";
 
 export type { SgkBook, SgkLesson, SgkTopic } from "./types";
 
 /** Mọi cuốn sách đã có mục lục. */
-export const SGK_BOOKS: SgkBook[] = [TOAN3];
+export const SGK_BOOKS: SgkBook[] = [TOAN1, TOAN3];
 
 export const QUESTIONS_PER_LESSON = 10;
 

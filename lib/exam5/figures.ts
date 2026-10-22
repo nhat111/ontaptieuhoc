@@ -533,3 +533,15 @@ export function dataTableSvg(o: { head: [string, string]; labels: string[]; valu
   });
   return svg(W + 20, 2 * ch + 20, body);
 }
+
+/** Các băng giấy xếp thẳng hàng ở mép trái, để so sánh dài hơn – ngắn hơn (Toán 1). */
+export function lengthBarsSvg(bars: { label: string; len: number }[]): string {
+  const unit = 22, x0 = 46, h = 26, gap = 18, top = 14;
+  let body = line({ x: x0, y: top - 6 }, { x: x0, y: top + bars.length * (h + gap) - gap + 6 }, true, 1);
+  bars.forEach((b, i) => {
+    const y = top + i * (h + gap);
+    body += text({ x: x0 - 16, y: y + h / 2 }, b.label, 16) +
+      `<rect data-l="${esc(b.label)}:${b.len}" x="${x0}" y="${y}" width="${b.len * unit}" height="${h}" rx="3" fill="#d9d9d9" stroke="${STROKE}" stroke-width="1.5"/>`;
+  });
+  return svg(x0 + Math.max(...bars.map((b) => b.len)) * unit + 24, top * 2 + bars.length * (h + gap) - gap, body);
+}

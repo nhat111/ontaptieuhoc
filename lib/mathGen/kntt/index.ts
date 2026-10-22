@@ -3,3 +3,4 @@
 // trong lib/mathGen/lop<N>.ts thì dùng lại ở đó, không chép sang đây.
 
 export { KNTT3 } from "./lop3";
+export { KNTT1 } from "./lop1";

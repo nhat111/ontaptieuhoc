@@ -10,7 +10,7 @@
 // Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
 
 import { mulberry32, type Draft } from "../lib/mathGen/core";
-import { KNTT3 } from "../lib/mathGen";
+import { KNTT1, KNTT3 } from "../lib/mathGen";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
 import { QUESTIONS_PER_LESSON, SGK_BOOKS, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
@@ -195,9 +195,56 @@ function recheck3(name: string, d: Draft): string | null {
   return null;
 }
 
+function recheck1(name: string, d: Draft): string | null {
+  const q = d.question, a = answerOf(d), svg = svgOf(d);
+  let m: RegExpMatchArray | null;
+  const count = (s: string) => [...new Intl.Segmenter().segment(s)].filter((g) => g.segment.trim()).length;
+  switch (name) {
+    case "nhieuItBang": {
+      m = q.match(/^Hàng trên: (\S+)  Hàng dưới: (\S+)  /u)!;
+      const [x, y] = [count(m[1]), count(m[2])];
+      return a === (x > y ? "Nhiều hơn" : x < y ? "Ít hơn" : "Bằng nhau") ? null : `đếm ${x} – ${y} → ${a}`;
+    }
+    case "viTri": {
+      m = q.match(/xếp thành hàng: (.+?)  /u)!;
+      const row = [...new Intl.Segmenter().segment(m[1])].map((g) => g.segment).filter((g) => g.trim());
+      if (row.length !== 3) return "hàng không đủ 3 con";
+      const EMO: Record<string, string> = { "🐶": "con chó", "🐱": "con mèo", "🐰": "con thỏ", "🐔": "con gà", "🐷": "con lợn", "🐸": "con ếch", "🐢": "con rùa" };
+      const ask = q.split("  ")[1];
+      if (/ở giữa\?/.test(ask)) return a === EMO[row[1]] ? null : "ở giữa sai";
+      if (/^Con vật nào ở bên trái/.test(ask)) return a === EMO[row[0]] ? null : "bên trái sai";
+      if (/^Con vật nào ở bên phải/.test(ask)) return a === EMO[row[2]] ? null : "bên phải sai";
+      if (/ở bên nào/.test(ask)) {
+        const [who, ref] = ask.match(/^(.+) ở bên nào của (.+)\?$/)!.slice(1).map((x) => x.toLowerCase());
+        const i = row.findIndex((e) => EMO[e] === who), j = row.findIndex((e) => EMO[e] === ref);
+        if (i < 0 || j < 0) return "không nhận ra con vật";
+        return a === (i < j ? "Bên trái" : "Bên phải") ? null : "bên nào sai";
+      }
+      return "dạng vị trí lạ";
+    }
+    case "daiNganHon": {
+      if ((m = q.match(/^(\S+) cao hơn (\S+), \S+ cao hơn (\S+)\. Bạn nào (cao|thấp) nhất\?$/))) return a === (m[4] === "cao" ? m[1] : m[3]) ? null : "cao thấp sai";
+      const bars = [...svg.matchAll(/data-l="(\w):(\d+)"/g)].map((x) => ({ l: x[1], v: +x[2] }));
+      const pickBar = /dài nhất/.test(q) ? bars.reduce((x, y) => (y.v > x.v ? y : x)) : bars.reduce((x, y) => (y.v < x.v ? y : x));
+      return a === `Băng giấy ${pickBar.l}` ? null : "băng giấy sai";
+    }
+    case "cong21": case "cong22": case "tru21": case "tru22": {
+      const nums = [...q.matchAll(/(\d+)/g)].map((x) => +x[1]);
+      const [x, y] = nums;
+      const cong = name.startsWith("cong");
+      if (+a !== (cong ? x + y : x - y)) return "tính sai";
+      if (name.endsWith("21") ? !(x >= 10 && y < 10) : !(x >= 10 && y >= 10)) return "sai kiểu số chữ số";
+      if (cong ? (x % 10) + (y % 10) >= 10 : (x % 10) < (y % 10)) return "có nhớ";
+      return null;
+    }
+  }
+  return null;
+}
+
 // Mỗi bộ dạng câu KNTT<N> đi kèm hàm tính lại của nó. Dạng số học thuần (phép tính, so
 // sánh, liền trước – liền sau) đã được scripts/gen-math-check.ts tính lại nên trả null ở đây.
 const RECHECK: [string, Record<string, (r: ReturnType<typeof mulberry32>) => Draft>, (name: string, d: Draft) => string | null][] = [
+  ["KNTT1", KNTT1, recheck1],
   ["KNTT3", KNTT3, recheck3],
 ];
 for (const [label, gens, recheck] of RECHECK) {
