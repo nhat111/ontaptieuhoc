@@ -9,7 +9,7 @@
 // Chạy: npx tsx scripts/gen-math-check.ts
 
 import { mulberry32 } from "../lib/mathGen/core";
-import { LOP1, LOP2, LOP3, LOP4, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
+import { LOP1, LOP2, LOP3, LOP3K, LOP4, LOP5, toQuestionRow, type Draft, type Generator } from "../lib/mathGen";
 import { scoreAnswer, type Question } from "../lib/quizData";
 
 const RUNS = 3000;
@@ -426,7 +426,7 @@ function checkRow(ex: Draft, seed: number): string | null {
 
 let failures = 0, total = 0;
 const examples: string[] = [];
-for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP3, LOP4, LOP5 }) as [string, Record<string, Generator>][]) {
+for (const [grade, gens] of Object.entries({ LOP1, LOP2, LOP3, LOP3K, LOP4, LOP5 }) as [string, Record<string, Generator>][]) {
   for (const [name, gen] of Object.entries(gens)) {
     let bad = 0;
     for (let s = 0; s < RUNS; s++) {

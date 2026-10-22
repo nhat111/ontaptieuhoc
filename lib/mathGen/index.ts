@@ -15,6 +15,7 @@ import { LOP2 } from "./lop2";
 import { LOP3 } from "./lop3";
 import { LOP4 } from "./lop4";
 import { LOP5 } from "./lop5";
+import { LOP3K } from "./lop3kntt";
 
 export type MathGrade = 1 | 2 | 3 | 4 | 5;
 
@@ -235,5 +236,5 @@ export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, 
   return rows;
 }
 
-export { LOP1, LOP2, LOP3, LOP4, LOP5 };
+export { LOP1, LOP2, LOP3, LOP3K, LOP4, LOP5 };
 export type { Draft, Generator };

@@ -5,8 +5,12 @@
 //  - mỗi bài làm được sinh đúng 10 câu với 300 seed, cùng seed ra cùng bộ câu, không câu
 //    nào trùng trong một bộ; đáp án đúng chấm là đúng, đáp án nhiễu chấm là sai
 //    (bằng chính `scoreAnswer` của trang làm bài).
-// Đáp án từng dạng câu được tính lại độc lập trong scripts/gen-math-check.ts.
+//  - dạng câu riêng của Toán 3 theo sách (LOP3K): tính lại đáp án độc lập, phần lớn bằng
+//    cách đọc ngược số liệu từ hình vẽ (thuộc tính data-… trong SVG) hoặc từ đề bài.
+// Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
 
+import { mulberry32, type Draft } from "../lib/mathGen/core";
+import { LOP3K } from "../lib/mathGen";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
 import { QUESTIONS_PER_LESSON, SGK_TOAN, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
@@ -64,6 +68,138 @@ for (const [g, topics] of Object.entries(SGK_TOAN)) {
   }
   console.log(`✓ Toán ${grade}: ${all.length} bài, ${ready} bài làm được trên máy`);
 }
+
+/* ───────── Tính lại đáp án các dạng LOP3K ───────── */
+
+const svgOf = (d: Draft) => decodeURIComponent((d.image ?? "").replace(/^data:image\/svg\+xml;utf8,/, ""));
+const answerOf = (d: Draft): string =>
+  d.type === "multiple_choice" ? d.options.find((o) => o.id === d.answer)!.text
+    : d.type === "fill_blank" ? d.answers[0]
+      : d.type === "true_false" ? (d.answer ? "Đúng" : "Sai") : "";
+const n = (s: string) => Number(s.replace(/[^\d]/g, ""));
+const WD = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"];
+// Thứ trong tuần tính bằng công thức Zeller (không dùng Date như generator).
+function zellerMon0(y: number, m: number, d: number) {
+  if (m < 3) { m += 12; y -= 1; }
+  const h = (d + Math.floor((13 * (m + 1)) / 5) + (y % 100) + Math.floor((y % 100) / 4) + Math.floor(y / 400) - 2 * Math.floor(y / 100)) % 7;
+  return (((h + 7) % 7) + 5) % 7; // Zeller: 0 = thứ Bảy → đổi sang 0 = thứ Hai
+}
+const daysIn = (y: number, m: number) => [31, (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+
+function recheck(name: string, d: Draft): string | null {
+  const q = d.question, a = answerOf(d), svg = svgOf(d);
+  let m: RegExpMatchArray | null;
+  switch (name) {
+    case "nhietDo":
+      if ((m = svg.match(/data-t="(\d+)"/))) return n(a) === +m[1] ? null : `nhiệt kế ${m[1]} → ${a}`;
+      if ((m = q.match(/là (\d+) °C, đến .* (tăng thêm|giảm đi) (\d+) °C/))) return +a === (m[2] === "tăng thêm" ? +m[1] + +m[3] : +m[1] - +m[3]) ? null : "tăng giảm sai";
+      if ((m = q.match(/Hôm qua nhiệt độ là (\d+) °C, hôm nay nhiệt độ là (\d+) °C\. Hôm (qua|nay)/))) {
+        const [x, y] = [+m[1], +m[2]];
+        if ((m[3] === "qua") !== x > y) return "so sánh nóng hơn sai chiều";
+        return +a === Math.abs(x - y) ? null : "hiệu nhiệt độ sai";
+      }
+      return null;
+    case "xemLich": {
+      m = svg.match(/data-cal="(\d+)-(\d+)"/);
+      if (!m) return "thiếu tờ lịch";
+      const [y, mo] = [+m[1], +m[2]];
+      if ((m = q.match(/Ngày (\d+) tháng \d+ là thứ mấy/))) return a === WD[zellerMon0(y, mo, +m[1])] ? null : `ngày ${m[1]}/${mo}/${y} → ${a}`;
+      if (/Ngày đầu tiên/.test(q)) return a === WD[zellerMon0(y, mo, 1)] ? null : "ngày đầu tháng sai";
+      if ((m = q.match(/có mấy ngày (.+)\?$/))) {
+        const w = WD.findIndex((x) => x.toLowerCase() === m![1].toLowerCase());
+        let c = 0; for (let dd = 1; dd <= daysIn(y, mo); dd++) if (zellerMon0(y, mo, dd) === w) c++;
+        return +a === c ? null : `đếm ${m[1]} sai`;
+      }
+      if ((m = q.match(/bên\. (.+) đầu tiên của tháng \d+ là ngày ___/))) {
+        const w = WD.findIndex((x) => x.toLowerCase() === m![1].toLowerCase());
+        return zellerMon0(y, mo, +a) === w && +a <= 7 ? null : "ngày đầu tiên của thứ sai";
+      }
+      return "dạng lịch lạ";
+    }
+    case "bangSoLieu": {
+      const vals = [...svg.matchAll(/data-v="(\d+)"/g)].map((x) => +x[1]);
+      if (vals.length !== 4) return "bảng thiếu số";
+      if (/tất cả ___/.test(q)) return +a === vals.reduce((x, y) => x + y, 0) ? null : "tổng sai";
+      if ((m = q.match(/ (nhiều|ít) .+ nhất\?$/))) {
+        const i = d.type === "multiple_choice" ? d.options.findIndex((o) => o.id === d.answer) : -1;
+        return vals[i] === (m[1] === "nhiều" ? Math.max(...vals) : Math.min(...vals)) ? null : "nhiều/ít nhất sai";
+      }
+      if (/nhiều hơn/.test(q)) return vals.some((x) => vals.some((y) => x - y === +a && x > y)) ? null : "hiệu sai";
+      return vals.includes(+a) ? null : "đọc bảng sai";
+    }
+    case "dienTichO":
+      if (/Diện tích hình tô màu/.test(q)) return (svg.match(/class="o"/g) ?? []).length === +a ? null : "đếm ô sai";
+      if ((m = q.match(/^(\d+) cm² ([+\-×]) (\d+) cm² = ___/)) || (m = q.match(/^(\d+) cm² (×) (\d+) = ___/))) {
+        const [x, op, y] = [+m[1], m[2], +m[3]];
+        return +a === (op === "+" ? x + y : op === "-" ? x - y : x * y) ? null : "tính cm² sai";
+      }
+      return null;
+    case "chuViDaGiac": {
+      const sides = svg ? [...svg.matchAll(/>(\d+) cm</g)].map((x) => +x[1]) : [...q.matchAll(/= (\d+) cm/g)].map((x) => +x[1]);
+      return +a === sides.reduce((x, y) => x + y, 0) && sides.length >= 3 ? null : `chu vi sai: ${sides} → ${a}`;
+    }
+    case "trungDiem": {
+      if ((m = q.match(/dài (\d+) cm\. M là trung điểm .* AM là ___/))) return +a * 2 === +m[1] ? null : "AM sai";
+      if ((m = q.match(/AM = (\d+) cm\. Độ dài đoạn thẳng AB/))) return +a === 2 * +m[1] ? null : "AB sai";
+      const pos = Object.fromEntries([...svg.matchAll(/data-p="(\w):(\d+)"/g)].map((x) => [x[1], +x[2]]));
+      return (a === "Đúng") === (pos.M * 2 === pos.B) ? null : "trung điểm hình sai";
+    }
+    case "diemOGiua": {
+      const pos = Object.fromEntries([...svg.matchAll(/data-p="(\w):(\d+)"/g)].map((x) => [x[1], +x[2]]));
+      m = q.match(/hai điểm (\w) và (\w)\?/)!;
+      const [lo, hi] = [Math.min(pos[m[1]], pos[m[2]]), Math.max(pos[m[1]], pos[m[2]])];
+      const between = Object.keys(pos).filter((k) => pos[k] > lo && pos[k] < hi);
+      return between.length === 1 && between[0] === a ? null : "điểm ở giữa sai";
+    }
+    case "haiBuocTinh": {
+      const nums = [...q.matchAll(/(\d+)/g)].map((x) => +x[1]);
+      if (/nhiều hơn .* cả hai/.test(q)) return +a === 2 * nums[0] + nums[1] ? null : "nhiều hơn sai";
+      if (/ít hơn .* cả hai/.test(q)) return +a === 2 * nums[0] - nums[1] ? null : "ít hơn sai";
+      if (/cửa hàng có/.test(q)) return +a === nums[0] - nums[1] + nums[2] ? null : "bán nhập sai";
+      if (/Mỗi hộp có/.test(q)) return +a === nums[0] * nums[1] + nums[2] ? null : "hộp lẻ sai";
+      if (/gấp .* lần/.test(q)) return +a === nums[0] + nums[0] * nums[1] ? null : "gấp sai";
+      if (/rót đều vào/.test(q)) return (nums[0] - nums[1]) === +a * nums[2] ? null : "chia còn lại sai";
+      return "dạng hai bước lạ";
+    }
+    case "khaNang": {
+      if (/xúc xắc/.test(q)) {
+        if (/7 chấm/.test(q)) return a === "Không thể" ? null : "xúc xắc 7";
+        if (/bé hơn 7/.test(q)) return a === "Chắc chắn" ? null : "xúc xắc < 7";
+        return a === "Có thể" ? null : "xúc xắc 1–6";
+      }
+      if ((m = q.match(/các thẻ ghi số ([\d, ]+)\. .* rút được thẻ ghi (số chẵn|số lẻ|số bé hơn 10|số (\d+)):$/))) {
+        const cards = m[1].split(", ").map(Number);
+        const ok = (x: number) => m![2] === "số chẵn" ? x % 2 === 0 : m![2] === "số lẻ" ? x % 2 === 1 : m![2] === "số bé hơn 10" ? x < 10 : x === +m![3];
+        const k = cards.filter(ok).length;
+        return a === (k === cards.length ? "Chắc chắn" : k ? "Có thể" : "Không thể") ? null : "thẻ số sai";
+      }
+      if ((m = q.match(/^Trong hộp có (.+)\. Không nhìn .* quả bóng (\S+):$/))) {
+        const colors = [...m[1].matchAll(/\d+ quả bóng (\S+)/g)].map((x) => x[1]);
+        const k = colors.filter((c) => c === m![2]).length;
+        return a === (k === colors.length ? "Chắc chắn" : k ? "Có thể" : "Không thể") ? null : "bóng sai";
+      }
+      return "dạng khả năng lạ";
+    }
+    case "gocVuong":
+      if ((m = q.match(/Đồng hồ chỉ (\d+) giờ/))) return (a === "Góc vuông") === (+m[1] === 3 || +m[1] === 9) ? null : "góc đồng hồ sai";
+      if (svg.includes("<line")) {
+        // Góc vuông vẽ kí hiệu vuông (polyline), góc khác vẽ cung (path).
+        return (a === "Góc vuông") === svg.includes("<polyline") ? null : "góc hình sai";
+      }
+      return null;
+  }
+  return null;
+}
+
+for (const [name, gen] of Object.entries(LOP3K)) {
+  let bad = 0;
+  for (let s = 0; s < 3000; s++) {
+    const d = gen(mulberry32(s * 31 + 7));
+    const err = recheck(name, d);
+    if (err) { bad++; fail(`LOP3K.${name} seed ${s}: ${err} — ${d.question}`); if (bad > 3) break; }
+  }
+}
+console.log(`✓ đã tính lại đáp án ${Object.keys(LOP3K).length} dạng câu riêng của Toán 3 theo sách`);
 
 if (errors) {
   console.error(`\n${errors} lỗi`);
