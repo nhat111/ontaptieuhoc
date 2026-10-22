@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import QuizClient from "@/components/quiz/QuizClient";
 import { cleanSeed, rowToQuestion } from "@/lib/quickExam";
 import {
-  buildSgkRows, findSgkLesson, freshSeed, sgkBook, sgkProgressKey, sgkReady, sgkToanHref,
+  buildSgkExamples, buildSgkRows, findSgkLesson, freshSeed, sgkBook, sgkProgressKey, sgkReady, sgkToanHref,
 } from "@/lib/sgk";
 
 interface Props {
@@ -74,6 +74,7 @@ export default async function SgkLessonPage({ params, searchParams }: Props) {
   // Không có seed → bộ câu mới mỗi lần vào (bấm "Làm bộ câu mới" ở trang kết quả).
   const seed = cleanSeed((await searchParams).seed) ?? freshSeed();
   const questions = buildSgkRows(grade, lesson, seed).map((r, i) => rowToQuestion(r, i + 1));
+  const examples = buildSgkExamples(grade, lesson).map((r, i) => rowToQuestion(r, i + 1));
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
@@ -89,6 +90,7 @@ export default async function SgkLessonPage({ params, searchParams }: Props) {
         quickExamHref={sgkToanHref(grade, lesson.so)}
         progressKey={sgkProgressKey(grade, lesson.so)}
         backLink={{ href: listHref, label: `Toán ${grade} theo bài` }}
+        examples={examples}
       />
     </Suspense>
   );

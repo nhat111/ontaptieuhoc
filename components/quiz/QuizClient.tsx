@@ -36,6 +36,7 @@ import {
 } from "@/lib/speech";
 import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 import ReadingCard from "./ReadingCard";
+import WorkedExamples from "./WorkedExamples";
 
 interface Props {
   initialQuestions: Question[];
@@ -49,9 +50,11 @@ interface Props {
   progressKey?: string;
   /** Nút thứ hai ở trang kết quả (mặc định: Tạo đề khác → /tao-de). */
   backLink?: { href: string; label: string };
+  /** Ví dụ giải mẫu hiện dưới thẻ bắt đầu (bài Toán theo sách, lib/sgk → buildSgkExamples). */
+  examples?: Question[];
 }
 
-export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink }: Props) {
+export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -491,6 +494,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
             )}
             </div>
           </div>
+          {examples && <WorkedExamples examples={examples} />}
         </div>
         {pdfHtml && (
           <PdfPreview

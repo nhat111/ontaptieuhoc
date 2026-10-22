@@ -2,7 +2,8 @@
 // Mỗi bài sinh 10 câu theo seed, không cần DB: cùng bài + seed → cùng bộ câu.
 // Kế hoạch và đối chiếu từng bài: .claude/ai-context/feature-specs/toan-kntt.md.
 
-import { buildWorksheetQuestions, type GenQuestionRow, type MathGrade, type MathLessonSpec } from "../mathGen";
+import { buildWorksheetQuestions, toQuestionRow, type GenQuestionRow, type MathGrade, type MathLessonSpec } from "../mathGen";
+import { mulberry32, seedFrom, type Generator } from "../mathGen/core";
 import { TOAN1 } from "./books/toan1";
 import { TOAN2 } from "./books/toan2";
 import { TOAN3 } from "./books/toan3";
@@ -63,4 +64,26 @@ export const freshSeed = () => Math.random().toString(36).slice(2, 8);
 export function buildSgkRows(grade: number, lesson: SgkLesson, seed: string): GenQuestionRow[] {
   const specs = lesson.mix ? [specOf(grade, lesson)] : tronOf(grade, lesson).map((l) => specOf(grade, l));
   return buildWorksheetQuestions(specs, QUESTIONS_PER_LESSON, `kntt|${lesson.so}|${seed}`);
+}
+
+export const MAX_EXAMPLES = 4;
+
+/**
+ * Ví dụ giải mẫu của một bài: mỗi dạng câu một ví dụ (bài luyện tập: các dạng của những
+ * bài được trộn). Dạng nào ra đề trùng chữ với dạng trước (VD hai kiểu "Đồng hồ bên chỉ mấy
+ * giờ?") thì bỏ, rồi chọn rải đều tối đa MAX_EXAMPLES. Seed cố định theo bài nên ví dụ không
+ * đổi giữa các lần vào; câu lấy từ chính bộ sinh câu nên đáp án, lời giải luôn khớp bài làm.
+ */
+export function buildSgkExamples(grade: number, lesson: SgkLesson): GenQuestionRow[] {
+  const sources = lesson.mix ? [lesson] : tronOf(grade, lesson);
+  const gens: Generator[] = [];
+  for (const l of sources) for (const [g] of l.mix ?? []) if (!gens.includes(g)) gens.push(g);
+  const r = mulberry32(seedFrom(`vidu|${sgkBook(grade)?.id}|${lesson.so}`));
+  const rows: GenQuestionRow[] = [];
+  for (const g of gens) {
+    const row = toQuestionRow(g(r), r);
+    if (!rows.some((x) => x.content === row.content)) rows.push(row);
+  }
+  if (rows.length <= MAX_EXAMPLES) return rows;
+  return Array.from({ length: MAX_EXAMPLES }, (_, i) => rows[Math.floor((i * rows.length) / MAX_EXAMPLES)]);
 }
