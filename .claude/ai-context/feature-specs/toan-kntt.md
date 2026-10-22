@@ -158,6 +158,10 @@ Mục lục 13 chủ đề, 73 bài (tập một: chủ đề 1–7, bài 1–37
 
 Câu "góc gì" và "hình nào là hình bình hành" của đề in có chữ giống nhau ở mọi câu (chỉ hình khác) nên mỗi bài chỉ lấy một câu, tránh trùng khi khử câu lặp.
 
+## Toán 5 (10/2026)
+
+Mục lục 12 chủ đề, 75 bài (tập một: chủ đề 1–6, bài 1–35; tập hai: chủ đề 7–12), đối chiếu với kế hoạch dạy học Toán 5 Kết nối tri thức (HoaTieu.vn; bài 49 "Hình khai triển…" thuộc chủ đề 9). **68/75 bài làm được trên máy**; 7 bài thực hành: 17 (đơn vị đo đại lượng), 28 (đo, vẽ, lắp ghép), 42–43 (máy tính cầm tay), 54 (ước lượng thể tích), 61 (ước lượng chuyển động), 66 (thu thập số liệu). Phần lớn bài dùng `LOP5`, `LOP4` (ôn số tự nhiên, phân số) và các dạng có hình của đề in lớp 5 (`lib/exam5/toan5.ts`: tam giác, hình thang, hình tròn, hình hộp, biểu đồ quạt, tổng – tỉ, hiệu – tỉ, phần trăm), lọc theo bài bằng `only` + `has`/`tagged` (cộng trừ phân số khác mẫu, đổi đơn vị ra số thập phân, nhân chia với 10; 0,1…, Sxq / Stp / V của hình hộp, hình lập phương, vận tốc / quãng đường – thời gian). Dạng mới `KNTT5` (`lib/mathGen/kntt/lop5.ts`): nhận biết phân số thập phân (4), viết số thập phân từ các hàng (10), làm tròn số thập phân (13), km² – ha (15), tỉ số (36), tỉ lệ bản đồ (37), giá trị phần trăm trong bài toán (41), thể tích đếm bằng hình lập phương 1 cm³ (45), đơn vị thể tích và lít (46, 47), hình khai triển (49), chia số đo thời gian (58), sắp xếp số liệu (63), tỉ số số lần lặp lại (65).
+
 ## Tiến độ
 
 - **10/2026 — đã làm (lớp 3):** trang `/lop/3/toan` và `/lop/3/toan/bai-<n>`, dữ liệu `lib/sgk/toan3.ts`. **63/81 bài làm được trên máy**: 34 bài "có", thêm 8 bài nhờ dạng mới (25 chia hết – có dư, 39 số lớn gấp mấy lần số bé, 45–46 các số đến 10 000, 54–57 phép tính trong phạm vi 10 000; 23, 26 có dạng riêng thay vì lọc), và các bài luyện tập / ôn tập trộn được.
@@ -170,7 +174,7 @@ Câu "góc gì" và "hình nào là hình bình hành" của đề in có chữ 
 2. **Trang:** `/lop/3/toan/bai-<n>` — tên bài, bài luyện 10 câu sinh theo seed (dùng lại `QuizClient` như Tạo đề nhanh, không cần DB), nút "Làm bộ khác", "In phiếu"; trang mục lục `/lop/3/toan` theo chủ đề. Tab Toán của `/lop/3` có lối vào.
 3. **Generator:** gắn 34 bài có ngay trước, rồi 15 bài một phần, rồi 7 bài thiếu. Mỗi dạng mới được kiểm tra trong `scripts/gen-math-check.ts` như các dạng cũ.
 4. **Kiểm tra:** `scripts/sgk-toan-check.ts` — đủ 81 bài, số bài liên tục, bài nào cũng sinh được 10 câu chấm đúng, bài trộn chỉ trỏ tới bài đứng trước.
-5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5. **Đã xong lớp 1, 2, 3, 4; tiếp theo lớp 5.**
+5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5. **Đã xong lớp 1–5. THCS làm sau.**
 
 Câu hỏi cần chủ site chốt: URL `/lop/3/toan/bai-15` hay `/toan-3/bai-15`; trang bài có lưu
 tiến độ vào `localStorage` như bài trong DB không.
