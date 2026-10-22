@@ -4,8 +4,8 @@
 // chưa có dạng câu nào để trống `mix` → trang bài hiện "Đang soạn".
 // Đối chiếu từng bài: .claude/ai-context/feature-specs/toan-kntt.md.
 
-import { LOP2, LOP3 } from "../mathGen";
-import { xemGio, tienHinh } from "../exam5/toan1to4";
+import { LOP2, LOP3, LOP3K } from "../mathGen";
+import { demTamGiac, demTuGiac, doDaiThuoc, duongGapKhuc, hinhCN, hinhTron3, tienHinh, xemGio } from "../exam5/toan1to4";
 import { type SgkTopic, has, only, tagged } from "./types";
 
 const bang = (k: number) => tagged(`bảng ${k}`);
@@ -35,7 +35,7 @@ export const TOAN3: SgkTopic[] = [
     { so: 4, ten: "Ôn tập bảng nhân 2; 5, bảng chia 2; 5", mix: [[LOP2.bangNhanChia, 7], [LOP2.nhanChiaLoiVan, 3]] },
     { so: 5, ten: "Bảng nhân 3, bảng chia 3", mix: bangMix(3, LOP3.bangNhanChia34, LOP3.timThuaSo34, LOP3.dungSai34, LOP3.loiVan34) },
     { so: 6, ten: "Bảng nhân 4, bảng chia 4", mix: bangMix(4, LOP3.bangNhanChia34, LOP3.timThuaSo34, LOP3.dungSai34, LOP3.loiVan34) },
-    { so: 7, ten: "Ôn tập hình học và đo lường" },
+    { so: 7, ten: "Ôn tập hình học và đo lường", mix: [[duongGapKhuc(false), 3], [doDaiThuoc, 2], [LOP2.donViDo2, 3], [LOP2.xemGio, 2]] },
     { so: 8, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 2, tap: 1, ten: "Bảng nhân, bảng chia", bai: [
@@ -48,12 +48,12 @@ export const TOAN3: SgkTopic[] = [
     { so: 15, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 3, tap: 1, ten: "Làm quen với hình phẳng, hình khối", bai: [
-    { so: 16, ten: "Điểm ở giữa, trung điểm của đoạn thẳng" },
-    { so: 17, ten: "Hình tròn. Tâm, bán kính, đường kính của hình tròn" },
-    { so: 18, ten: "Góc, góc vuông, góc không vuông" },
-    { so: 19, ten: "Hình tam giác, hình tứ giác. Hình chữ nhật, hình vuông" },
+    { so: 16, ten: "Điểm ở giữa, trung điểm của đoạn thẳng", mix: [[LOP3K.diemOGiua, 4], [LOP3K.trungDiem, 6]] },
+    { so: 17, ten: "Hình tròn. Tâm, bán kính, đường kính của hình tròn", mix: [[LOP3K.banKinhDuongKinh, 6], [hinhTron3, 4]] },
+    { so: 18, ten: "Góc, góc vuông, góc không vuông", mix: [[LOP3K.gocVuong, 10]] },
+    { so: 19, ten: "Hình tam giác, hình tứ giác. Hình chữ nhật, hình vuông", mix: [[LOP3K.hinhPhang3, 7], [demTamGiac([1, 2], false), 2], [demTuGiac([1, 2], "hình chữ nhật", false), 1]] },
     { so: 20, ten: "Thực hành vẽ góc vuông, vẽ đường tròn, hình vuông, hình chữ nhật và vẽ trang trí", thucHanh: true },
-    { so: 21, ten: "Khối lập phương, khối hộp chữ nhật" },
+    { so: 21, ten: "Khối lập phương, khối hộp chữ nhật", mix: [[LOP3K.khoiHop, 10]] },
     { so: 22, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 4, tap: 1, ten: "Phép nhân, phép chia trong phạm vi 100", bai: [
@@ -62,14 +62,14 @@ export const TOAN3: SgkTopic[] = [
     { so: 25, ten: "Phép chia hết, phép chia có dư", mix: [[LOP3.chiaHetCoDu, 10]] },
     { so: 26, ten: "Chia số có hai chữ số cho số có một chữ số", mix: [[LOP3.chia2ChuSo, 10]] },
     { so: 27, ten: "Giảm một số đi một số lần", mix: [[giam, 6], [loiVanGiam, 4]] },
-    { so: 28, ten: "Bài toán giải bằng hai bước tính" },
+    { so: 28, ten: "Bài toán giải bằng hai bước tính", mix: [[LOP3K.haiBuocTinh, 10]] },
     { so: 29, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 5, tap: 1, ten: "Một số đơn vị đo độ dài, khối lượng, dung tích, nhiệt độ", bai: [
     { so: 30, ten: "Mi-li-mét", mix: [[doi(/ mm$/), 10]] },
     { so: 31, ten: "Gam", mix: [[doi(/ g$/), 10]] },
     { so: 32, ten: "Mi-li-lít", mix: [[doi(/ ml$/), 10]] },
-    { so: 33, ten: "Nhiệt độ. Đơn vị đo nhiệt độ" },
+    { so: 33, ten: "Nhiệt độ. Đơn vị đo nhiệt độ", mix: [[LOP3K.nhietDo, 10]] },
     { so: 34, ten: "Thực hành và trải nghiệm với các đơn vị mi-li-mét, gam, mi-li-lít, độ C", thucHanh: true },
     { so: 35, ten: "Luyện tập chung", luyen: true },
   ] },
@@ -94,8 +94,8 @@ export const TOAN3: SgkTopic[] = [
     { so: 49, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 9, tap: 2, ten: "Chu vi, diện tích một số hình phẳng", bai: [
-    { so: 50, ten: "Chu vi hình tam giác, hình tứ giác, hình chữ nhật, hình vuông" },
-    { so: 51, ten: "Diện tích của một hình. Xăng-ti-mét vuông" },
+    { so: 50, ten: "Chu vi hình tam giác, hình tứ giác, hình chữ nhật, hình vuông", mix: [[LOP3K.chuViDaGiac, 5], [hinhCN("chuVi"), 3], [only(LOP3.chuViDienTich, has(/Chu vi/)), 2]] },
+    { so: 51, ten: "Diện tích của một hình. Xăng-ti-mét vuông", mix: [[LOP3K.dienTichO, 10]] },
     { so: 52, ten: "Diện tích hình chữ nhật, diện tích hình vuông", mix: [[only(LOP3.chuViDienTich, has(/Diện tích/)), 10]] },
     { so: 53, ten: "Luyện tập chung", luyen: true },
   ] },
@@ -119,7 +119,7 @@ export const TOAN3: SgkTopic[] = [
   ] },
   { so: 13, tap: 2, ten: "Xem đồng hồ. Tháng – năm. Tiền Việt Nam", bai: [
     { so: 66, ten: "Xem đồng hồ. Tháng – năm", mix: [[xemGio([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]), 6], [LOP3.thangNam, 4]] },
-    { so: 67, ten: "Thực hành xem đồng hồ, xem lịch" },
+    { so: 67, ten: "Thực hành xem đồng hồ, xem lịch", mix: [[LOP3K.xemLich, 7], [xemGio([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]), 3]] },
     { so: 68, ten: "Tiền Việt Nam", mix: [[tienHinh([1000, 2000, 5000, 10000, 20000, 50000], [3, 5]), 5], [LOP3.tienVN3, 5]] },
     { so: 69, ten: "Luyện tập chung", luyen: true },
   ] },
@@ -129,8 +129,8 @@ export const TOAN3: SgkTopic[] = [
     { so: 72, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 15, tap: 2, ten: "Làm quen với yếu tố thống kê, xác suất", bai: [
-    { so: 73, ten: "Thu thập, phân loại, ghi chép số liệu. Bảng số liệu" },
-    { so: 74, ten: "Khả năng xảy ra của một sự kiện" },
+    { so: 73, ten: "Thu thập, phân loại, ghi chép số liệu. Bảng số liệu", mix: [[LOP3K.bangSoLieu, 10]] },
+    { so: 74, ten: "Khả năng xảy ra của một sự kiện", mix: [[LOP3K.khaNang, 10]] },
     { so: 75, ten: "Thực hành và trải nghiệm thu thập, phân loại, ghi chép số liệu, đọc bảng số liệu", thucHanh: true },
   ] },
   { so: 16, tap: 2, ten: "Ôn tập cuối năm", bai: [

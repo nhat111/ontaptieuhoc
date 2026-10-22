@@ -118,7 +118,7 @@ viết mới; **in** = bài thực hành (vẽ, đo thật) — chỉ làm phi�
 ## Tiến độ
 
 - **10/2026 — đã làm (lớp 3):** trang `/lop/3/toan` và `/lop/3/toan/bai-<n>`, dữ liệu `lib/sgk/toan3.ts`. **63/81 bài làm được trên máy**: 34 bài "có", thêm 8 bài nhờ dạng mới (25 chia hết – có dư, 39 số lớn gấp mấy lần số bé, 45–46 các số đến 10 000, 54–57 phép tính trong phạm vi 10 000; 23, 26 có dạng riêng thay vì lọc), và các bài luyện tập / ôn tập trộn được.
-- **Còn lại (lớp 3):** 7, 16, 17, 18, 19, 21, 28, 33, 50, 51, 67, 73, 74 đang soạn (phần lớn cần hình vẽ: trung điểm, góc, khối hộp, nhiệt kế, đếm ô vuông, tờ lịch; hoặc nội dung viết tay: bảng số liệu, khả năng xảy ra); 20, 34, 75 là bài thực hành; 22, 80 chờ các bài trên.
+- **Đợt 2 (lớp 3):** thêm 13 dạng câu trong `lib/mathGen/lop3kntt.ts` (`LOP3K`) và hình vẽ mới trong `lib/exam5/figures.ts` (điểm trên đường thẳng, hình tròn có bán kính – đường kính – dây, nhiệt kế, tờ lịch, hình có số đo cạnh, hình ghép ô vuông, bảng số liệu) cho các bài 7, 16, 17, 18, 19, 21, 28, 33, 50, 51, 67, 73, 74; bài 22, 80 trộn được. **Toán 3: 78/81 bài làm được trên máy**; 3 bài còn lại (20, 34, 75) là bài thực hành vẽ, đo, làm trên giấy. Hình mang thuộc tính `data-…` để `scripts/sgk-toan-check.ts` đọc ngược mà tính lại đáp án.
 - URL đã chốt: `/lop/3/toan/bai-15`; có lưu tiến độ trên máy.
 
 ## Kế hoạch làm

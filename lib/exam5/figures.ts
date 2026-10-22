@@ -356,7 +356,8 @@ export function angleSvg(deg: number): string {
   return svg(300, deg > 90 ? 150 : 145,
     line(O, A, false, 1.8) + line(O, B, false, 1.8) + mark +
     text({ x: O.x, y: O.y + 16 }, "O") + text({ x: A.x + 12, y: A.y }, "A") +
-    text({ x: B.x + (deg > 100 ? -10 : 10), y: B.y - (deg === 180 ? -2 : 10) }, "B"),
+    // Cạnh OB gần thẳng đứng thì chữ B đặt bên phải đầu mút, không tràn khỏi khung hình.
+    text({ x: B.x + (deg > 100 ? -10 : deg >= 60 ? 14 : 10), y: deg === 180 ? B.y + 2 : Math.max(10, B.y - 10) }, "B"),
   );
 }
 
@@ -420,4 +421,115 @@ export function fractionSvg(d: number, shaded: number[], kind: "rect" | "circle"
     return `<path d="M${c.x},${c.y} L${fx(p0.x)},${fx(p0.y)} A${R},${R} 0 0 1 ${fx(p1.x)},${fx(p1.y)} Z" fill="${on.has(i) ? SHADE : "#fff"}" stroke="${STROKE}" stroke-width="1.6"/>`;
   }).join("");
   return svg(160, 160, body);
+}
+
+/* ═════════════ Hình cho Toán 3 theo bài sách (lib/mathGen/lop3kntt.ts) ═════════════
+   Mỗi hình mang thuộc tính data-… ghi số liệu đã vẽ, để scripts/sgk-toan-check.ts đọc
+   ngược lại từ hình mà kiểm tra đáp án (không ảnh hưởng hình hiển thị). */
+
+/** Các điểm trên một đường thẳng; `unit` > 0 thì vẽ vạch chia mỗi đơn vị để đếm. */
+export function pointsOnLineSvg(pts: { label: string; pos: number }[], unit = 0): string {
+  const step = 30, x0 = 30;
+  const max = Math.max(...pts.map((p) => p.pos));
+  const X = (pos: number) => x0 + pos * step;
+  let body = line({ x: X(0) - 14, y: 50 }, { x: X(max) + 14, y: 50 }, false, 1.6);
+  if (unit) for (let i = 0; i <= max; i++) body += line({ x: X(i), y: 45 }, { x: X(i), y: 55 }, false, 0.9);
+  for (const p of pts) {
+    body += `<circle cx="${X(p.pos)}" cy="50" r="3.5" fill="${STROKE}" data-p="${esc(p.label)}:${p.pos}"/>` +
+      text({ x: X(p.pos), y: 30 }, p.label, 16);
+  }
+  return svg(X(max) + 30, 80, body);
+}
+
+/** Hình tròn tâm O: bán kính O–r, đường kính d1–d2 (qua O), dây cung c1–c2 (không qua O). */
+export function circleRadiusSvg(o: { r: string; d1: string; d2: string; c1: string; c2: string }): string {
+  const c = { x: 110, y: 105 }, R = 80;
+  const at = (deg: number) => ({ x: c.x + R * Math.cos((deg * Math.PI) / 180), y: c.y - R * Math.sin((deg * Math.PI) / 180) });
+  const lab = (deg: number, s: string) => {
+    const a = (deg * Math.PI) / 180;
+    return text({ x: c.x + (R + 14) * Math.cos(a), y: c.y - (R + 14) * Math.sin(a) }, s);
+  };
+  const r = at(65), d1 = at(160), d2 = at(340), c1 = at(215), c2 = at(285);
+  return svg(220, 210,
+    `<circle cx="${c.x}" cy="${c.y}" r="${R}" fill="none" stroke="${STROKE}" stroke-width="1.8"/>` +
+    `<circle cx="${c.x}" cy="${c.y}" r="2.5" fill="${STROKE}"/>` +
+    line(c, r, false, 1.4) + line(d1, d2, false, 1.4) + line(c1, c2, false, 1.4) +
+    text({ x: c.x + 2, y: c.y + 14 }, "O") +
+    lab(65, o.r) + lab(160, o.d1) + lab(340, o.d2) + lab(215, o.c1) + lab(285, o.c2),
+  );
+}
+
+/** Nhiệt kế chia độ C từ 20 đến 45, vạch nhỏ mỗi độ, ghi số mỗi 5 độ. */
+export function thermometerSvg(t: number): string {
+  const y = (v: number) => 236 - (v - 20) * 8;
+  let body = `<rect x="64" y="24" width="14" height="222" rx="7" fill="#fff" stroke="${STROKE}" stroke-width="1.6"/>` +
+    `<rect data-t="${t}" x="68" y="${y(t)}" width="6" height="${250 - y(t)}" fill="#8a8a8a"/>` +
+    `<circle cx="71" cy="252" r="13" fill="#8a8a8a" stroke="${STROKE}" stroke-width="1.6"/>`;
+  for (let v = 20; v <= 45; v++) {
+    const big = v % 5 === 0;
+    body += line({ x: 78, y: y(v) }, { x: 78 + (big ? 14 : 7), y: y(v) }, false, big ? 1.3 : 0.8);
+    if (big) body += text({ x: 98, y: y(v) }, String(v), 13, "start");
+  }
+  body += text({ x: 71, y: 12 }, "°C", 14);
+  return svg(140, 275, body);
+}
+
+/** Tờ lịch một tháng, tuần bắt đầu từ thứ Hai. */
+export function calendarSvg(year: number, month: number): string {
+  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const first = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7; // 0 = thứ Hai
+  const rows = Math.ceil((first + days) / 7), cw = 40, ch = 30, x0 = 10, y0 = 66;
+  let body = text({ x: x0 + 3.5 * cw, y: 18 }, `THÁNG ${month} – ${year}`, 16) +
+    `<rect x="${x0}" y="${y0 - ch}" width="${7 * cw}" height="${(rows + 1) * ch}" fill="none" stroke="${STROKE}" stroke-width="1.4"/>`;
+  ["T2", "T3", "T4", "T5", "T6", "T7", "CN"].forEach((d, i) => { body += text({ x: x0 + i * cw + cw / 2, y: y0 - ch / 2 }, d, 13); });
+  body += line({ x: x0, y: y0 }, { x: x0 + 7 * cw, y: y0 }, false, 1.2);
+  for (let d = 1; d <= days; d++) {
+    const i = first + d - 1;
+    body += text({ x: x0 + (i % 7) * cw + cw / 2, y: y0 + Math.floor(i / 7) * ch + ch / 2 }, String(d), 14);
+  }
+  return svg(x0 * 2 + 7 * cw, y0 + rows * ch + 12, `<g data-cal="${year}-${month}">${body}</g>`);
+}
+
+/** Hình tam giác ABC hoặc tứ giác ABCD, số đo ghi cạnh từng cạnh (theo thứ tự AB, BC, …). */
+export function polygonSidesSvg(kind: "tamgiac" | "tugiac", labels: string[]): string {
+  const P = (kind === "tamgiac" ? [[110, 22], [200, 150], [24, 150]] : [[40, 40], [190, 22], [216, 150], [20, 140]])
+    .map(([x, y]) => ({ x: x + 20, y: y + 10 }));
+  const cx = P.reduce((s, p) => s + p.x, 0) / P.length, cy = P.reduce((s, p) => s + p.y, 0) / P.length;
+  let body = poly(P);
+  P.forEach((p, i) => {
+    const q = P[(i + 1) % P.length], mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+    const dx = mid.x - cx, dy = mid.y - cy, d = Math.hypot(dx, dy) || 1;
+    body += text({ x: mid.x + (dx / d) * 22, y: mid.y + (dy / d) * 16 }, labels[i], 14, "middle", true);
+    const vx = p.x - cx, vy = p.y - cy, v = Math.hypot(vx, vy) || 1;
+    body += text({ x: p.x + (vx / v) * 14, y: p.y + (vy / v) * 12 }, "ABCD"[i]);
+  });
+  return svg(270, 200, body);
+}
+
+/** Hình ghép từ các ô vuông 1 cm × 1 cm, vẽ trên lưới. */
+export function unitSquaresSvg(cells: [number, number][]): string {
+  const s = 26, x0 = 14, y0 = 14;
+  const W = Math.max(...cells.map(([x]) => x)) + 1, H = Math.max(...cells.map(([, y]) => y)) + 1;
+  let body = "";
+  for (let i = 0; i <= W; i++) body += line({ x: x0 + i * s, y: y0 }, { x: x0 + i * s, y: y0 + H * s }, true, 0.5);
+  for (let j = 0; j <= H; j++) body += line({ x: x0, y: y0 + j * s }, { x: x0 + W * s, y: y0 + j * s }, true, 0.5);
+  body += cells.map(([x, y]) =>
+    `<rect class="o" x="${x0 + x * s}" y="${y0 + y * s}" width="${s}" height="${s}" fill="#d4d4d4" stroke="${STROKE}" stroke-width="1.4"/>`).join("");
+  return svg(x0 * 2 + W * s, y0 * 2 + H * s, body);
+}
+
+/** Bảng số liệu hai hàng: tên (lớp, bạn…) và số liệu. */
+export function dataTableSvg(o: { head: [string, string]; labels: string[]; values: number[] }): string {
+  const w0 = 120, cw = 62, ch = 34, x0 = 10, y0 = 10;
+  const W = w0 + o.labels.length * cw;
+  let body = `<rect x="${x0}" y="${y0}" width="${W}" height="${2 * ch}" fill="none" stroke="${STROKE}" stroke-width="1.5"/>` +
+    line({ x: x0, y: y0 + ch }, { x: x0 + W, y: y0 + ch }) + line({ x: x0 + w0, y: y0 }, { x: x0 + w0, y: y0 + 2 * ch });
+  body += text({ x: x0 + w0 / 2, y: y0 + ch / 2 }, o.head[0], 13) + text({ x: x0 + w0 / 2, y: y0 + ch * 1.5 }, o.head[1], 13);
+  o.labels.forEach((l, i) => {
+    const x = x0 + w0 + i * cw;
+    if (i) body += line({ x, y: y0 }, { x, y: y0 + 2 * ch }, false, 1);
+    body += text({ x: x + cw / 2, y: y0 + ch / 2 }, l, 14) +
+      `<text data-v="${o.values[i]}" x="${x + cw / 2}" y="${y0 + ch * 1.5}" font-size="15" font-weight="bold" text-anchor="middle" dominant-baseline="central" ${FONT}>${o.values[i]}</text>`;
+  });
+  return svg(W + 20, 2 * ch + 20, body);
 }
