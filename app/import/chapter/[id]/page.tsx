@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { getChapterContext, getLessonsInChapter } from "@/lib/db";
+import { DeleteChapterButton, DeleteLessonButton } from "@/components/import/DeleteButtons";
 
 // Editor dashboard — nothing to index.
 export const metadata: Metadata = {
@@ -83,7 +84,13 @@ export default async function ChapterDashboardPage({
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-gray-700">Danh sách bài</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <DeleteChapterButton
+              chapterId={chapterId}
+              title={ctx.chapterTitle}
+              lessonCount={lessons.length}
+              redirectTo={`/lop/${ctx.grade}?subject=${encodeURIComponent(ctx.subjectName)}`}
+            />
             <Link
               href="/import"
               className="text-xs text-blue-600 hover:underline border border-blue-200 hover:border-blue-300 rounded-lg px-3 py-1.5"
@@ -110,7 +117,7 @@ export default async function ChapterDashboardPage({
               const filled = l.questionCount > 0;
               const isExam = l.type === "exam";
               return (
-                <li key={l.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                <li key={l.id} className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
                   <span
                     className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
                       filled
@@ -141,6 +148,12 @@ export default async function ChapterDashboardPage({
                   >
                     {filled ? "Sửa" : "Nhập"}
                   </Link>
+                  <DeleteLessonButton
+                    lessonId={l.id}
+                    title={l.title}
+                    questionCount={l.questionCount}
+                    isExam={isExam}
+                  />
                 </li>
               );
             })}
