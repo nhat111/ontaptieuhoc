@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import SelfCheck from "@/components/lamVan/SelfCheck";
-import { Card, Crumbs, Example, FormBadge, QuickExamCta } from "@/components/lamVan/parts";
+import { Card, Crumbs, Example, FormBadge, QuickExamCta, SampleBody, sgkText } from "@/components/lamVan/parts";
 import { CHECKLIST, FORM_CHECK, GUIDES, guideById, promptsForGuide } from "@/lib/lamVan";
 
 export const dynamicParams = false;
@@ -35,6 +35,7 @@ export default async function LamVanGuidePage({ params }: Props) {
   if (!g) notFound();
   const prompts = promptsForGuide(g.id);
   const others = GUIDES.filter((o) => o.id !== g.id);
+  const vb = g.form === "van-ban";
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -52,9 +53,13 @@ export default async function LamVanGuidePage({ params }: Props) {
           <FormBadge form={g.form} />
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">{g.title}</h1>
           <p className="mt-2 text-slate-600">{g.blurb}</p>
+          <p className="mt-2 text-sm text-slate-500">
+            Sách Tiếng Việt 5 (Kết nối tri thức với cuộc sống): <b className="font-semibold text-slate-700">{sgkText(g)}</b>
+          </p>
           <nav aria-label="Mục lục" className="mt-5 flex flex-wrap gap-2">
             {[
-              ["dan-y", "Dàn ý"], ["viet-hay", "Viết cho hay"], ["mo-ket", "Mở bài, kết bài"], ["tu-ngu", "Từ ngữ"],
+              ["dan-y", vb ? "Các phần" : "Dàn ý"], ["viet-hay", vb ? "Viết cho rõ" : "Viết cho hay"],
+              ["mo-ket", vb ? "Mẫu từng phần" : "Mở bài, kết bài"], ["tu-ngu", "Từ ngữ"],
               ["bai-mau", "Bài tham khảo"], ["loi", "Lỗi hay mắc"], ["tu-kiem-tra", "Tự kiểm tra"],
             ].map(([id, label]) => (
               <a key={id} href={`#${id}`} className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:text-primary-700 hover:ring-primary-200">
@@ -76,7 +81,7 @@ export default async function LamVanGuidePage({ params }: Props) {
           </Card>
         )}
 
-        <Card id="dan-y" title={g.form === "doan-van" ? "Dàn ý đoạn văn" : "Dàn ý bài văn"} icon={<ListTree className="h-4 w-4" />}>
+        <Card id="dan-y" title={vb ? "Các phần của văn bản" : g.form === "doan-van" ? "Dàn ý đoạn văn" : "Dàn ý bài văn"} icon={<ListTree className="h-4 w-4" />}>
           <ol className="space-y-4">
             {g.outline.map((o, i) => (
               <li key={o.part}>
@@ -89,7 +94,7 @@ export default async function LamVanGuidePage({ params }: Props) {
           </ol>
         </Card>
 
-        <Card id="viet-hay" title="Viết sao cho hay?" icon={<Lightbulb className="h-4 w-4" />}>
+        <Card id="viet-hay" title={vb ? "Viết sao cho rõ, đúng?" : "Viết sao cho hay?"} icon={<Lightbulb className="h-4 w-4" />}>
           <ul className="space-y-4">
             {g.tips.map((t) => (
               <li key={t.title}>
@@ -104,7 +109,7 @@ export default async function LamVanGuidePage({ params }: Props) {
           </p>
         </Card>
 
-        <Card id="mo-ket" title={g.form === "doan-van" ? "Câu mở đoạn, câu kết đoạn mẫu" : "Mở bài, kết bài mẫu"} icon={<MessageSquareQuote className="h-4 w-4" />}>
+        <Card id="mo-ket" title={vb ? "Mẫu từng phần" : g.form === "doan-van" ? "Câu mở đoạn, câu kết đoạn mẫu" : "Mở bài, kết bài mẫu"} icon={<MessageSquareQuote className="h-4 w-4" />}>
           <div className="grid gap-3 sm:grid-cols-2">
             {[...g.openings, ...g.endings].map((x, i) => (
               <figure key={i} className="rounded-xl border border-slate-200 p-3">
@@ -130,9 +135,11 @@ export default async function LamVanGuidePage({ params }: Props) {
           </div>
         </Card>
 
-        <Card id="bai-mau" title="Bài tham khảo" icon={<BookOpen className="h-4 w-4" />}>
+        <Card id="bai-mau" title={vb ? "Văn bản tham khảo" : "Bài tham khảo"} icon={<BookOpen className="h-4 w-4" />}>
           <p className="text-sm text-slate-500">
-            Em hãy thử lập dàn ý và viết trước, rồi mới mở bài tham khảo. Đừng học thuộc — mỗi bạn có người thân, ngôi trường, cảm xúc riêng, thầy cô thích nhất bài viết bằng lời của chính em.
+            {vb
+              ? "Em hãy ghi chép, lập bảng và thử viết trước, rồi mới mở bản tham khảo. Số liệu, tên người trong bản tham khảo là ví dụ — bài của em phải ghi đúng việc thật của tổ, lớp em."
+              : "Em hãy thử lập dàn ý và viết trước, rồi mới mở bài tham khảo. Đừng học thuộc — mỗi bạn có người thân, ngôi trường, cảm xúc riêng, thầy cô thích nhất bài viết bằng lời của chính em."}
           </p>
           {g.samples.map((sm, k) => (
             <details key={k} className="group mt-3 rounded-xl border border-slate-200">
@@ -143,11 +150,9 @@ export default async function LamVanGuidePage({ params }: Props) {
                 </span>
                 <span className="text-sm text-slate-600"><b>Đề:</b> {sm.prompt}</span>
               </summary>
-              <div className="space-y-3 border-t border-slate-100 px-4 py-4 text-[15px] leading-relaxed text-slate-800">
-                {sm.paragraphs.map((p, i) => <p key={i} className="indent-6">{p}</p>)}
-              </div>
+              <SampleBody blocks={sm.paragraphs} form={g.form} />
               <p className="mx-4 mb-4 rounded-xl bg-success-50 px-3 py-2 text-sm leading-relaxed text-success-800">
-                <b>Vì sao bài này được điểm cao?</b> {sm.note}
+                <b>{vb ? "Vì sao bản này đạt yêu cầu?" : "Vì sao bài này được điểm cao?"}</b> {sm.note}
               </p>
             </details>
           ))}
@@ -162,7 +167,7 @@ export default async function LamVanGuidePage({ params }: Props) {
         </Card>
 
         <Card id="tu-kiem-tra" title="Viết xong, tự kiểm tra bài" icon={<ClipboardCheck className="h-4 w-4" />}>
-          <SelfCheck items={[FORM_CHECK[g.form], ...g.check, ...CHECKLIST]} />
+          <SelfCheck items={[...FORM_CHECK[g.form], ...g.check, ...CHECKLIST]} />
         </Card>
 
         <section aria-label="Dạng bài khác">

@@ -317,27 +317,30 @@ export const LTVC_BY_KIND: Record<ExamKind, [LtvcTopic, LtvcTopic]> = {
 
 /* ═════════════ Kiểm tra viết (tập làm văn) ═════════════ */
 
+// Theo phần Viết của Tiếng Việt 5 Kết nối tri thức (lib/lamVan.ts): đề nào cũng thuộc một
+// dạng bài đã học trước kì kiểm tra. Giữ đúng số đề mỗi kì — link đề đã chia sẻ chọn đề
+// viết theo vị trí, đổi số đề sẽ làm đề cũ ra đề viết khác hẳn.
 export const WRITING_PROMPTS: Record<ExamKind, string[]> = {
   "giua-hk1": [
-    "Viết bài văn kể lại một câu chuyện cổ tích mà em yêu thích, trong đó có thêm những chi tiết sáng tạo của em (thay đổi kết thúc, thêm nhân vật, …).",
-    "Viết bài văn tả cảnh một buổi sáng (hoặc một buổi chiều) ở nơi em sống.",
-    "Viết bài văn tả cảnh trường em trước giờ vào học.",
+    "Viết bài văn kể sáng tạo một câu chuyện cổ tích em đã đọc hoặc đã nghe (thêm chi tiết, thay đổi kết thúc hoặc đóng vai nhân vật để kể).",
+    "Viết bài văn kể sáng tạo một câu chuyện có nhân vật chính là con vật hoặc đồ vật.",
+    "Viết bài văn tả một cảnh ao hồ, sông suối ở quê hương em hoặc ở nơi gia đình em sinh sống.",
   ],
   "cuoi-hk1": [
-    "Viết bài văn tả một cảnh đẹp ở quê hương em (một dòng sông, một cánh đồng, một ngọn núi, một bãi biển, …).",
-    "Hãy tưởng tượng em là một nhân vật trong câu chuyện em đã đọc. Viết bài văn kể lại câu chuyện đó theo lời của nhân vật, có thêm những chi tiết sáng tạo.",
-    "Viết đoạn văn (khoảng 8–10 câu) nêu tình cảm, cảm xúc của em về một nhân vật trong câu chuyện em đã đọc hoặc đã nghe.",
+    "Viết bài văn tả một cảnh biển đảo em đã được thấy tận mắt hoặc xem trên phim ảnh.",
+    "Viết đoạn văn (khoảng 8–10 câu) giới thiệu một nhân vật trong cuốn sách em đã đọc hoặc trong bộ phim hoạt hình em đã xem.",
+    "Viết đoạn văn (khoảng 8–10 câu) thể hiện tình cảm, cảm xúc của em về một câu chuyện em đã đọc, đã nghe.",
   ],
   "giua-hk2": [
     "Viết bài văn tả một người thân trong gia đình em.",
-    "Viết bài văn tả thầy giáo hoặc cô giáo đã để lại cho em nhiều ấn tượng.",
-    "Viết đoạn văn (khoảng 8–10 câu) nêu ý kiến của em về việc học sinh tham gia trồng cây, giữ gìn môi trường xanh – sạch – đẹp.",
+    "Viết bài văn tả một người đã để lại cho em những ấn tượng tốt đẹp.",
+    "Viết đoạn văn (khoảng 8–10 câu) thể hiện tình cảm, cảm xúc của em về một buổi hoạt động ngoại khoá của trường hoặc lớp em.",
   ],
   "cuoi-hk2": [
-    "Viết bài văn tả một người bạn thân của em.",
-    "Viết đoạn văn (khoảng 8–10 câu) nêu ý kiến tán thành hoặc phản đối việc học sinh tiểu học sử dụng điện thoại thông minh.",
-    "Viết bài văn tả một cảnh đẹp mà em đã được ngắm nhìn trong dịp hè hoặc trong một chuyến tham quan.",
-    "Viết bài văn kể lại một câu chuyện về lòng biết ơn, trong đó có thêm những chi tiết sáng tạo của em.",
+    "Viết bài văn tả một người em chỉ gặp một vài lần nhưng nhớ mãi.",
+    "Viết đoạn văn (khoảng 8–10 câu) nêu ý kiến tán thành phong trào trồng và bảo vệ cây xanh.",
+    "Viết đoạn văn (khoảng 8–10 câu) nêu ý kiến phản đối hiện tượng vứt rác bừa bãi.",
+    "Viết bài văn tả một cảnh đẹp của quê hương, đất nước mà em yêu thích.",
   ],
 };
 

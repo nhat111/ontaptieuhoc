@@ -29,34 +29,40 @@ export default function LamVanLop5Page() {
           </span>
           <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">{TITLE}</h1>
           <p className="mt-2 text-slate-600">
-            Phần <b>B. Kiểm tra viết</b> trong đề Tiếng Việt chiếm 10 điểm. Ở đây có cách làm từng dạng bài hay gặp ở lớp 5:
-            đọc đề thế nào, lập dàn ý ra sao, viết gì cho hay, và tự soát bài trước khi nộp.
+            Cách làm từng dạng bài trong phần Viết của sách <b>Tiếng Việt 5 – Kết nối tri thức với cuộc sống</b>, bộ sách
+            dùng chung cả nước từ năm học 2026–2027: đọc đề thế nào, lập dàn ý ra sao, viết gì cho hay, và tự soát bài trước khi nộp.
           </p>
         </div>
       </section>
 
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
         <Card id="dang-bai" title="Em đang gặp dạng bài nào?" icon={<PenLine className="h-4 w-4" />}>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {GUIDES.map((g) => (
-              <li key={g.id}>
-                <Link
-                  href={`/lam-van/lop-5/${g.id}`}
-                  className="group flex h-full flex-col rounded-2xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-violet-300 hover:shadow-pop motion-safe:hover:-translate-y-0.5"
-                >
-                  <span className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-slate-900">{g.name}</span>
-                    <FormBadge form={g.form} />
-                  </span>
-                  <span className="flex-1 text-sm leading-relaxed text-slate-600">{g.blurb}</span>
-                  <span className="mt-3 inline-flex items-center gap-0.5 text-sm font-bold text-primary-700">
-                    Xem cách làm
-                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {([1, 2] as const).map((tap) => (
+            <div key={tap} className="mt-4 first:mt-0">
+              <p className="mb-2 text-sm font-extrabold text-slate-500">Tập {tap === 1 ? "một" : "hai"}</p>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {GUIDES.filter((g) => g.sgk.tap === tap).map((g) => (
+                  <li key={g.id}>
+                    <Link
+                      href={`/lam-van/lop-5/${g.id}`}
+                      className="group flex h-full flex-col rounded-2xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-violet-300 hover:shadow-pop motion-safe:hover:-translate-y-0.5"
+                    >
+                      <span className="mb-1.5 flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-slate-900">{g.name}</span>
+                        <FormBadge form={g.form} />
+                      </span>
+                      <span className="flex-1 text-sm leading-relaxed text-slate-600">{g.blurb}</span>
+                      <span className="mt-2 text-xs font-semibold text-slate-400">SGK: {g.sgk.bai}</span>
+                      <span className="mt-2 inline-flex items-center gap-0.5 text-sm font-bold text-primary-700">
+                        Xem cách làm
+                        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </Card>
 
         <Card id="40-phut" title="Làm bài trong 40 phút" icon={<Timer className="h-4 w-4" />}>
@@ -91,7 +97,7 @@ export default function LamVanLop5Page() {
 
         <Card id="cham-diem" title="Bài viết được chấm thế nào?" icon={<ClipboardCheck className="h-4 w-4" />}>
           <p className="mb-3 text-sm text-slate-600">
-            Gợi ý biểu điểm 10 điểm — giống phần hướng dẫn chấm in kèm đề ở <Link href="/tao-de" className="font-semibold text-primary-700 hover:underline">Tạo đề nhanh</Link>. Đề của trường có thể chia điểm khác đôi chút.
+            Gợi ý biểu điểm 10 điểm — giống phần hướng dẫn chấm in kèm đề ở <Link href="/tao-de" className="font-semibold text-primary-700 hover:underline">Tạo đề nhanh</Link>. Đề của trường có thể chia điểm khác đôi chút. Báo cáo công việc và chương trình hoạt động không chấm theo thang này — tự soát theo bảng kiểm tra ở trang của dạng bài đó.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {(["bai-van", "doan-van"] as const).map((form) => (
