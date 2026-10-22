@@ -1,4 +1,5 @@
-import { BookOpen, ChevronDown, Lightbulb, PenLine, Puzzle } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, ChevronDown, ChevronRight, Lightbulb, PenLine, Puzzle } from "lucide-react";
 import { baiOf, skillsOf, type TvGuide, type TvSkill } from "@/lib/tvGuide";
 
 /**
@@ -123,6 +124,12 @@ function SkillGroup({ title, icon, skills }: { title: string; icon: React.ReactN
                   <span className="font-semibold">Lỗi hay mắc: </span>
                   {s.loi}
                 </p>
+              )}
+              {s.link && (
+                <Link href={s.link.href} className="inline-flex items-center gap-0.5 font-semibold text-primary-700 hover:underline">
+                  {s.link.label}
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
               )}
             </div>
           </details>
