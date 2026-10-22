@@ -5,25 +5,29 @@
 //  - mỗi bài làm được sinh đúng 10 câu với 300 seed, cùng seed ra cùng bộ câu, không câu
 //    nào trùng trong một bộ; đáp án đúng chấm là đúng, đáp án nhiễu chấm là sai
 //    (bằng chính `scoreAnswer` của trang làm bài).
-//  - dạng câu riêng của Toán 3 theo sách (LOP3K): tính lại đáp án độc lập, phần lớn bằng
-//    cách đọc ngược số liệu từ hình vẽ (thuộc tính data-… trong SVG) hoặc từ đề bài.
+//  - dạng câu viết riêng theo sách (lib/mathGen/kntt, KNTT<N>): tính lại đáp án độc lập,
+//    phần lớn bằng cách đọc ngược số liệu từ hình vẽ (data-… trong SVG) hoặc từ đề bài.
 // Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
 
 import { mulberry32, type Draft } from "../lib/mathGen/core";
-import { LOP3K } from "../lib/mathGen";
+import { KNTT3 } from "../lib/mathGen";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
-import { QUESTIONS_PER_LESSON, SGK_TOAN, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
+import { QUESTIONS_PER_LESSON, SGK_BOOKS, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
 
 const SEEDS = 300;
 let errors = 0;
 const fail = (msg: string) => { errors++; if (errors <= 30) console.error("✗ " + msg); };
 
-for (const [g, topics] of Object.entries(SGK_TOAN)) {
-  const grade = Number(g);
-  topics!.forEach((t, i) => {
+const ids = new Set<string>();
+for (const book of SGK_BOOKS) {
+  const { grade, topics } = book;
+  if (ids.has(`${book.slug}-${grade}`)) fail(`trùng sách ${book.slug} lớp ${grade}`);
+  ids.add(`${book.slug}-${grade}`);
+  if (!/^[a-z0-9-]+$/.test(book.id) || !book.source) fail(`${book.id}: thiếu id hợp lệ hoặc nguồn đối chiếu`);
+  topics.forEach((t, i) => {
     if (t.so !== i + 1) fail(`lớp ${grade}: chủ đề thứ ${i + 1} đánh số ${t.so}`);
-    if (i > 0 && t.tap < topics![i - 1].tap) fail(`lớp ${grade}: chủ đề ${t.so} thuộc tập ${t.tap} đứng sau tập ${topics![i - 1].tap}`);
+    if (i > 0 && t.tap < topics[i - 1].tap) fail(`lớp ${grade}: chủ đề ${t.so} thuộc tập ${t.tap} đứng sau tập ${topics[i - 1].tap}`);
   });
   const all = sgkLessons(grade);
   all.forEach(({ lesson }, i) => { if (lesson.so !== i + 1) fail(`lớp ${grade}: bài thứ ${i + 1} đánh số ${lesson.so}`); });
@@ -69,7 +73,7 @@ for (const [g, topics] of Object.entries(SGK_TOAN)) {
   console.log(`✓ Toán ${grade}: ${all.length} bài, ${ready} bài làm được trên máy`);
 }
 
-/* ───────── Tính lại đáp án các dạng LOP3K ───────── */
+/* ───────── Tính lại đáp án các dạng KNTT<N> ───────── */
 
 const svgOf = (d: Draft) => decodeURIComponent((d.image ?? "").replace(/^data:image\/svg\+xml;utf8,/, ""));
 const answerOf = (d: Draft): string =>
@@ -86,7 +90,7 @@ function zellerMon0(y: number, m: number, d: number) {
 }
 const daysIn = (y: number, m: number) => [31, (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 
-function recheck(name: string, d: Draft): string | null {
+function recheck3(name: string, d: Draft): string | null {
   const q = d.question, a = answerOf(d), svg = svgOf(d);
   let m: RegExpMatchArray | null;
   switch (name) {
@@ -191,15 +195,22 @@ function recheck(name: string, d: Draft): string | null {
   return null;
 }
 
-for (const [name, gen] of Object.entries(LOP3K)) {
-  let bad = 0;
-  for (let s = 0; s < 3000; s++) {
-    const d = gen(mulberry32(s * 31 + 7));
-    const err = recheck(name, d);
-    if (err) { bad++; fail(`LOP3K.${name} seed ${s}: ${err} — ${d.question}`); if (bad > 3) break; }
+// Mỗi bộ dạng câu KNTT<N> đi kèm hàm tính lại của nó. Dạng số học thuần (phép tính, so
+// sánh, liền trước – liền sau) đã được scripts/gen-math-check.ts tính lại nên trả null ở đây.
+const RECHECK: [string, Record<string, (r: ReturnType<typeof mulberry32>) => Draft>, (name: string, d: Draft) => string | null][] = [
+  ["KNTT3", KNTT3, recheck3],
+];
+for (const [label, gens, recheck] of RECHECK) {
+  for (const [name, gen] of Object.entries(gens)) {
+    let bad = 0;
+    for (let s = 0; s < 3000; s++) {
+      const d = gen(mulberry32(s * 31 + 7));
+      const err = recheck(name, d);
+      if (err) { bad++; fail(`${label}.${name} seed ${s}: ${err} — ${d.question}`); if (bad > 3) break; }
+    }
   }
+  console.log(`✓ ${label}: đã tính lại đáp án ${Object.keys(gens).length} dạng câu`);
 }
-console.log(`✓ đã tính lại đáp án ${Object.keys(LOP3K).length} dạng câu riêng của Toán 3 theo sách`);
 
 if (errors) {
   console.error(`\n${errors} lỗi`);

@@ -423,7 +423,7 @@ export function fractionSvg(d: number, shaded: number[], kind: "rect" | "circle"
   return svg(160, 160, body);
 }
 
-/* ═════════════ Hình cho Toán 3 theo bài sách (lib/mathGen/lop3kntt.ts) ═════════════
+/* ═════════════ Hình cho Toán 3 theo bài sách (lib/mathGen/kntt/lop3.ts) ═════════════
    Mỗi hình mang thuộc tính data-… ghi số liệu đã vẽ, để scripts/sgk-toan-check.ts đọc
    ngược lại từ hình mà kiểm tra đáp án (không ảnh hưởng hình hiển thị). */
 

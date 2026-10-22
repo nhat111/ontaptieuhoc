@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import QuizClient from "@/components/quiz/QuizClient";
 import { cleanSeed, rowToQuestion } from "@/lib/quickExam";
 import {
-  SGK_BOOK, buildSgkRows, findSgkLesson, freshSeed, sgkProgressKey, sgkReady, sgkToanHref,
+  buildSgkRows, findSgkLesson, freshSeed, sgkBook, sgkProgressKey, sgkReady, sgkToanHref,
 } from "@/lib/sgk";
 
 interface Props {
@@ -20,17 +20,17 @@ async function load(params: Props["params"]) {
   const grade = Number(g);
   const m = /^bai-(\d{1,3})$/.exec(bai);
   const found = m ? findSgkLesson(grade, Number(m[1])) : null;
-  return found ? { grade, ...found } : null;
+  return found ? { grade, bookName: sgkBook(grade)!.book, ...found } : null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const x = await load(params);
   if (!x) return {};
-  const title = `Bài ${x.lesson.so}: ${x.lesson.ten} – Toán ${x.grade} ${SGK_BOOK}`;
+  const title = `Bài ${x.lesson.so}: ${x.lesson.ten} – Toán ${x.grade} ${x.bookName}`;
   const ready = sgkReady(x.grade, x.lesson);
   const description = ready
-    ? `Luyện tập Toán lớp ${x.grade} bài ${x.lesson.so} "${x.lesson.ten}" (sách ${SGK_BOOK}, chủ đề ${x.topic.so}): 10 câu làm trên máy, chấm điểm ngay, có lời giải, mỗi lần một bộ câu mới.`
-    : `Toán lớp ${x.grade} bài ${x.lesson.so} "${x.lesson.ten}" (sách ${SGK_BOOK}).`;
+    ? `Luyện tập Toán lớp ${x.grade} bài ${x.lesson.so} "${x.lesson.ten}" (sách ${x.bookName}, chủ đề ${x.topic.so}): 10 câu làm trên máy, chấm điểm ngay, có lời giải, mỗi lần một bộ câu mới.`
+    : `Toán lớp ${x.grade} bài ${x.lesson.so} "${x.lesson.ten}" (sách ${x.bookName}).`;
   const url = sgkToanHref(x.grade, x.lesson.so);
   return {
     title, description,

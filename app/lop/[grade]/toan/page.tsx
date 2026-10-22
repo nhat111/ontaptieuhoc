@@ -5,10 +5,7 @@ import { BookOpenCheck, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import SgkTopicList, { type SgkTopicView } from "@/components/sgk/SgkTopicList";
 import { gradeTheme } from "@/lib/gradeTheme";
-import {
-  SGK_BOOK, SGK_TOAN, sgkLessons, sgkProgressKey, sgkReady, sgkToanHref,
-} from "@/lib/sgk";
-import type { MathGrade } from "@/lib/mathGen";
+import { sgkBook, sgkLessons, sgkProgressKey, sgkReady, sgkToanHref } from "@/lib/sgk";
 
 interface Props {
   params: Promise<{ grade: string }>;
@@ -16,16 +13,18 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const grade = Number((await params).grade);
-  if (!SGK_TOAN[grade as MathGrade]) return {};
-  const title = `Toán ${grade} ${SGK_BOOK} – luyện tập theo từng bài`;
-  const description = `Bài luyện tập Toán lớp ${grade} theo đúng từng bài sách ${SGK_BOOK}: làm trên máy, chấm điểm ngay, mỗi lần một bộ câu mới, in được phiếu. Miễn phí, không cần đăng nhập.`;
+  const book = sgkBook(grade);
+  if (!book) return {};
+  const title = `Toán ${grade} ${book.book} – luyện tập theo từng bài`;
+  const description = `Bài luyện tập Toán lớp ${grade} theo đúng từng bài sách ${book.book}: làm trên máy, chấm điểm ngay, mỗi lần một bộ câu mới, in được phiếu. Miễn phí, không cần đăng nhập.`;
   return { title, description, alternates: { canonical: sgkToanHref(grade) }, openGraph: { title, description, url: sgkToanHref(grade) } };
 }
 
 export default async function SgkToanPage({ params }: Props) {
   const grade = Number((await params).grade);
-  const topics = SGK_TOAN[grade as MathGrade];
-  if (!topics) notFound();
+  const book = sgkBook(grade);
+  if (!book) notFound();
+  const topics = book.topics;
   const theme = gradeTheme(grade);
 
   const view = (tap: 1 | 2): SgkTopicView[] => topics.filter((t) => t.tap === tap).map((t) => ({
@@ -57,7 +56,7 @@ export default async function SgkToanPage({ params }: Props) {
           <div className="min-w-0">
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Toán {grade} theo từng bài</h1>
             <p className="mt-1 text-sm text-slate-600">
-              Đúng thứ tự bài trong sách <b>{SGK_BOOK}</b>. Mỗi bài 10 câu, làm trên máy chấm ngay; mỗi lần vào là một bộ câu mới.
+              Đúng thứ tự bài trong sách <b>{book.book}</b>. Mỗi bài 10 câu, làm trên máy chấm ngay; mỗi lần vào là một bộ câu mới.
             </p>
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
               <BookOpenCheck className="h-3.5 w-3.5 text-success-600" aria-hidden />
