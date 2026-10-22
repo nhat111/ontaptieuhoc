@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpenCheck, ChevronRight, FileText, Gamepad2, Inbox, PenLine, Plus, Sparkles } from "lucide-react";
@@ -86,12 +87,10 @@ export default async function GradePage({
 
   // Toán lớp có sách (lib/sgk): tab Bài tập chỉ hiện các chủ đề của sách, không hiện bài cũ trong DB.
   const book = activeView !== "exam" && hidesOldLessons(gradeNum, activeSubject) ? sgkBook(gradeNum) : null;
-  const [chapters, leaderboard] = await Promise.all([
+  const chapters =
     activeSubject && !book
-      ? getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
-      : Promise.resolve([]),
-    getLeaderboardByGrade(gradeNum),
-  ]);
+      ? await getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
+      : [];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -286,10 +285,17 @@ export default async function GradePage({
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <Sidebar leaderboard={leaderboard} grade={gradeNum} />
+            {/* Bảng xếp hạng chậm nhất trang (đọc hết quiz_results): stream sau, không chặn danh sách bài. */}
+            <Suspense fallback={<Sidebar grade={gradeNum} loading />}>
+              <LeaderboardSidebar grade={gradeNum} />
+            </Suspense>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+async function LeaderboardSidebar({ grade }: { grade: number }) {
+  return <Sidebar leaderboard={await getLeaderboardByGrade(grade)} grade={grade} />;
 }
