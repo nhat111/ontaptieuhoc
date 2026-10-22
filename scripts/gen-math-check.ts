@@ -133,13 +133,18 @@ function checkMath(ex: Draft): string | null {
     m = q.match(new RegExp(`dài ${N} \\S+, chiều rộng ${N} \\S+, chiều cao ${N} \\S+\\.`));
     if (m) {
       const [a, b, c] = [num(m[1]), num(m[2]), num(m[3])];
-      const want = q.includes("xung quanh") ? (a + b) * 2 * c : q.includes("toàn phần") ? (a + b) * 2 * c + 2 * a * b : a * b * c;
+      // "không có nắp": diện tích xung quanh + một đáy (bài toán làm hộp bằng bìa).
+      const want = q.includes("không có nắp") ? (a + b) * 2 * c + a * b
+        : q.includes("xung quanh") ? (a + b) * 2 * c : q.includes("toàn phần") ? (a + b) * 2 * c + 2 * a * b : a * b * c;
       if (!close(want, num(ans))) return `hình hộp sai: ${q}`;
     }
     m = q.match(new RegExp(`lập phương có cạnh ${N}`));
     if (m) {
       const a = num(m[1]);
-      const want = q.includes("xung quanh") ? a * a * 4 : q.includes("toàn phần") ? a * a * 6 : a ** 3;
+      // "không có nắp": sơn 5 mặt; "mỗi đề-xi-mét khối … nặng w kg": thể tích × w.
+      const kg = q.match(new RegExp(`Mỗi đề-xi-mét khối .+ nặng ${N} kg`));
+      const want = q.includes("không có nắp") ? a * a * 5 : kg ? a ** 3 * num(kg[1])
+        : q.includes("xung quanh") ? a * a * 4 : q.includes("toàn phần") ? a * a * 6 : a ** 3;
       if (!close(want, num(ans))) return "hình lập phương sai";
     }
     m = q.match(new RegExp(`^${N} giờ = ___ phút`));

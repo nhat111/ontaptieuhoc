@@ -126,7 +126,7 @@ function answersHtml(versions: WorksheetVersion[], mode: AnswerMode): string {
     const open = items.filter((p) => p.row.type !== "mcq");
     const line = (label: string, p: Parsed) =>
       `<p class="ans"><b>${label}:</b> ${escapeHtml(answerText(p.row))}` +
-      (mode === "solutions" && p.solution ? `<br/><span class="exp">${escapeHtml(latexToPlain(p.solution))}</span>` : "") +
+      (mode === "solutions" && p.solution ? `<br/><span class="exp">${escapeHtml(latexToPlain(p.solution)).replace(/\n/g, "<br/>")}</span>` : "") +
       `</p>`;
     return (
       (v.label ? `<h3>${escapeHtml(v.label)}</h3>` : "") +

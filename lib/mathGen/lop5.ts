@@ -4,7 +4,7 @@
 import {
   type Generator, type Rng, type Dec, int, pick, chance, shuffle, retry, gcd,
   dec, add, sub, mul, cmp, shift, divInt, fmt, fmtInt, sign,
-  mcOptions, fixedOptions, blanks, word,
+  mcOptions, fixedOptions, blanks, word, baiGiai,
 } from "./core";
 import { NAMES } from "./shared";
 
@@ -269,7 +269,9 @@ export const tiSoPhanTram: Generator = (r) => {
       explanation, hint: "Chia số thứ nhất cho số thứ hai, rồi nhân 100." };
   return { type: "fill_blank", difficulty: "hard", tags: ["tỉ số phần trăm", "toán có lời văn"],
     question: `Lớp ${pick(r, ["5A", "5B", "5C"])} có ${b} học sinh, trong đó có ${a} học sinh nữ. Số học sinh nữ chiếm ___% số học sinh cả lớp.`,
-    ...blanks(fmt(pct)), explanation, hint: "Tỉ số phần trăm = số học sinh nữ : số học sinh cả lớp × 100." };
+    ...blanks(fmt(pct)),
+    explanation: baiGiai([["Tỉ số phần trăm của số học sinh nữ và số học sinh cả lớp là:", `${a} : ${b} = ${fmt(divInt(dec(a), b))} = ${fmt(pct)}%`]], `${fmt(pct)}%`),
+    hint: "Tỉ số phần trăm = số học sinh nữ : số học sinh cả lớp × 100." };
 };
 
 /* ═════ Hình học: diện tích, chu vi, thể tích ═════ */
@@ -456,7 +458,10 @@ export const loiVan5: Generator = (r) => {
     return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "tiền"],
       question: `${name} mua ${qty} quyển truyện, mỗi quyển giá ${fmtInt(price)} đồng. ${name} đưa người bán ${fmtInt(paid)} đồng. Người bán trả lại ___ đồng.`,
       ...blanks(fmtInt(change)),
-      explanation: `Tiền mua: ${fmtInt(price)} × ${qty} = ${fmtInt(price * qty)} đồng. Tiền trả lại: ${fmtInt(paid)} - ${fmtInt(price * qty)} = ${fmtInt(change)} đồng.`,
+      explanation: baiGiai([
+        [`Số tiền mua ${qty} quyển truyện là:`, `${fmtInt(price)} × ${qty} = ${fmtInt(price * qty)} (đồng)`],
+        ["Người bán trả lại số tiền là:", `${fmtInt(paid)} - ${fmtInt(price * qty)} = ${fmtInt(change)} (đồng)`],
+      ], `${fmtInt(change)} đồng`),
       hint: "Tính tổng tiền mua trước, rồi lấy tiền đưa trừ đi." };
   }
   // Chọn trung bình cộng trước, rồi sinh các số sao cho tổng khớp → đáp án luôn "đẹp"

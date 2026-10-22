@@ -11,7 +11,7 @@
 import {
   type Draft, type Generator, type Rng, type Dec,
   int, pick, chance, retry, gcd, dec, add, sub, mul, cmp, shift, divInt, fmt, fmtInt,
-  mcOptions, blanks, mulberry32, seedFrom,
+  mcOptions, blanks, mulberry32, seedFrom, baiGiai,
 } from "../mathGen/core";
 import { LOP5, toQuestionRow, type GenQuestionRow } from "../mathGen";
 import { NAMES } from "../mathGen/shared";
@@ -357,7 +357,12 @@ export const hinhGhep: Generator = (r) => {
   return fill(
     `Một mảnh vườn gồm một hình chữ nhật chiều dài ${a} m, chiều rộng ${b} m và một nửa hình tròn có đường kính bằng chiều rộng hình chữ nhật (như hình vẽ). Tính diện tích mảnh vườn. Trả lời: ___ m².`,
     fmt(s),
-    `Diện tích hình chữ nhật: ${a} × ${b} = ${a * b} (m²). Bán kính nửa hình tròn: ${b} : 2 = ${rad} (m). Diện tích nửa hình tròn: ${rad} × ${rad} × 3,14 : 2 = ${fmt(half)} (m²). Diện tích mảnh vườn: ${a * b} + ${fmt(half)} = ${fmt(s)} (m²).`,
+    baiGiai([
+      ["Diện tích phần hình chữ nhật là:", `${a} × ${b} = ${a * b} (m²)`],
+      ["Bán kính nửa hình tròn là:", `${b} : 2 = ${rad} (m)`],
+      ["Diện tích nửa hình tròn là:", `${rad} × ${rad} × 3,14 : 2 = ${fmt(half)} (m²)`],
+      ["Diện tích mảnh vườn là:", `${a * b} + ${fmt(half)} = ${fmt(s)} (m²)`],
+    ], `${fmt(s)} m²`),
     ["hình ghép", "diện tích", "hình vẽ"],
     rectSemicircleSvg({ a: `${a} m`, b: `${b} m`, aVal: a, bVal: b }),
   );
@@ -375,7 +380,11 @@ export const tongTi: Generator = (r) => retry(() => {
     { q: `Một mảnh đất hình chữ nhật có nửa chu vi là ${total} m, chiều rộng bằng ${m}/${n} chiều dài. Hỏi chiều rộng mảnh đất dài bao nhiêu mét?`, u: "m" },
   ]);
   return fill(`${ctx.q} Trả lời: ___ ${ctx.u}.`, String(small),
-    `Tổng số phần bằng nhau: ${m} + ${n} = ${m + n} (phần). Giá trị một phần: ${total} : ${m + n} = ${k}. Số bé: ${k} × ${m} = ${small} (${ctx.u}).`,
+    baiGiai([
+      ["Tổng số phần bằng nhau là:", `${m} + ${n} = ${m + n} (phần)`],
+      ["Giá trị một phần là:", `${total} : ${m + n} = ${k} (${ctx.u})`],
+      ["Số cần tìm (ứng với " + m + " phần) là:", `${k} × ${m} = ${small} (${ctx.u})`],
+    ], `${small} ${ctx.u}`),
     ["tổng – tỉ", "toán có lời văn"]);
 });
 
@@ -389,7 +398,11 @@ export const hieuTi: Generator = (r) => retry(() => {
     { q: `Một cửa hàng có số gạo tẻ nhiều hơn số gạo nếp ${diff} kg. Số gạo nếp bằng ${m}/${n} số gạo tẻ. Hỏi cửa hàng có bao nhiêu ki-lô-gam gạo nếp?`, u: "kg" },
   ]);
   return fill(`${ctx.q} Trả lời: ___ ${ctx.u}.`, String(small),
-    `Hiệu số phần bằng nhau: ${n} - ${m} = ${n - m} (phần). Giá trị một phần: ${diff} : ${n - m} = ${k}. Số bé: ${k} × ${m} = ${small} (${ctx.u}).`,
+    baiGiai([
+      ["Hiệu số phần bằng nhau là:", `${n} - ${m} = ${n - m} (phần)`],
+      ["Giá trị một phần là:", `${diff} : ${n - m} = ${k} (${ctx.u})`],
+      ["Số cần tìm (ứng với " + m + " phần) là:", `${k} × ${m} = ${small} (${ctx.u})`],
+    ], `${small} ${ctx.u}`),
     ["hiệu – tỉ", "toán có lời văn"]);
 });
 
@@ -401,7 +414,11 @@ export const thuaRuong: Generator = (r) => {
   return fill(
     `Một thửa ruộng hình thang có đáy lớn ${B} m, đáy bé bằng 2/3 đáy lớn, chiều cao ${h} m. Trung bình cứ 100 m² thu hoạch được ${y} kg thóc. Hỏi trên cả thửa ruộng đó người ta thu hoạch được bao nhiêu ki-lô-gam thóc? Trả lời: ___ kg.`,
     fmt(total),
-    `Đáy bé: ${B} × 2 : 3 = ${T} (m). Diện tích: (${B} + ${T}) × ${h} : 2 = ${fmtInt(S)} (m²). Số thóc: ${fmtInt(S)} : 100 × ${y} = ${fmt(total)} (kg).`,
+    baiGiai([
+      ["Đáy bé của thửa ruộng là:", `${B} × 2 : 3 = ${T} (m)`],
+      ["Diện tích thửa ruộng là:", `(${B} + ${T}) × ${h} : 2 = ${fmtInt(S)} (m²)`],
+      ["Số thóc thu hoạch được là:", `${fmtInt(S)} : 100 × ${y} = ${fmt(total)} (kg)`],
+    ], `${fmt(total)} kg thóc`),
     ["hình thang", "toán có lời văn"]);
 };
 
@@ -415,7 +432,10 @@ export const muaHang: Generator = (r) => {
   const paid = Math.ceil(cost / 50000) * 50000 + (chance(r, 0.5) ? 50000 : 0);
   return fill(`${name} mua ${qty} ${what}, mỗi ${what} giá ${fmtInt(price)} đồng. ${name} đưa cho cô bán hàng ${fmtInt(paid)} đồng. Hỏi cô bán hàng phải trả lại ${name} bao nhiêu tiền? Trả lời: ___ đồng.`,
     fmtInt(paid - cost),
-    `Số tiền mua: ${fmtInt(price)} × ${qty} = ${fmtInt(cost)} (đồng). Tiền trả lại: ${fmtInt(paid)} - ${fmtInt(cost)} = ${fmtInt(paid - cost)} (đồng).`,
+    baiGiai([
+      [`Số tiền mua ${qty} ${what} là:`, `${fmtInt(price)} × ${qty} = ${fmtInt(cost)} (đồng)`],
+      [`Cô bán hàng phải trả lại ${name} số tiền là:`, `${fmtInt(paid)} - ${fmtInt(cost)} = ${fmtInt(paid - cost)} (đồng)`],
+    ], `${fmtInt(paid - cost)} đồng`),
     ["toán có lời văn", "tiền"]);
 };
 
@@ -427,7 +447,12 @@ export const beNuoc: Generator = (r) => {
   return fill(
     `Một bể nước dạng hình hộp chữ nhật có chiều dài ${m(l)} m, chiều rộng ${m(w)} m, chiều cao ${m(h)} m. Mực nước trong bể cao bằng ${frac[0]}/${frac[1]} chiều cao của bể. Hỏi trong bể đang có bao nhiêu lít nước? (1 dm³ = 1 lít) Trả lời: ___ lít.`,
     fmtInt(water),
-    `Đổi: ${m(l)} m = ${l} dm; ${m(w)} m = ${w} dm; ${m(h)} m = ${h} dm. Thể tích bể: ${l} × ${w} × ${h} = ${fmtInt(V)} (dm³). Thể tích nước: ${fmtInt(V)} × ${frac[0]} : ${frac[1]} = ${fmtInt(water)} (dm³) = ${fmtInt(water)} lít.`,
+    baiGiai([
+      ["Đổi:", `${m(l)} m = ${l} dm; ${m(w)} m = ${w} dm; ${m(h)} m = ${h} dm`],
+      ["Thể tích của bể là:", `${l} × ${w} × ${h} = ${fmtInt(V)} (dm³)`],
+      ["Thể tích nước trong bể là:", `${fmtInt(V)} × ${frac[0]} : ${frac[1]} = ${fmtInt(water)} (dm³)`],
+      ["Đổi:", `${fmtInt(water)} dm³ = ${fmtInt(water)} lít`],
+    ], `${fmtInt(water)} lít nước`),
     ["thể tích", "toán có lời văn"]);
 };
 
@@ -438,14 +463,20 @@ export const phanTramBai: Generator = (r) => {
     const thing = pick(r, ["chiếc xe đạp", "chiếc cặp sách", "bộ bàn ghế học sinh", "chiếc đồng hồ"]);
     return fill(`Một cửa hàng bán ${thing} giá ${fmtInt(price)} đồng. Nhân dịp khai giảng, cửa hàng giảm giá ${p}%. Hỏi sau khi giảm giá, ${thing} đó giá bao nhiêu tiền? Trả lời: ___ đồng.`,
       fmtInt(after),
-      `Số tiền được giảm: ${fmtInt(price)} × ${p} : 100 = ${fmtInt(price - after)} (đồng). Giá sau khi giảm: ${fmtInt(price)} - ${fmtInt(price - after)} = ${fmtInt(after)} (đồng).`,
+      baiGiai([
+        ["Số tiền được giảm là:", `${fmtInt(price)} × ${p} : 100 = ${fmtInt(price - after)} (đồng)`],
+        [`Giá ${thing} sau khi giảm là:`, `${fmtInt(price)} - ${fmtInt(price - after)} = ${fmtInt(after)} (đồng)`],
+      ], `${fmtInt(after)} đồng`),
       ["tỉ số phần trăm", "toán có lời văn"]);
   }
   const N = pick(r, [20, 25, 32, 36, 40, 45]), p = retry(() => { const x = pick(r, [20, 25, 40, 44, 48, 52, 55, 60, 75]); return (N * x) % 100 === 0 ? x : null; }, 400);
   const girls = (N * p) / 100;
   return fill(`Lớp 5B có ${N} học sinh, trong đó số học sinh nữ chiếm ${p}% số học sinh cả lớp. Hỏi lớp 5B có bao nhiêu học sinh nam? Trả lời: ___ học sinh.`,
     String(N - girls),
-    `Số học sinh nữ: ${N} × ${p} : 100 = ${girls} (học sinh). Số học sinh nam: ${N} - ${girls} = ${N - girls} (học sinh).`,
+    baiGiai([
+      ["Số học sinh nữ của lớp 5B là:", `${N} × ${p} : 100 = ${girls} (học sinh)`],
+      ["Số học sinh nam của lớp 5B là:", `${N} - ${girls} = ${N - girls} (học sinh)`],
+    ], `${N - girls} học sinh nam`),
     ["tỉ số phần trăm", "toán có lời văn"]);
 };
 
@@ -455,7 +486,10 @@ export const gapNhau: Generator = (r) => {
   const s = mul(dec(v1 + v2), t);
   return fill(`Quãng đường AB dài ${fmt(s)} km. Cùng một lúc, một ô tô đi từ A đến B với vận tốc ${v1} km/giờ và một xe máy đi từ B đến A với vận tốc ${v2} km/giờ. Hỏi sau bao lâu hai xe gặp nhau? Trả lời: ___ giờ.`,
     fmt(t),
-    `Sau mỗi giờ, hai xe đi được: ${v1} + ${v2} = ${v1 + v2} (km). Thời gian để hai xe gặp nhau: ${fmt(s)} : ${v1 + v2} = ${fmt(t)} (giờ).`,
+    baiGiai([
+      ["Sau mỗi giờ, cả hai xe đi được quãng đường là:", `${v1} + ${v2} = ${v1 + v2} (km)`],
+      ["Thời gian để hai xe gặp nhau là:", `${fmt(s)} : ${v1 + v2} = ${fmt(t)} (giờ)`],
+    ], `${fmt(t)} giờ`),
     ["chuyển động", "toán có lời văn"]);
 };
 
@@ -469,7 +503,11 @@ export const quangDuongGio: Generator = (r) => {
   const hm = (x: number) => `${Math.floor(x / 60)} giờ${x % 60 ? ` ${x % 60} phút` : ""}`;
   return fill(`Một ô tô đi từ A lúc ${hm(startH * 60 + startM)} và đến B lúc ${hm(endM)}. Biết vận tốc của ô tô là ${v} km/giờ. Tính quãng đường AB. Trả lời: ___ km.`,
     fmt(s),
-    `Thời gian ô tô đi: ${hm(endM)} - ${hm(startH * 60 + startM)} = ${dur[0]} giờ${dur[1] ? ` ${dur[1]} phút` : ""} = ${fmt(divInt(hours, 60))} giờ. Quãng đường AB: ${v} × ${fmt(divInt(hours, 60))} = ${fmt(s)} (km).`,
+    baiGiai([
+      ["Thời gian ô tô đi từ A đến B là:", `${hm(endM)} - ${hm(startH * 60 + startM)} = ${dur[0]} giờ${dur[1] ? ` ${dur[1]} phút` : ""}`],
+      ["Đổi:", `${dur[0]} giờ${dur[1] ? ` ${dur[1]} phút` : ""} = ${fmt(divInt(hours, 60))} giờ`],
+      ["Quãng đường AB dài là:", `${v} × ${fmt(divInt(hours, 60))} = ${fmt(s)} (km)`],
+    ], `${fmt(s)} km`),
     ["chuyển động", "số đo thời gian", "toán có lời văn"]);
 };
 

@@ -8,7 +8,7 @@
 // Số thập phân dùng kiểu Dec (số nguyên + số chữ số thập phân), không dùng float.
 // scripts/sgk-toan-check.ts (recheck5) tính lại đáp án từ chữ trong đề.
 
-import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, fmt, dec, mul } from "../core";
+import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, fmt, dec, mul, add, sub, divInt, cmp, baiGiai } from "../core";
 import { NAMES } from "../shared";
 
 const fill = (question: string, answer: string, explanation: string, tags: string[], hint: string) => ({
@@ -123,7 +123,8 @@ export const phanTramLoiVan: Generator = (r) => {
     [`Một trường có ${fmtInt(base)} học sinh, trong đó ${p}% số học sinh tham gia câu lạc bộ thể thao. Số học sinh tham gia câu lạc bộ là ___`, "học sinh"],
     [`Một mảnh vườn có diện tích ${fmtInt(base)} m², người ta dùng ${p}% diện tích để trồng rau. Diện tích trồng rau là ___ m².`, "m²"],
   ] as const);
-  return fill(q, fmtInt(v), `${p}% của ${fmtInt(base)} là: ${fmtInt(base)} × ${p} : 100 = ${fmtInt(v)} (${u}).`, ["tỉ số phần trăm", "toán có lời văn"], "Nhân với số phần trăm rồi chia cho 100.");
+  return fill(q, fmtInt(v), baiGiai([[`${p}% của ${fmtInt(base)} ${u} là:`, `${fmtInt(base)} × ${p} : 100 = ${fmtInt(v)} (${u})`]], `${fmtInt(v)} ${u}`),
+    ["tỉ số phần trăm", "toán có lời văn"], "Nhân với số phần trăm rồi chia cho 100.");
 };
 
 /* ═════════════ Bài 45–47: thể tích, đơn vị đo thể tích ═════════════ */
@@ -230,7 +231,166 @@ export const tiSoLanLap: Generator = (r) => {
     `Số lần ${ev} là ${s}, tổng số lần là ${t}: tỉ số là ${s}/${t}.`, ["tỉ số số lần lặp lại"], "Số lần sự kiện xảy ra viết trên, tổng số lần viết dưới.");
 };
 
+/* ═════════════ Bài toán có lời văn theo từng bài (lời giải trình bày đủ "Bài giải") ═════════════
+   Mỗi dạng một tình huống đời thường, 2–3 bước tính; đáp án luôn là số "đẹp".
+   recheck5 tính lại đáp án từ số liệu trong đề. */
+
+const lv = (question: string, unit: string, answer: string, explanation: string, tags: string[], hint: string) =>
+  fill(`${question} Trả lời: ___ ${unit}.`, answer, explanation, ["toán có lời văn", ...tags], hint);
+
+/** Bài 5: phân số của một số, hai lần lấy ra rồi tìm phần còn lại. */
+export const lvPhanSo: Generator = (r) => retry(() => {
+  const n1 = pick(r, [2, 3, 4, 5]), m1 = int(r, 1, n1 - 1), n2 = pick(r, [3, 4, 5, 6, 8]), m2 = int(r, 1, n2 - 1);
+  if (gcdInt(m1, n1) !== 1 || gcdInt(m2, n2) !== 1 || m1 * n2 + m2 * n1 >= n1 * n2) return null;
+  const lcm = (n1 * n2) / gcdInt(n1, n2), T = lcm * int(r, 2, Math.max(2, Math.floor(600 / lcm)));
+  if (T < 40) return null;
+  const d1 = (T * m1) / n1, d2 = (T * m2) / n2, left = T - d1 - d2;
+  return lv(`Một bể chứa ${T} lít nước. Ngày thứ nhất người ta dùng ${m1}/${n1} lượng nước trong bể, ngày thứ hai dùng ${m2}/${n2} lượng nước trong bể. Hỏi bể còn lại bao nhiêu lít nước?`,
+    "lít", String(left), baiGiai([
+      ["Ngày thứ nhất dùng số lít nước là:", `${T} × ${m1}/${n1} = ${d1} (lít)`],
+      ["Ngày thứ hai dùng số lít nước là:", `${T} × ${m2}/${n2} = ${d2} (lít)`],
+      ["Bể còn lại số lít nước là:", `${T} - ${d1} - ${d2} = ${left} (lít)`],
+    ], `${left} lít nước`), ["phân số"], "Tìm phân số của một số: lấy số đó nhân với phân số.");
+});
+const gcdInt = (a: number, b: number): number => (b === 0 ? a : gcdInt(b, a % b));
+
+/** Bài 15: diện tích khu đất hình chữ nhật đổi ra héc-ta. */
+export const lvHecta: Generator = (r) => {
+  const a = int(r, 3, 12) * 100, b = int(r, 2, a / 100 - 1) * 50;
+  const S = a * b, ha = divInt(dec(S), 10000);
+  const place = pick(r, ["khu rừng", "cánh đồng", "khu đất"]);
+  return lv(`Một ${place} hình chữ nhật có chiều dài ${fmtInt(a)} m, chiều rộng ${b} m. Hỏi diện tích ${place} đó bằng bao nhiêu héc-ta?`,
+    "ha", fmt(ha), baiGiai([
+      [`Diện tích ${place} là:`, `${fmtInt(a)} × ${b} = ${fmtInt(S)} (m²)`],
+      ["Đổi:", `${fmtInt(S)} m² = ${fmt(ha)} ha`],
+    ], `${fmt(ha)} ha`), ["héc-ta", "diện tích"], "1 ha = 10.000 m².");
+};
+
+const stp = (r: Rng, lo: number, hi: number, p: 1 | 2) => dec(int(r, lo * 10 ** p, hi * 10 ** p), p);
+
+/** Bài 19: cộng số thập phân, "nặng hơn" rồi tính cả hai. */
+export const lvCongSTP: Generator = (r) => {
+  const a = stp(r, 20, 60, 1), b = stp(r, 1, 15, pick(r, [1, 2] as const)), c = add(a, b), s = add(a, c);
+  return lv(`Bao gạo thứ nhất cân nặng ${fmt(a)} kg, bao gạo thứ hai nặng hơn bao thứ nhất ${fmt(b)} kg. Hỏi cả hai bao gạo cân nặng bao nhiêu ki-lô-gam?`,
+    "kg", fmt(s), baiGiai([
+      ["Bao gạo thứ hai cân nặng là:", `${fmt(a)} + ${fmt(b)} = ${fmt(c)} (kg)`],
+      ["Cả hai bao gạo cân nặng là:", `${fmt(a)} + ${fmt(c)} = ${fmt(s)} (kg)`],
+    ], `${fmt(s)} kg`), ["phép cộng", "số thập phân"], "Tìm bao thứ hai trước, rồi cộng cả hai bao.");
+};
+
+/** Bài 20: trừ số thập phân, lấy ra hai lần. */
+export const lvTruSTP: Generator = (r) => retry(() => {
+  const T = stp(r, 30, 90, 1), x = stp(r, 5, 25, pick(r, [1, 2] as const)), y = stp(r, 5, 25, 1);
+  const rest = sub(sub(T, x), y);
+  if (cmp(rest, dec(2)) < 0) return null;
+  return lv(`Một thùng có ${fmt(T)} lít dầu. Lần thứ nhất người ta lấy ra ${fmt(x)} lít, lần thứ hai lấy ra ${fmt(y)} lít. Hỏi trong thùng còn lại bao nhiêu lít dầu?`,
+    "lít", fmt(rest), baiGiai([
+      ["Hai lần lấy ra tất cả số lít dầu là:", `${fmt(x)} + ${fmt(y)} = ${fmt(add(x, y))} (lít)`],
+      ["Trong thùng còn lại số lít dầu là:", `${fmt(T)} - ${fmt(add(x, y))} = ${fmt(rest)} (lít)`],
+    ], `${fmt(rest)} lít dầu`), ["phép trừ", "số thập phân"], "Tính số dầu lấy ra cả hai lần trước.");
+});
+
+/** Bài 21: nhân số thập phân, can dầu cả vỏ. */
+export const lvNhanSTP: Generator = (r) => {
+  const w = pick(r, [dec(8, 1), dec(75, 2), dec(85, 2)]), n = int(r, 5, 25), c = stp(r, 1, 3, 1);
+  const oil = mul(w, dec(n)), total = add(oil, c);
+  return lv(`Mỗi lít dầu hoả cân nặng ${fmt(w)} kg. Một can rỗng cân nặng ${fmt(c)} kg. Hỏi can đó đựng ${n} lít dầu hoả thì cân nặng tất cả bao nhiêu ki-lô-gam?`,
+    "kg", fmt(total), baiGiai([
+      [`${n} lít dầu hoả cân nặng là:`, `${fmt(w)} × ${n} = ${fmt(oil)} (kg)`],
+      ["Can dầu hoả cân nặng tất cả là:", `${fmt(oil)} + ${fmt(c)} = ${fmt(total)} (kg)`],
+    ], `${fmt(total)} kg`), ["phép nhân", "số thập phân"], "Tính cân nặng của dầu trước, rồi cộng thêm vỏ can.");
+};
+
+/** Bài 22: chia số thập phân, rút về đơn vị. */
+export const lvChiaSTP: Generator = (r) => {
+  const per = stp(r, 1, 6, pick(r, [1, 2] as const)), n = int(r, 4, 12), k = int(r, 2, 9);
+  const T = mul(per, dec(n)), res = mul(per, dec(k));
+  return lv(`Có ${fmt(T)} kg đường chia đều vào ${n} túi. Hỏi ${k} túi như thế có bao nhiêu ki-lô-gam đường?`,
+    "kg", fmt(res), baiGiai([
+      ["Mỗi túi có số ki-lô-gam đường là:", `${fmt(T)} : ${n} = ${fmt(per)} (kg)`],
+      [`${k} túi như thế có số ki-lô-gam đường là:`, `${fmt(per)} × ${k} = ${fmt(res)} (kg)`],
+    ], `${fmt(res)} kg đường`), ["phép chia", "số thập phân"], "Tìm số đường trong một túi trước.");
+};
+
+/** Bài 25: diện tích tam giác khi chiều cao cho bằng phân số của đáy. */
+export const lvTamGiac: Generator = (r) => retry(() => {
+  const [m, n] = pick(r, [[1, 2], [2, 3], [3, 4], [3, 5], [4, 5]] as const);
+  const a = n * int(r, 3, 12);
+  const h = (a * m) / n;
+  const S = divInt(dec(a * h), 2);
+  return lv(`Một mảnh đất hình tam giác có độ dài đáy là ${a} m, chiều cao bằng ${m}/${n} độ dài đáy. Tính diện tích mảnh đất đó.`,
+    "m²", fmt(S), baiGiai([
+      ["Chiều cao của mảnh đất là:", `${a} × ${m} : ${n} = ${h} (m)`],
+      ["Diện tích mảnh đất là:", `${a} × ${h} : 2 = ${fmt(S)} (m²)`],
+    ], `${fmt(S)} m²`), ["hình tam giác", "diện tích"], "Diện tích tam giác = đáy × chiều cao : 2.");
+});
+
+/** Bài 50: hộp không nắp hình hộp chữ nhật — diện tích bìa. */
+export const lvHopKhongNap: Generator = (r) => retry(() => {
+  const a = int(r, 4, 12), b = int(r, 3, a - 1), c = int(r, 2, 9);
+  const xq = (a + b) * 2 * c, day = a * b;
+  return lv(`Người ta làm một cái hộp không có nắp dạng hình hộp chữ nhật bằng bìa có chiều dài ${a} dm, chiều rộng ${b} dm, chiều cao ${c} dm. Tính diện tích bìa cần dùng để làm hộp (không tính mép dán).`,
+    "dm²", String(xq + day), baiGiai([
+      ["Diện tích xung quanh của hộp là:", `(${a} + ${b}) × 2 × ${c} = ${xq} (dm²)`],
+      ["Diện tích đáy hộp là:", `${a} × ${b} = ${day} (dm²)`],
+      ["Diện tích bìa cần dùng là:", `${xq} + ${day} = ${xq + day} (dm²)`],
+    ], `${xq + day} dm²`), ["hình hộp chữ nhật", "diện tích"], "Hộp không nắp: diện tích xung quanh cộng một mặt đáy.");
+});
+
+/** Bài 51: thùng không nắp hình lập phương — diện tích cần sơn (5 mặt). */
+export const lvLapPhuongSon: Generator = (r) => {
+  const a = int(r, 3, 15), mat = a * a;
+  return lv(`Một cái thùng không có nắp dạng hình lập phương có cạnh ${a} dm. Người ta sơn mặt ngoài của thùng. Hỏi diện tích cần sơn là bao nhiêu đề-xi-mét vuông?`,
+    "dm²", String(mat * 5), baiGiai([
+      ["Diện tích một mặt của thùng là:", `${a} × ${a} = ${mat} (dm²)`],
+      ["Thùng không có nắp nên chỉ sơn 5 mặt. Diện tích cần sơn là:", `${mat} × 5 = ${mat * 5} (dm²)`],
+    ], `${mat * 5} dm²`), ["hình lập phương", "diện tích"], "Thùng không nắp có 5 mặt.");
+};
+
+/** Bài 53: khối gỗ hình lập phương — thể tích rồi khối lượng. */
+export const lvLapPhuongGo: Generator = (r) => {
+  const a = int(r, 2, 9), w = pick(r, [dec(6, 1), dec(7, 1), dec(8, 1), dec(75, 2)]);
+  const V = a * a * a, kg = mul(dec(V), w);
+  return lv(`Một khối gỗ dạng hình lập phương có cạnh ${a} dm. Mỗi đề-xi-mét khối gỗ cân nặng ${fmt(w)} kg. Hỏi khối gỗ đó cân nặng bao nhiêu ki-lô-gam?`,
+    "kg", fmt(kg), baiGiai([
+      ["Thể tích khối gỗ là:", `${a} × ${a} × ${a} = ${V} (dm³)`],
+      ["Khối gỗ cân nặng là:", `${fmt(w)} × ${V} = ${fmt(kg)} (kg)`],
+    ], `${fmt(kg)} kg`), ["hình lập phương", "thể tích"], "Tính thể tích trước: cạnh × cạnh × cạnh.");
+};
+
+const hm = (x: number) => `${Math.floor(x / 60)} giờ${x % 60 ? ` ${x % 60} phút` : ""}`;
+const dur = (x: number) => (x < 60 ? `${x} phút` : hm(x));
+
+/** Bài 57: trừ số đo thời gian, bỏ thời gian nghỉ. Đáp án dạng "1 giờ 25 phút" nên là trắc nghiệm. */
+export const lvThoiGian: Generator = (r) => retry(() => {
+  const start = int(r, 6 * 12, 9 * 12) * 5, go = int(r, 9, 30) * 5, rest = pick(r, [10, 15, 20, 25, 30]);
+  const end = start + go + rest, total = go + rest;
+  if (go < 30) return null;
+  const right = dur(go);
+  const wrong = [dur(total), dur(go + 10), dur(Math.abs(go - 10)), dur(go + 60)].filter((x) => x !== right);
+  return mc(`Một người đi xe đạp từ nhà lúc ${hm(start)} và đến nơi lúc ${hm(end)}. Dọc đường người đó nghỉ ${rest} phút. Hỏi nếu không kể thời gian nghỉ thì người đó đi xe đạp hết bao nhiêu thời gian?`,
+    mcOptions(r, right, wrong), baiGiai([
+      ["Thời gian từ lúc đi đến lúc tới nơi là:", `${hm(end)} - ${hm(start)} = ${dur(total)}`],
+      ["Không kể thời gian nghỉ, người đó đi hết:", `${dur(total)} - ${rest} phút = ${right}`],
+    ], right), ["toán có lời văn", "số đo thời gian"], "Lấy giờ đến trừ giờ đi, rồi trừ thời gian nghỉ.");
+});
+
+/** Bài 59: vận tốc khi biết giờ đi, giờ đến (thời gian là 30, 45, 90… phút để vận tốc là số đẹp). */
+export const lvVanToc: Generator = (r) => {
+  const [mins, hrs] = pick(r, [[30, dec(5, 1)], [45, dec(75, 2)], [90, dec(15, 1)], [120, dec(2)], [150, dec(25, 1)], [75, dec(125, 2)]] as const);
+  const v = int(r, 3, 12) * 4, s = mul(hrs, dec(v));
+  const start = int(r, 6 * 4, 9 * 4) * 15;
+  const who = pick(r, ["Một người đi xe máy", "Một ô tô", "Một người đi xe đạp"]);
+  return lv(`${who} khởi hành từ A lúc ${hm(start)} và đến B lúc ${hm(start + mins)}. Quãng đường AB dài ${fmt(s)} km. Tính vận tốc của ${who.replace(/^Một/, "").trim()}.`,
+    "km/giờ", String(v), baiGiai([
+      ["Thời gian đi từ A đến B là:", `${hm(start + mins)} - ${hm(start)} = ${dur(mins)} = ${fmt(hrs)} giờ`],
+      ["Vận tốc là:", `${fmt(s)} : ${fmt(hrs)} = ${v} (km/giờ)`],
+    ], `${v} km/giờ`), ["chuyển động đều", "vận tốc"], "Đổi thời gian ra giờ, rồi lấy quãng đường chia cho thời gian.");
+};
+
 export const KNTT5 = {
   phanSoTP, vietSTP, lamTronSTP, kmHa, tiSo, tiLeBanDo, phanTramLoiVan, theTichHinh, donViTheTich,
   khaiTrien, chiaThoiGian, soLieu5, tiSoLanLap,
+  lvPhanSo, lvHecta, lvCongSTP, lvTruSTP, lvNhanSTP, lvChiaSTP, lvTamGiac, lvHopKhongNap, lvLapPhuongSon,
+  lvLapPhuongGo, lvThoiGian, lvVanToc,
 };
