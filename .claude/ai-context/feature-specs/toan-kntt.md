@@ -144,6 +144,20 @@ Mục lục 14 chủ đề, 75 bài (tập một: chủ đề 1–7, bài 1–36
 
 Còn lại dùng `LOP1`, `LOP2`, `KNTT1` (cộng trừ không nhớ, bài 5), `KNTT3` (tờ lịch, khối hộp, khả năng xảy ra) và các dạng có hình của đề in: đồng hồ, đường gấp khúc, đếm tứ giác, tiền, nhóm đồ vật.
 
+## Toán 4 (10/2026)
+
+Mục lục 13 chủ đề, 73 bài (tập một: chủ đề 1–7, bài 1–37; tập hai: chủ đề 8–13), đối chiếu với kế hoạch dạy học Toán 4 Kết nối tri thức (HoaTieu.vn). **69/73 bài làm được trên máy**; bài 20 (sử dụng đơn vị đo đại lượng), 28 (vẽ hai đường thẳng vuông góc), 30 (vẽ hai đường thẳng song song) và 45 (ước lượng trong tính toán) là bài thực hành. Phần lớn bài dùng `LOP4`, `LOP3` và các dạng có hình của đề in (góc, nhận dạng hình bình hành – hình thoi, biểu đồ cột, phân số tô màu). Dạng mới `KNTT4` (`lib/mathGen/kntt/lop4.ts`):
+
+- số chẵn, số lẻ (bài 3), biểu thức chứa chữ (4), bài toán ba bước tính (5);
+- đo góc trên hình thước đo góc có hai vòng số, nhiễu là số đọc nhầm vòng (7), loại góc theo số đo (8);
+- đọc, viết số sáu chữ số và số đến lớp triệu (10, 12; không ra số có nhóm nghìn bằng 0 ở giữa vì cách đọc chưa thống nhất), dãy số tự nhiên (15);
+- tính chất giao hoán, kết hợp của phép cộng, phép nhân, tính chất phân phối (24, 40, 42);
+- hai đường thẳng vuông góc, song song trên hình chữ nhật, hình vuông có tên đỉnh (27, 29), hình bình hành, hình thoi (31);
+- rút về đơn vị (47), dãy số liệu (49), số lần xuất hiện của một sự kiện (51);
+- đọc, viết phân số, tử số – mẫu số (53), phân số và phép chia (54), tính chất cơ bản (55), quy đồng mẫu số (57), tìm phân số của một số (65).
+
+Câu "góc gì" và "hình nào là hình bình hành" của đề in có chữ giống nhau ở mọi câu (chỉ hình khác) nên mỗi bài chỉ lấy một câu, tránh trùng khi khử câu lặp.
+
 ## Tiến độ
 
 - **10/2026 — đã làm (lớp 3):** trang `/lop/3/toan` và `/lop/3/toan/bai-<n>`, dữ liệu `lib/sgk/toan3.ts`. **63/81 bài làm được trên máy**: 34 bài "có", thêm 8 bài nhờ dạng mới (25 chia hết – có dư, 39 số lớn gấp mấy lần số bé, 45–46 các số đến 10 000, 54–57 phép tính trong phạm vi 10 000; 23, 26 có dạng riêng thay vì lọc), và các bài luyện tập / ôn tập trộn được.
@@ -156,7 +170,7 @@ Còn lại dùng `LOP1`, `LOP2`, `KNTT1` (cộng trừ không nhớ, bài 5), `K
 2. **Trang:** `/lop/3/toan/bai-<n>` — tên bài, bài luyện 10 câu sinh theo seed (dùng lại `QuizClient` như Tạo đề nhanh, không cần DB), nút "Làm bộ khác", "In phiếu"; trang mục lục `/lop/3/toan` theo chủ đề. Tab Toán của `/lop/3` có lối vào.
 3. **Generator:** gắn 34 bài có ngay trước, rồi 15 bài một phần, rồi 7 bài thiếu. Mỗi dạng mới được kiểm tra trong `scripts/gen-math-check.ts` như các dạng cũ.
 4. **Kiểm tra:** `scripts/sgk-toan-check.ts` — đủ 81 bài, số bài liên tục, bài nào cũng sinh được 10 câu chấm đúng, bài trộn chỉ trỏ tới bài đứng trước.
-5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5. **Đã xong lớp 1, 2, 3; tiếp theo lớp 4, rồi lớp 5.**
+5. Làm xong lớp 3 thì lặp lại cho lớp 1, 2, 4, 5. **Đã xong lớp 1, 2, 3, 4; tiếp theo lớp 5.**
 
 Câu hỏi cần chủ site chốt: URL `/lop/3/toan/bai-15` hay `/toan-3/bai-15`; trang bài có lưu
 tiến độ vào `localStorage` như bài trong DB không.

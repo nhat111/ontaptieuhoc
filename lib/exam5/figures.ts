@@ -580,3 +580,29 @@ export function pictographSvg(rows: { label: string; n: number }[], icon: PictoI
   });
   return svg(W + 20, rows.length * rh + 20, body);
 }
+
+/** Thước đo góc đặt trên góc AOB (OA nằm ngang, chỉ vạch 0), hai thang số như thước thật. */
+export function protractorSvg(deg: number): string {
+  const O = { x: 160, y: 172 }, R = 130;
+  const P = (a: number, r: number) => ({ x: O.x + r * Math.cos((a * Math.PI) / 180), y: O.y - r * Math.sin((a * Math.PI) / 180) });
+  let body = `<path d="M${O.x - R},${O.y} A${R},${R} 0 0 1 ${O.x + R},${O.y} Z" fill="none" stroke="${STROKE}" stroke-width="1.4"/>`;
+  for (let a = 0; a <= 180; a += 10) {
+    body += line(P(a, R), P(a, a % 30 ? R - 8 : R - 14), false, a % 30 ? 0.8 : 1.2);
+    // Số ở hai đầu (0, 180) nhấc lên khỏi đường đáy cho khỏi đè lên cạnh OA.
+    const lift = (p: Pt) => (a % 180 === 0 ? { x: p.x, y: p.y - 9 } : p);
+    if (a % 30 === 0) body += text(lift(P(a, R - 25)), String(a), 11) + text(lift(P(a, R - 44)), String(180 - a), 10, "middle", true);
+  }
+  const A = P(0, R + 18), B = P(deg, R + 18);
+  body += line(O, A, false, 1.8) + `<line data-deg="${deg}" x1="${O.x}" y1="${O.y}" x2="${fx(B.x)}" y2="${fx(B.y)}" stroke="${STROKE}" stroke-width="1.8"/>` +
+    `<circle cx="${O.x}" cy="${O.y}" r="2.5" fill="${STROKE}"/>` +
+    text({ x: O.x, y: O.y + 14 }, "O") + text({ x: A.x + 10, y: A.y }, "A") + text({ x: B.x + (deg > 95 ? -8 : 8), y: B.y - 8 }, "B");
+  return svg(340, 194, body);
+}
+
+/** Hình chữ nhật (hoặc vuông) có tên bốn đỉnh theo chiều kim đồng hồ từ góc trên bên trái. */
+export function rectLabelSvg(names: string, square = false): string {
+  const [w, h] = square ? [110, 110] : [170, 100], x0 = 30, y0 = 22;
+  const pts = [{ x: x0, y: y0 }, { x: x0 + w, y: y0 }, { x: x0 + w, y: y0 + h }, { x: x0, y: y0 + h }];
+  const off = [{ x: -12, y: -10 }, { x: 12, y: -10 }, { x: 12, y: 10 }, { x: -12, y: 10 }];
+  return svg(w + 60, h + 44, poly(pts) + pts.map((p, i) => text({ x: p.x + off[i].x, y: p.y + off[i].y }, names[i])).join(""));
+}

@@ -20,7 +20,7 @@ const STEPS: GuideStep[] = [
       <>Chọn môn ở hàng tab trên cùng: <b>Toán</b>, <b>Tiếng Việt</b>… (THCS: <b>Ngữ văn</b>, <b>Khoa học tự nhiên</b>, <b>Lịch sử và Địa lí</b>…)</>,
       <>Chọn <b>Bài tập</b> (luyện theo từng chương, từng bài) hoặc <b>Đề kiểm tra</b> (ôn thi cuối kỳ).</>,
       <>Bấm vào một bài để mở. Mỗi bài ghi sẵn số câu hỏi.</>,
-      <>Lớp 1, lớp 2 và lớp 3, tab Toán có thêm ô <b>Toán … theo từng bài sách</b>: các bài xếp đúng thứ tự sách Kết nối tri thức, mỗi bài 10 câu do máy sinh, mỗi lần vào là một bộ câu mới. Bài nào chưa có câu luyện ghi <b>Đang soạn</b>; bài vẽ, đo ghi <b>Thực hành</b> (làm trên giấy).</>,
+      <>Lớp 1 đến lớp 4, tab Toán có thêm ô <b>Toán … theo từng bài sách</b>: các bài xếp đúng thứ tự sách Kết nối tri thức, mỗi bài 10 câu do máy sinh, mỗi lần vào là một bộ câu mới. Bài nào chưa có câu luyện ghi <b>Đang soạn</b>; bài vẽ, đo ghi <b>Thực hành</b> (làm trên giấy).</>,
     ],
     cta: { href: "/#grades", label: "Chọn lớp ngay" },
   },

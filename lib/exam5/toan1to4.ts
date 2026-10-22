@@ -239,16 +239,16 @@ const bieuThucLon: Generator = (r) => {
   }
 };
 
-const cong6 = only(LOP4.congTruSoLon, has(/\+/));
-const tru6 = only(LOP4.congTruSoLon, has(/ - /));
-const chia4 = only(LOP4.chiaSoLon, has(/^[\d.]+ : \d+ = ___$/));
-const chiaDu4 = only(LOP4.chiaSoLon, has(/dư/));
-const tbcSo = only(LOP4.trungBinhCong, has(/^Số trung bình cộng/));
-const tbcBai = only(LOP4.trungBinhCong, has(/Trả lời|Số kia/));
-const tongHieuBai = only(LOP4.tongHieu, has(/Trả lời/));
+export const cong6 = only(LOP4.congTruSoLon, has(/\+/));
+export const tru6 = only(LOP4.congTruSoLon, has(/ - /));
+export const chia4 = only(LOP4.chiaSoLon, has(/^[\d.]+ : \d+ = ___$/));
+export const chiaDu4 = only(LOP4.chiaSoLon, has(/dư/));
+export const tbcSo = only(LOP4.trungBinhCong, has(/^Số trung bình cộng/));
+export const tbcBai = only(LOP4.trungBinhCong, has(/Trả lời|Số kia/));
+export const tongHieuBai = only(LOP4.tongHieu, has(/Trả lời/));
 
 /** Tính thuận tiện với phép nhân: a × b × c (a × c tròn trăm), a × b ± a × c. */
-const thuanTienNhan: Generator = (r) => {
+export const thuanTienNhan: Generator = (r) => {
   if (chance(r, 0.4)) {
     const [a, c] = pick(r, [[25, 4], [5, 20], [50, 2], [125, 8], [250, 4], [2, 500]] as const);
     const b = int(r, 12, 99);
@@ -378,7 +378,7 @@ export const soLapDuoc = (n: 4 | 5): Generator => (r) => {
 };
 
 /** Lớp 4: bài toán tìm phân số của một số. */
-const phanSoLoiVan: Generator = (r) => retry(() => {
+export const phanSoLoiVan: Generator = (r) => retry(() => {
   const d = int(r, 3, 8), n = int(r, 1, d - 1);
   const kind = pick(r, ["gao", "vai", "hocSinh", "hcn"] as const);
   if (kind === "hcn") {
@@ -570,7 +570,7 @@ export const hinhCN = (what: "chuVi" | "dienTich"): Generator => (r) => {
 };
 
 /** Phân số chỉ phần tô màu. `unit`: lớp 3 chỉ tô 1 phần ("một phần mấy"). */
-const phanSoHinh = (unit: boolean): Generator => (r) => {
+export const phanSoHinh = (unit: boolean): Generator => (r) => {
   const kind = pick(r, ["rect", "circle"] as const);
   const d = unit ? int(r, 2, 6) : int(r, 3, 8), n = unit ? 1 : int(r, 1, d - 1);
   const shaded = shuffle(r, range(0, d - 1)).slice(0, n);
@@ -590,7 +590,7 @@ const phanSoHinh = (unit: boolean): Generator => (r) => {
 
 const GOC = { nhon: "Góc nhọn", vuong: "Góc vuông", tu: "Góc tù", bet: "Góc bẹt" } as const;
 
-const gocHinh: Generator = (r) => {
+export const gocHinh: Generator = (r) => {
   const kind = pick(r, ["nhon", "vuong", "tu", "bet"] as const);
   const deg = { nhon: int(r, 5, 14) * 5, vuong: 90, tu: int(r, 22, 32) * 5, bet: 180 }[kind];
   return {
@@ -605,7 +605,7 @@ const gocHinh: Generator = (r) => {
   };
 };
 
-const hinhNhanDang: Generator = (r) => {
+export const hinhNhanDang: Generator = (r) => {
   const target = pick(r, ["binhhanh", "thoi"] as const);
   const pool: QuadKind[] = target === "binhhanh" ? ["thang", "tugiac", "tamgiac"] : ["binhhanh", "thang", "tugiac", "tamgiac"];
   const kinds = shuffle(r, [target, ...shuffle(r, pool).slice(0, 3)]);
@@ -627,7 +627,7 @@ const BAR_TOPICS = [
   { title: "Số ki-lô-gam giấy vụn các lớp thu gom được", unit: "kg", noun: "ki-lô-gam giấy vụn", verb: "thu gom được" },
 ];
 
-const bieuDoCot: Generator = (r) => {
+export const bieuDoCot: Generator = (r) => {
   const t = pick(r, BAR_TOPICS);
   const labels = ["4A", "4B", "4C", "4D"];
   const ask = pick(r, ["nhatMax", "nhatMin", "hon", "tong", "tbc"] as const);
