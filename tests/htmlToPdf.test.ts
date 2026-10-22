@@ -2,7 +2,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pageBreaks } from "../lib/htmlToPdf";
+import { isEmptyImage, pageBreaks, renderWithFallback } from "../lib/htmlToPdf";
 
 const lines = (n: number, h: number) => Array.from({ length: n }, (_, i) => ({ top: i * h, bottom: i * h + h }));
 
@@ -26,4 +26,22 @@ test("khối cao hơn một trang thì đành cắt ở mép trang", () => {
 
 test("page-break-before luôn sang trang mới, kể cả khi còn chỗ", () => {
   assert.deepEqual(pageBreaks(lines(6, 10), [30], 60, 1000), [30]);
+});
+
+// iOS hết bộ nhớ canvas thì toDataURL trả "data:," mà không báo lỗi; jsPDF nhận luôn và ra file trắng.
+test("ảnh trang rỗng bị nhận ra", () => {
+  assert.equal(isEmptyImage("data:,"), true);
+  assert.equal(isEmptyImage("data:image/jpeg;base64,"), true);
+  assert.equal(isEmptyImage("data:image/jpeg;base64," + "A".repeat(5000)), false);
+});
+
+test("ảnh rỗng thì chụp lại ở độ nét thấp hơn", async () => {
+  const tried: number[] = [];
+  const url = await renderWithFallback(async (s) => { tried.push(s); return s === 1 ? "data:image/jpeg;base64," + "A".repeat(5000) : "data:,"; });
+  assert.deepEqual(tried, [2, 1.5, 1]);
+  assert.ok(url.startsWith("data:image/jpeg"));
+});
+
+test("hết cách thì báo lỗi, không đưa ra file PDF trắng", async () => {
+  await assert.rejects(renderWithFallback(async () => "data:,"));
 });

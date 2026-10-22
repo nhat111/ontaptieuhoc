@@ -7,6 +7,12 @@
 // 10 trang ở scale 2 vượt giới hạn diện tích canvas của iOS và ra ảnh trắng.
 // Chữ trong PDF là ảnh (không bôi đen được), đổi lại tiếng Việt có dấu luôn
 // hiện đúng mà không phải nhúng font.
+//
+// iOS giới hạn tổng bộ nhớ canvas của một trang web. Vượt giới hạn thì canvas
+// không báo lỗi gì: vẽ không ra, toDataURL trả "data:," — và jsPDF nhận luôn
+// chuỗi rỗng đó, ra file PDF trắng, xem trước thì vỡ ảnh. Vì vậy: trả bộ nhớ
+// canvas ngay sau mỗi trang, phát hiện ảnh rỗng và chụp lại ở độ nét thấp hơn,
+// hết cách thì báo lỗi thay vì đưa ra một file trắng.
 
 // A4 ở 96 dpi = 794 × 1123 px; lề 48 px (≈ 12,7 mm) mỗi bên.
 const PAGE_W = 794;
@@ -14,7 +20,8 @@ const PAGE_H = 1123;
 const MARGIN = 48;
 const CONTENT_W = PAGE_W - 2 * MARGIN;
 const CONTENT_H = PAGE_H - 2 * MARGIN;
-const SCALE = 2;
+/** Độ nét thử lần lượt cho mỗi trang (máy thiếu bộ nhớ canvas thì hạ dần). */
+export const SCALES = [2, 1.5, 1];
 
 // Phần tử không được cắt ngang khi ngắt trang.
 const ATOMIC = "p, h1, h2, h3, li, tr, img, .opt, .ans, .img, .line";
@@ -24,6 +31,27 @@ export interface PdfResult {
   /** Ảnh JPEG từng trang (data URL) — dùng để xem trước trên mọi máy, kể cả
    *  Android/iOS vốn không hiện được PDF trong iframe. */
   pages: string[];
+}
+
+/** Ảnh trang thật (JPEG A4) nặng hàng chục KB; "data:," hay chuỗi cụt là canvas không vẽ được. */
+export const isEmptyImage = (url: string) => url.length < 2000 || !url.startsWith("data:image/");
+
+/**
+ * Chụp một trang, hạ độ nét khi máy trả về ảnh rỗng. Thuần — có test.
+ * `render(scale)` trả về data URL của trang ở độ nét đó.
+ */
+export async function renderWithFallback(render: (scale: number) => Promise<string>, scales = SCALES): Promise<string> {
+  for (const scale of scales) {
+    const url = await render(scale);
+    if (!isEmptyImage(url)) return url;
+  }
+  throw new Error("Canvas trả về ảnh rỗng ở mọi độ nét (thiếu bộ nhớ canvas)");
+}
+
+/** Trả bộ nhớ canvas ngay, không chờ dọn rác — iOS tính cả canvas chưa được dọn. */
+function release(c: HTMLCanvasElement) {
+  c.width = 0;
+  c.height = 0;
 }
 
 /** Chọn các điểm ngắt trang (toạ độ y trong body, px). Thuần — có test. */
@@ -118,26 +146,34 @@ export async function htmlToPdf(html: string): Promise<PdfResult> {
     for (let i = 0; i < bounds.length - 1; i++) {
       const y = bounds[i];
       const h = Math.max(1, Math.ceil(bounds[i + 1] - y));
-      const canvas = await html2canvas(body, {
-        scale: SCALE,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        x: 0,
-        y,
-        width: CONTENT_W,
-        height: h,
-        windowWidth: CONTENT_W,
+      const url = await renderWithFallback(async (scale) => {
+        const canvas = await html2canvas(body, {
+          scale,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+          logging: false,
+          x: 0,
+          y,
+          width: CONTENT_W,
+          height: h,
+          windowWidth: CONTENT_W,
+        });
+        // Ghép vào khung A4 trắng có lề để ảnh xem trước giống hệt trang PDF.
+        const page = document.createElement("canvas");
+        page.width = Math.round(PAGE_W * scale);
+        page.height = Math.round(PAGE_H * scale);
+        try {
+          const ctx = page.getContext("2d");
+          if (!ctx) return "";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, page.width, page.height);
+          ctx.drawImage(canvas, MARGIN * scale, MARGIN * scale);
+          return page.toDataURL("image/jpeg", 0.9);
+        } finally {
+          release(canvas);
+          release(page);
+        }
       });
-      // Ghép vào khung A4 trắng có lề để ảnh xem trước giống hệt trang PDF.
-      const page = document.createElement("canvas");
-      page.width = PAGE_W * SCALE;
-      page.height = PAGE_H * SCALE;
-      const ctx = page.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, page.width, page.height);
-      ctx.drawImage(canvas, MARGIN * SCALE, MARGIN * SCALE);
-      const url = page.toDataURL("image/jpeg", 0.9);
       pages.push(url);
       if (i > 0) pdf.addPage([PAGE_W, PAGE_H], "portrait");
       pdf.addImage(url, "JPEG", 0, 0, PAGE_W, PAGE_H);
