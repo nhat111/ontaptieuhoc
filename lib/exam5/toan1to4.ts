@@ -130,7 +130,7 @@ const soSanhPT10 = soSanhPhepTinh((r) => {
   if (chance(r, 0.5)) { const a = int(r, 1, 8), b = int(r, 1, 10 - a); return [`${a} + ${b}`, a + b]; }
   const a = int(r, 3, 10), b = int(r, 1, a - 1); return [`${a} - ${b}`, a - b];
 });
-const soSanhPT20 = soSanhPhepTinh((r) => retry(() => {
+export const soSanhPT20 = soSanhPhepTinh((r) => retry(() => {
   const a = int(r, 2, 9), b = int(r, 2, 9);
   if (a + b <= 10) return null;
   return chance(r, 0.5) ? [`${a} + ${b}`, a + b] : [`${a + b} - ${b}`, a];
@@ -165,7 +165,7 @@ export const tinh3So = (max: number, unit = 1): Generator => (r) => retry(() => 
 });
 
 /** Tìm số chưa biết trong phép cộng/trừ có nhớ: "___ + 7 = 15", "62 - ___ = 37". */
-const timSoCoNho = (max: 20 | 100): Generator => (r) => retry(() => {
+export const timSoCoNho = (max: 20 | 100): Generator => (r) => retry(() => {
   const [a, b] = max === 20 ? [int(r, 2, 9), int(r, 2, 9)] : [int(r, 11, 79), int(r, 6, 59)];
   const c = a + b;
   if (c > max || (a % 10) + (b % 10) < 10) return null;
@@ -178,7 +178,7 @@ const timSoCoNho = (max: 20 | 100): Generator => (r) => retry(() => {
 });
 
 /** Cộng, trừ có nhớ với số đo: "35 kg + 18 kg = ___ kg". */
-const soDoCoNho: Generator = (r) => retry(() => {
+export const soDoCoNho: Generator = (r) => retry(() => {
   const u = pick(r, ["kg", "l", "cm", "dm"]);
   const a = int(r, 12, 79), b = int(r, 6, 59);
   if (a + b > 100 || (a % 10) + (b % 10) < 10) return null;
@@ -198,7 +198,7 @@ const thieuNhan = only(LOP2.bangNhanChia, has(/× ___/));
 const doiDoDai2 = only(LOP2.donViDo2, has(/^\d+ \w+ = ___ \w+$/));
 
 /** "5 × 4 + 18 = ___" — nhân trước, cộng/trừ sau (bảng 2, 5). */
-const bieuThuc2: Generator = (r) => retry(() => {
+export const bieuThuc2: Generator = (r) => retry(() => {
   const k = pick(r, [2, 5]), x = int(r, 2, 10), c = int(r, 3, 40);
   const plus = chance(r, 0.6);
   const res = plus ? k * x + c : k * x - c;
@@ -518,7 +518,7 @@ export const tienHinh = (set: number[], count: [number, number]): Generator => (
 };
 
 /** "Có 4 đĩa, mỗi đĩa 5 quả cam" → 5 × 4 = 20 (5 được lấy 4 lần). Nhiễu khác giá trị nên không ai cãi được. */
-const nhomHinh: Generator = (r) => retry(() => {
+export const nhomHinh: Generator = (r) => retry(() => {
   const per = pick(r, [2, 5]), g = int(r, 2, 6), v = per * g;
   const wrong = [[per, "+", g, per + g], [per, "×", g + 1, per * (g + 1)], [per, "×", g - 1, per * (g - 1)], [g, "+", g, 2 * g], [per, "×", g + 2, per * (g + 2)], [per + 1, "×", g, (per + 1) * g]]
     .filter((w) => w[3] !== v).map((w) => `${w[0]} ${w[1]} ${w[2]} = ${w[3]}`);

@@ -545,3 +545,38 @@ export function lengthBarsSvg(bars: { label: string; len: number }[]): string {
   });
   return svg(x0 + Math.max(...bars.map((b) => b.len)) * unit + 24, top * 2 + bars.length * (h + gap) - gap, body);
 }
+
+/** Hình nhỏ của biểu đồ tranh (đen trắng), tâm (x, y). */
+export type PictoIcon = "hoa" | "sao" | "tao" | "ca";
+function pictoIcon(k: PictoIcon, x: number, y: number): string {
+  const s = `fill="none" stroke="${STROKE}" stroke-width="1.4"`;
+  switch (k) {
+    case "hoa": return [0, 72, 144, 216, 288].map((a) => {
+      const t = (a * Math.PI) / 180;
+      return `<circle cx="${(x + 6 * Math.sin(t)).toFixed(1)}" cy="${(y - 6 * Math.cos(t)).toFixed(1)}" r="4.2" ${s}/>`;
+    }).join("") + `<circle cx="${x}" cy="${y}" r="2.6" fill="${STROKE}"/>`;
+    case "sao": return `<polygon points="${range10().map((i) => {
+      const t = (i * 36 * Math.PI) / 180, R = i % 2 ? 4.6 : 11;
+      return `${(x + R * Math.sin(t)).toFixed(1)},${(y - R * Math.cos(t)).toFixed(1)}`;
+    }).join(" ")}" ${s}/>`;
+    case "tao": return `<circle cx="${x}" cy="${y + 1.5}" r="9" ${s}/><path d="M${x} ${y - 7.5} q1 -5 4 -6" ${s}/>`;
+    case "ca": return `<ellipse cx="${x - 2}" cy="${y}" rx="8.5" ry="5.5" ${s}/><polygon points="${x + 6},${y} ${x + 12},${y - 5} ${x + 12},${y + 5}" ${s}/><circle cx="${x - 6}" cy="${y - 1.5}" r="1.2" fill="${STROKE}"/>`;
+  }
+}
+const range10 = () => Array.from({ length: 10 }, (_, i) => i);
+
+/** Biểu đồ tranh: mỗi hàng một tên và một dãy hình, mỗi hình là 1 đơn vị. */
+export function pictographSvg(rows: { label: string; n: number }[], icon: PictoIcon): string {
+  const w0 = 74, cell = 28, rh = 34, x0 = 10, y0 = 10;
+  const max = Math.max(...rows.map((r) => r.n));
+  const W = w0 + Math.max(max, 4) * cell + 10;
+  let body = `<rect x="${x0}" y="${y0}" width="${W}" height="${rows.length * rh}" fill="none" stroke="${STROKE}" stroke-width="1.5"/>` +
+    line({ x: x0 + w0, y: y0 }, { x: x0 + w0, y: y0 + rows.length * rh }, false, 1);
+  rows.forEach((r, i) => {
+    const y = y0 + i * rh;
+    if (i) body += line({ x: x0, y }, { x: x0 + W, y }, false, 1);
+    body += `<g data-row="${esc(r.label)}:${r.n}">` + text({ x: x0 + w0 / 2, y: y + rh / 2 }, r.label, 14) +
+      Array.from({ length: r.n }, (_, j) => pictoIcon(icon, x0 + w0 + 8 + cell / 2 + j * cell, y + rh / 2)).join("") + "</g>";
+  });
+  return svg(W + 20, rows.length * rh + 20, body);
+}

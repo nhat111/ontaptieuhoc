@@ -9,8 +9,9 @@
 //    phần lớn bằng cách đọc ngược số liệu từ hình vẽ (data-… trong SVG) hoặc từ đề bài.
 // Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
 
-import { mulberry32, type Draft } from "../lib/mathGen/core";
-import { KNTT1, KNTT3 } from "../lib/mathGen";
+import { mulberry32, sign, type Draft } from "../lib/mathGen/core";
+import { KNTT1, KNTT2, KNTT3 } from "../lib/mathGen";
+import { EMOJI, cap } from "../lib/mathGen/shared";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
 import { QUESTIONS_PER_LESSON, SGK_BOOKS, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
@@ -241,10 +242,216 @@ function recheck1(name: string, d: Draft): string | null {
   return null;
 }
 
+/** Đọc số kiểu lớp 2 ("ba trăm linh năm", "bảy trăm hai mươi mốt") — viết độc lập với docSo3. */
+function parseViet(s: string): number | null {
+  const D: Record<string, number> = { không: 0, một: 1, mốt: 1, hai: 2, ba: 3, bốn: 4, tư: 4, năm: 5, lăm: 5, sáu: 6, bảy: 7, tám: 8, chín: 9 };
+  const w = s.toLowerCase().split(" ");
+  if (w[1] !== "trăm" || !(w[0] in D)) return null;
+  let v = D[w[0]] * 100, i = 2;
+  if (i === w.length) return v;
+  if (w[i] === "linh") return i + 2 === w.length && w[i + 1] in D ? v + D[w[i + 1]] : null;
+  if (w[i] === "mười") { v += 10; i++; }
+  else if (w[i] in D && w[i + 1] === "mươi") { v += D[w[i]] * 10; i += 2; }
+  else return null;
+  if (i === w.length) return v;
+  return i + 1 === w.length && w[i] in D ? v + D[w[i]] : null;
+}
+const KHOI_CHECK: Record<string, string> = {
+  "quả bóng đá": "Khối cầu", "quả địa cầu": "Khối cầu", "viên bi": "Khối cầu", "quả bóng rổ": "Khối cầu", "quả bóng bàn": "Khối cầu",
+  "lon nước ngọt": "Khối trụ", "cục pin": "Khối trụ", "khúc gỗ tròn": "Khối trụ", "ống nhựa": "Khối trụ", "lon sữa bột": "Khối trụ",
+  "con xúc xắc": "Khối lập phương", "khối ru-bích": "Khối lập phương", "hộp phấn": "Khối hộp chữ nhật", "viên gạch": "Khối hộp chữ nhật", "bao diêm": "Khối hộp chữ nhật",
+};
+const UNIT_CM: Record<string, number> = { cm: 1, dm: 10, m: 100, km: 100000 };
+const borrows = (x: number, y: number, op: "+" | "-") => {
+  let c = 0, k = 0;
+  for (let i = 0; i < 3; i++) {
+    const [p, q] = [Math.floor(x / 10 ** i) % 10, Math.floor(y / 10 ** i) % 10];
+    const v = op === "+" ? p + q + c : p - q - c;
+    c = op === "+" ? +(v >= 10) : +(v < 0);
+    k += c;
+  }
+  return k;
+};
+
+function recheck2(name: string, d: Draft): string | null {
+  const q = d.question, a = answerOf(d), svg = svgOf(d);
+  const nums = (s: string) => [...s.matchAll(/\d+/g)].map((x) => +x[0]);
+  const N = nums(q.replace(/[Ll]ớp 2[AB]/g, ""));
+  const opts = d.type === "multiple_choice" ? d.options.map((o) => o.text) : [];
+  const want = (v: number | string, why: string) => (String(v) === a ? null : `${why}: ${v} ≠ ${a}`);
+  const graphemes = (s: string) => [...new Intl.Segmenter().segment(s)].map((g) => g.segment).filter((g) => g.trim());
+  let m: RegExpMatchArray | null;
+  switch (name) {
+    case "tiaSo": {
+      const pts = [...svg.matchAll(/data-p="([^"]+):(\d+)"/g)].map((x) => ({ l: x[1], p: +x[2] }));
+      const known = pts.filter((x) => x.l !== "?"), hole = pts.find((x) => x.l === "?")!;
+      const step = (+known[1].l - +known[0].l) / (known[1].p - known[0].p);
+      if (known.some((x) => +x.l !== +known[0].l + (x.p - known[0].p) * step)) return "tia số không cách đều";
+      return want(+known[0].l + (hole.p - known[0].p) * step, "tia số");
+    }
+    case "honKem": return want(Math.abs(N[0] - N[1]), "hơn kém");
+    case "them20": case "nhieuIt20": {
+      const plus = /thêm|nhiều hơn/.test(q);
+      if (plus ? N[0] + N[1] <= 10 : N[0] - N[1] >= 10 || N[0] <= 10) return "không qua 10";
+      return want(plus ? N[0] + N[1] : N[0] - N[1], "thêm bớt");
+    }
+    case "kiLoGam": case "lit": {
+      if ((m = q.match(/^(.+) cân nặng (\d+) kg, (.+) cân nặng (\d+) kg\. Vật nào (nặng|nhẹ) hơn\?$/))) {
+        const heavier = +m[2] > +m[4] ? m[1] : m[3], lighter = +m[2] > +m[4] ? m[3] : m[1];
+        return a.toLowerCase() === (m[5] === "nặng" ? heavier : lighter).toLowerCase() ? null : "nặng nhẹ sai";
+      }
+      if ((m = q.match(/^(\d+) (?:kg|l) ([+-]) (\d+) (?:kg|l) = ___/))) return want(m[2] === "+" ? +m[1] + +m[3] : +m[1] - +m[3], "tính");
+      if (/ca đầy/.test(q)) return want(N[1], "ca 1 l");
+      return want(/Cân thăng bằng|nặng hơn con|Cả hai/.test(q) ? N[0] + N[1] : N[0] - N[1], "lời văn kg / l");
+    }
+    case "cong21": case "cong22": case "tru21": case "tru22": {
+      const [x, y] = N, cong = name.startsWith("cong");
+      if (name.endsWith("21") ? !(x >= 10 && y < 10) : !(x >= 10 && y >= 10)) return "sai kiểu số chữ số";
+      if (cong ? (x % 10) + (y % 10) < 10 || x + y > 100 : (x % 10) >= (y % 10)) return "không có nhớ";
+      return want(cong ? x + y : x - y, "tính");
+    }
+    case "doanThang": {
+      const pts = [...svg.matchAll(/data-p="(\w):(\d+)"/g)].map((x) => ({ l: x[1], p: +x[2] }));
+      if (/bao nhiêu đoạn thẳng/.test(q)) return want(String((pts.length * (pts.length - 1)) / 2), "đếm đoạn");
+      if ((m = q.match(/^Ba điểm (\w), (\w), (\w) thẳng hàng/))) {
+        const three = [m[1], m[2], m[3]].map((l) => pts.find((x) => x.l === l)!).sort((u, v) => u.p - v.p);
+        return want(`Điểm ${three[1].l}`, "điểm ở giữa");
+      }
+      const inFig = (o: string) => o.slice(-2).split("").every((l) => pts.some((x) => x.l === l));
+      return inFig(a) && opts.filter(inFig).length === 1 ? null : "đoạn thẳng trong hình sai";
+    }
+    case "gioPhut": {
+      if (/^1 ngày có/.test(q)) return want(24, "ngày giờ");
+      if (/^1 giờ =/.test(q)) return want(60, "giờ phút");
+      if ((m = q.match(/^(\d+) giờ (tối|chiều) còn gọi là ___/))) return want(+m[1] + 12, "giờ chiều tối");
+      if ((m = q.match(/^(\d+) giờ còn gọi là:$/))) return want(`${+m[1] - 12} giờ ${+m[1] <= 16 ? "chiều" : "tối"}`, "giờ chiều tối");
+      if (/Sau \d+ giờ nữa/.test(q)) return want(N[0] + N[1], "sau mấy giờ");
+      return want(N[1] - N[0], "khoảng thời gian");
+    }
+    case "ngayThang2": {
+      if ((m = q.match(/^Tháng (\d+) có bao nhiêu ngày\?$/))) return want(`${daysIn(2027, +m[1])} ngày`, "số ngày trong tháng");
+      if (/Ngày kia/.test(q)) return want(N[0] + 2, "ngày kia");
+      return want(N[0] + 7, "tuần sau");
+    }
+    case "phepNhan": {
+      if ((m = q.match(/^Viết phép nhân: ([\d + ]+) = (\d+) × ___$/))) {
+        const t = m[1].split(" + ").map(Number);
+        return t.every((x) => x === +m![2]) ? want(t.length, "số lần") : "các số hạng khác nhau";
+      }
+      if ((m = q.match(/^Tổng ([\d + ]+) viết thành phép nhân là:$/))) {
+        const t = m[1].split(" + ").map(Number);
+        return want(`${t[0]} × ${t.length}`, "viết phép nhân");
+      }
+      if ((m = q.match(/^Phép tính (\d+) × (\d+) đọc là:$/))) return want(`${m[1]} nhân ${m[2]}`, "đọc phép nhân");
+      return want(N[0] * N[1], "nhóm bằng nhau");
+    }
+    case "tenCongTru": case "tenNhan": case "tenChia": {
+      if ((m = q.match(/^Trong phép (cộng|trừ|nhân|chia) (\d+) ([+\-×:]) (\d+) = (\d+), số (\d+) gọi là:$/))) {
+        const [x, y, z, t] = [+m[2], +m[4], +m[5], +m[6]];
+        const ok = { "+": x + y === z, "-": x - y === z, "×": x * y === z, ":": y * z === x }[m[3]];
+        if (!ok) return "phép tính sai";
+        const role = { cộng: ["Số hạng", "Số hạng", "Tổng"], trừ: ["Số bị trừ", "Số trừ", "Hiệu"], nhân: ["Thừa số", "Thừa số", "Tích"], chia: ["Số bị chia", "Số chia", "Thương"] }[m[1]]!;
+        if (new Set([x, y, z]).size !== 3 && m[1] !== "cộng" && m[1] !== "nhân") return "hai thành phần trùng số";
+        return want(role[[x, y, z].indexOf(t)], "tên gọi");
+      }
+      if (/^Số bị chia là/.test(q)) return want(N[0] / N[1], "thương");
+      return want(N[0] * N[1], "tích");
+    }
+    case "phepChia": case "chia2": case "chia5": {
+      const k = /^Từ phép nhân/.test(q) ? N[0] : N[1], p = /^Từ phép nhân/.test(q) ? N[2] : N[0];
+      if (name === "chia2" && k !== 2) return "bảng chia 2 mà chia cho số khác";
+      if (name === "chia5" && k !== 5) return "bảng chia 5 mà chia cho số khác";
+      return p % k ? "chia không hết" : want(p / k, "phép chia");
+    }
+    case "khoiTruCau": {
+      if ((m = q.match(/^(.+) có dạng khối gì\?$/))) return want(KHOI_CHECK[m[1].toLowerCase()], "khối của đồ vật");
+      if ((m = q.match(/^Đồ vật nào dưới đây có dạng (khối \S+)\?$/))) {
+        const k = cap(m[1]);
+        return opts.filter((o) => KHOI_CHECK[o.toLowerCase()] === k).length === 1 && KHOI_CHECK[a.toLowerCase()] === k ? null : "chọn đồ vật sai";
+      }
+      return want(/không có mặt phẳng/.test(q) ? "Khối cầu" : "Khối trụ", "đặc điểm khối");
+    }
+    case "tramChucNghin": {
+      if (/^10 trăm bằng/.test(q)) return want("1 nghìn", "nghìn");
+      if (/chục = ___ đơn vị|trăm = ___ chục/.test(q)) return want(N[0] * 10, "đổi");
+      if (/đơn vị = ___ chục/.test(q)) return want(N[0] / 10, "đổi");
+      return want(N[0] / 100, "số trăm");
+    }
+    case "tronTramChuc": {
+      if ((m = q.match(/^Số tròn (chục|trăm) liền (sau|trước) (\d+) là/))) return want(+m[3] + (m[1] === "chục" ? 10 : 100) * (m[2] === "sau" ? 1 : -1), "liền sau / trước");
+      if ((m = q.match(/^Số nào là số tròn (chục|trăm)\?$/))) {
+        const u = m[1] === "chục" ? 10 : 100;
+        return opts.filter((o) => +o % u === 0).length === 1 && +a % u === 0 ? null : "số tròn sai";
+      }
+      const seq = q.replace("Điền số: ", "").split(", "), i = seq.indexOf("___"), known = seq.map(Number);
+      const step = i === 1 ? known[3] - known[2] : known[1] - known[0];
+      return want(i === 1 ? known[2] - step : known[i - 1] + step, "dãy số tròn");
+    }
+    case "soSanhTron": {
+      if ((m = q.match(/^Chọn dấu thích hợp: (\d+) ___ (\d+)$/))) return want(sign(+m[1] - +m[2]), "so sánh");
+      m = q.match(/^Số (lớn|bé) nhất trong các số (.+) là:$/)!;
+      const list = m[2].split(", ").map(Number);
+      return want(m[1] === "lớn" ? Math.max(...list) : Math.min(...list), "lớn / bé nhất");
+    }
+    case "docViet3": {
+      if ((m = q.match(/^Số “(.+)” viết là:$/))) return want(parseViet(m[1]) ?? "?", "viết số");
+      m = q.match(/^Số (\d+) đọc là:$/)!;
+      if (parseViet(a) !== +m[1]) return `đọc sai: ${a}`;
+      return opts.every((o) => o === a || (parseViet(o) !== null && parseViet(o) !== +m![1])) ? null : "nhiễu đọc ra cùng số hoặc đọc không được";
+    }
+    case "vietTong": {
+      if ((m = q.match(/^(\d+) = (.+)$/))) {
+        const parts = m[2].split(" + ");
+        const v = +m[1] - parts.filter((x) => x !== "___").reduce((s, x) => s + +x, 0);
+        return want(v, "viết thành tổng");
+      }
+      m = q.match(/^Số (\d+) viết thành/)!;
+      const sum = (s: string) => s.split(" + ").reduce((t, x) => t + +x, 0);
+      if (sum(a) !== +m[1] || a.split(" + ").some((x) => /^\d0*$/.test(x) === false)) return "tổng đúng sai";
+      return opts.every((o) => o === a || sum(o) !== +m![1]) ? null : "nhiễu cũng bằng số đó";
+    }
+    case "donViDai": {
+      if ((m = q.match(/^Chọn dấu thích hợp: (\d+) (\w+) ___ (\d+) (\w+)$/))) return want(sign(+m[1] * UNIT_CM[m[2]] - +m[3] * UNIT_CM[m[4]]), "so sánh độ dài");
+      return opts.includes(a) ? null : "đơn vị không có trong lựa chọn";
+    }
+    case "cong1000": case "cong1000Nho": case "tru1000": case "tru1000Nho": {
+      const op = name.startsWith("cong") ? "+" : "-", [x, y] = N;
+      if (borrows(x, y, op) !== (name.endsWith("Nho") ? 1 : 0)) return "số lần nhớ sai";
+      return want(op === "+" ? x + y : x - y, "tính");
+    }
+    case "kiemDem": {
+      const list = graphemes(q.match(/^Đếm rồi trả lời: (\S+)  /u)![1]);
+      const count = (n: string) => list.filter((g) => g === EMOJI.find((e) => e.n === n)!.e).length;
+      if ((m = q.match(/  Có ___ (.+)\.$/))) return want(count(m[1]), "đếm");
+      if ((m = q.match(/  Số (.+) nhiều hơn số (.+) là ___$/))) return want(count(m[1]) - count(m[2]), "hơn kém");
+      m = q.match(/Loại nào có (nhiều|ít) nhất\?$/)!;
+      const c = opts.map((o) => count(o.toLowerCase()));
+      const best = m[1] === "nhiều" ? Math.max(...c) : Math.min(...c);
+      return c.filter((x) => x === best).length === 1 ? want(opts[c.indexOf(best)], "nhiều / ít nhất") : "hai loại bằng nhau";
+    }
+    case "bieuDoTranh": {
+      const rows: Record<string, number> = Object.fromEntries([...svg.matchAll(/data-row="([^"]+):(\d+)"/g)].map((x) => [x[1], +x[2]]));
+      // Số hình vẽ trong mỗi hàng phải khớp số ghi trong data-row.
+      const drawn = svg.split("<g data-row=").slice(1).map((g) => (g.match(/<circle [^>]*fill="#111"/g) ?? []).length + (g.match(/<polygon|<circle [^>]*r="9"/g) ?? []).length);
+      if (/bông hoa/.test(q) && drawn.some((c, x) => c !== Object.values(rows)[x])) return "số hình hoa không khớp";
+      const ask = q.replace(/^.+?\(mỗi hình là 1 [^)]+\)\. /, "");
+      if (/^Cả \d+ bạn/.test(ask)) return want(Object.values(rows).reduce((s, x) => s + x, 0), "tổng");
+      if ((m = ask.match(/^(\S+) .+ nhiều hơn (\S+) ___/))) return want(rows[m[1]] - rows[m[2]], "hơn kém");
+      if ((m = ask.match(/^Bạn nào .+ (nhiều|ít) .+ nhất\?$/))) {
+        const v = Object.values(rows), best = m[1] === "nhiều" ? Math.max(...v) : Math.min(...v);
+        return want(Object.keys(rows).find((k) => rows[k] === best)!, "nhiều / ít nhất");
+      }
+      return want(rows[ask.split(" ")[0]], "đọc biểu đồ");
+    }
+  }
+  return `chưa có cách tính lại dạng ${name}`;
+}
+
 // Mỗi bộ dạng câu KNTT<N> đi kèm hàm tính lại của nó. Dạng số học thuần (phép tính, so
 // sánh, liền trước – liền sau) đã được scripts/gen-math-check.ts tính lại nên trả null ở đây.
 const RECHECK: [string, Record<string, (r: ReturnType<typeof mulberry32>) => Draft>, (name: string, d: Draft) => string | null][] = [
   ["KNTT1", KNTT1, recheck1],
+  ["KNTT2", KNTT2, recheck2],
   ["KNTT3", KNTT3, recheck3],
 ];
 for (const [label, gens, recheck] of RECHECK) {
