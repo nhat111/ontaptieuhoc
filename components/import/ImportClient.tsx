@@ -6,6 +6,7 @@ import { GRADES, getSubjects } from "@/lib/subjects";
 import Header from "@/components/Header";
 import QuestionCard, { type QDraft } from "./QuestionCard";
 import PasteImportModal from "./PasteImportModal";
+import { DeleteLessonButton } from "./DeleteButtons";
 import MathText from "@/components/MathText";
 import { insertIntoFocused } from "@/lib/focusedEditor";
 
@@ -843,6 +844,17 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </svg>
                 Lưu &amp; sang bài tiếp
               </button>
+            )}
+
+            {editMode && (
+              <DeleteLessonButton
+                lessonId={initialData!.lessonId}
+                title={initialData!.title}
+                questionCount={questions.length}
+                isExam={examMode}
+                redirectTo={initialData!.chapterId ? `/import/chapter/${initialData!.chapterId}` : "/import"}
+                className="mt-2 w-full text-sm font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50"
+              />
             )}
 
             {editMode && initialData?.chapterId && (

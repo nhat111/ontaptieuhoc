@@ -2,6 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensureSubjectId } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { blockIfNoImportAccess } from "@/lib/importAuth";
 
 // Chapters are addressed by (grade, subject name) — the subject catalogue lives
@@ -64,4 +65,32 @@ export async function POST(req: NextRequest) {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
+}
+
+/**
+ * `DELETE /api/chapters?id=N` — xoá chương cùng mọi bài/đề và câu hỏi bên trong
+ * (ON DELETE CASCADE). Giao diện hỏi xác nhận kèm số bài trước khi gọi.
+ */
+export async function DELETE(req: NextRequest) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
+  const id = Number(req.nextUrl.searchParams.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const { data, error } = await getSupabaseServer()
+    .from("chapters")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data?.length) {
+    return NextResponse.json({ error: "Không tìm thấy chương." }, { status: 404 });
+  }
+
+  revalidatePath("/");
+  return NextResponse.json({ deleted: id });
 }

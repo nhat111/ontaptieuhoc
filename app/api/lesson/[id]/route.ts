@@ -1,5 +1,7 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { blockIfNoImportAccess } from "@/lib/importAuth";
 import type { QDraft, QImage, QType } from "@/components/import/QuestionCard";
 
 function decodeImages(explanation: unknown): QImage[] {
@@ -122,4 +124,38 @@ export async function GET(
     questions: qDrafts,
     type: lesson.type === "exam" ? "exam" : "lesson",
   });
+}
+
+/**
+ * Xoá hẳn một bài học / đề kiểm tra. Câu hỏi đi theo (ON DELETE CASCADE),
+ * quiz_results và feedback giữ lại với lesson_id = NULL (ON DELETE SET NULL).
+ * File giọng đọc trên Storage không bị xoá.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const blocked = await blockIfNoImportAccess(req);
+  if (blocked) return blocked;
+
+  const { id } = await params;
+  const lessonId = Number(id);
+  if (!Number.isInteger(lessonId) || lessonId <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const { data, error } = await getSupabaseServer()
+    .from("lessons")
+    .delete()
+    .eq("id", lessonId)
+    .select("id, chapter_id");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data?.length) {
+    return NextResponse.json({ error: "Không tìm thấy bài học." }, { status: 404 });
+  }
+
+  // Trang chủ đếm bài theo lớp với ISR 5 phút.
+  revalidatePath("/");
+  return NextResponse.json({ deleted: lessonId, chapterId: data[0].chapter_id });
 }
