@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getIndexableLessonIds } from "@/lib/db";
 import { SITE_URL } from "@/lib/siteUrl";
 import { GUIDES } from "@/lib/lamVan";
-import { SGK_BOOKS, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
+import { SGK_BOOKS, hidesOldLessons, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
 import { GRADES, SUBJECTS_BY_GRADE, getDefaultSubject } from "@/lib/subjects";
 
 // Lessons are created through /import at runtime, so the sitemap has to be
@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lessonIds = await getIndexableLessonIds();
+  // Bài cũ bị ẩn khỏi trang lớp thì cũng không mời Google vào.
+  const lessonIds = await getIndexableLessonIds(hidesOldLessons);
 
   const lastModified = new Date();
 

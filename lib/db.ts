@@ -527,16 +527,20 @@ export type GradeStats = Record<number, { lessons: number; exams: number }>
  * thay cho con số viết cứng — phụ huynh bấm vào lớp thấy trống thì mất tin ngay.
  * Lỗi thì trả rỗng: trang chủ hiện "Đang cập nhật" chứ không vỡ.
  */
-export async function getGradeStats(): Promise<GradeStats> {
+/** Bài học (không phải đề) bị ẩn khỏi trang lớp — xem hidesOldLessons trong lib/sgk. */
+export type HideLesson = (grade: number, subject: string) => boolean
+
+export async function getGradeStats(hide?: HideLesson): Promise<GradeStats> {
   try {
     const { data } = await getSupabaseServer()
       .from('lessons')
-      .select('type, questions(count), chapters!inner(subjects!inner(grade))')
+      .select('type, questions(count), chapters!inner(subjects!inner(grade, name))')
     const stats: GradeStats = {}
     for (const l of (data ?? []) as any[]) {
       if ((l.questions?.[0]?.count ?? 0) === 0) continue
       const grade = l.chapters?.subjects?.grade as number | undefined
       if (!grade) continue
+      if (l.type !== 'exam' && hide?.(grade, l.chapters?.subjects?.name)) continue
       const s = (stats[grade] ??= { lessons: 0, exams: 0 })
       if (l.type === 'exam') s.exams++
       else s.lessons++
@@ -553,14 +557,15 @@ export async function getGradeStats(): Promise<GradeStats> {
  * Ids of every lesson that actually has questions — a `/quiz?lessonId=` page
  * with no questions is a dead end, so it is kept out of the sitemap.
  */
-export async function getIndexableLessonIds(): Promise<number[]> {
+export async function getIndexableLessonIds(hide?: HideLesson): Promise<number[]> {
   try {
     const { data } = await getSupabaseServer()
       .from('lessons')
-      .select('id, questions(count)')
+      .select('id, type, questions(count), chapters!inner(subjects!inner(grade, name))')
       .order('id')
     return (data ?? [])
       .filter((l: any) => (l.questions?.[0]?.count ?? 0) > 0)
+      .filter((l: any) => l.type === 'exam' || !hide?.(l.chapters?.subjects?.grade, l.chapters?.subjects?.name))
       .map((l: any) => l.id as number)
   } catch {
     return []
