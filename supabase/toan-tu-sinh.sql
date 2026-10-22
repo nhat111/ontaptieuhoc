@@ -701,8 +701,8 @@ WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE source_id = 'gen_toan-5-ti-so-phan
 INSERT INTO questions (lesson_id, content, type, options, correct_answer, explanation, order_index)
 SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
 FROM lessons l, (VALUES
-  ('Lớp 5A có 50 học sinh, trong đó có 33 học sinh nữ. Số học sinh nữ chiếm ___% số học sinh cả lớp.', 'numeric', '[]', '66', '{"solution":"Lấy 33 : 50 = 0,66, rồi nhân với 100 và viết thêm kí hiệu %: 66%."}', 1),
-  ('Lớp 5A có 50 học sinh, trong đó có 38 học sinh nữ. Số học sinh nữ chiếm ___% số học sinh cả lớp.', 'numeric', '[]', '76', '{"solution":"Lấy 38 : 50 = 0,76, rồi nhân với 100 và viết thêm kí hiệu %: 76%."}', 2),
+  ('Lớp 5A có 50 học sinh, trong đó có 33 học sinh nữ. Số học sinh nữ chiếm ___% số học sinh cả lớp.', 'numeric', '[]', '66', '{"solution":"Bài giải\nTỉ số phần trăm của số học sinh nữ và số học sinh cả lớp là:\n33 : 50 = 0,66 = 66%\nĐáp số: 66%."}', 1),
+  ('Lớp 5A có 50 học sinh, trong đó có 38 học sinh nữ. Số học sinh nữ chiếm ___% số học sinh cả lớp.', 'numeric', '[]', '76', '{"solution":"Bài giải\nTỉ số phần trăm của số học sinh nữ và số học sinh cả lớp là:\n38 : 50 = 0,76 = 76%\nĐáp số: 76%."}', 2),
   ('Tỉ số phần trăm của 2 và 8 là ___%', 'numeric', '[]', '25', '{"solution":"Lấy 2 : 8 = 0,25, rồi nhân với 100 và viết thêm kí hiệu %: 25%."}', 3),
   ('Tỉ số phần trăm của 6 và 16 là ___%', 'numeric', '[]', '37,5', '{"solution":"Lấy 6 : 16 = 0,375, rồi nhân với 100 và viết thêm kí hiệu %: 37,5%."}', 4),
   ('80% của 450 là ___', 'numeric', '[]', '360', '{"solution":"Lấy 450 × 80 : 100 = 360."}', 5),
@@ -768,7 +768,7 @@ INSERT INTO questions (lesson_id, content, type, options, correct_answer, explan
 SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
 FROM lessons l, (VALUES
   ('Tìm trung bình cộng của các số: 14,8; 26,5; 5,6; 57,5. Trung bình cộng là ___', 'numeric', '[]', '26,1', '{"solution":"Tổng: 14,8 + 26,5 + 5,6 + 57,5 = 104,4. Trung bình cộng = 104,4 : 4 = 26,1."}', 1),
-  ('Nam mua 2 quyển truyện, mỗi quyển giá 22.000 đồng. Nam đưa người bán 50.000 đồng. Người bán trả lại ___ đồng.', 'short', '[]', '6.000|6000|6 000', '{"solution":"Tiền mua: 22.000 × 2 = 44.000 đồng. Tiền trả lại: 50.000 - 44.000 = 6.000 đồng."}', 2),
+  ('Nam mua 2 quyển truyện, mỗi quyển giá 22.000 đồng. Nam đưa người bán 50.000 đồng. Người bán trả lại ___ đồng.', 'short', '[]', '6.000|6000|6 000', '{"solution":"Bài giải\nSố tiền mua 2 quyển truyện là:\n22.000 × 2 = 44.000 (đồng)\nNgười bán trả lại số tiền là:\n50.000 - 44.000 = 6.000 (đồng)\nĐáp số: 6.000 đồng."}', 2),
   ('Tìm trung bình cộng của các số: 15,2; 33,6; 29,8. Trung bình cộng là ___', 'numeric', '[]', '26,2', '{"solution":"Tổng: 15,2 + 33,6 + 29,8 = 78,6. Trung bình cộng = 78,6 : 3 = 26,2."}', 3),
   ('75% của 320 là ___', 'numeric', '[]', '240', '{"solution":"Lấy 320 × 75 : 100 = 240."}', 4),
   ('Tỉ số phần trăm của 74 và 250 là ___%', 'numeric', '[]', '29,6', '{"solution":"Lấy 74 : 250 = 0,296, rồi nhân với 100 và viết thêm kí hiệu %: 29,6%."}', 5),

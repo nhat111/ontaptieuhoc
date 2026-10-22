@@ -191,3 +191,13 @@ export const sign = (c: number) => (c > 0 ? ">" : c < 0 ? "<" : "=");
 
 const DIGIT_WORDS = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín", "mười"];
 export const word = (n: number) => DIGIT_WORDS[n] ?? String(n);
+
+/**
+ * Lời giải bài toán có lời văn trình bày như vở học sinh: dòng "Bài giải", mỗi bước một câu
+ * lời giải ("Số hộp còn lại là:") và một phép tính kèm đơn vị trong ngoặc, cuối cùng "Đáp số".
+ * Các dòng nối bằng "\n": trang làm bài, trang kết quả hiện xuống dòng (whitespace-pre-wrap),
+ * bản in đổi thành <br/>.
+ */
+export function baiGiai(buoc: [loiGiai: string, pheptinh: string][], dapSo: string): string {
+  return ["Bài giải", ...buoc.flat(), `Đáp số: ${dapSo}.`].join("\n");
+}

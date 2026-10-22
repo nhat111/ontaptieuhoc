@@ -155,9 +155,9 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
       const qs = questionsOf(it);
       const pts = qs.reduce((s, q) => s + q.points, 0);
       const ans = isGroup(it)
-        ? qs.map((q, k) => `${"abcdef"[k]}) ${keyOf(q, o)}${withSol && solutionOf(q) ? ` <span class="exp">— ${rich(solutionOf(q), o)}</span>` : ""}`).join("<br/>") +
+        ? qs.map((q, k) => `${"abcdef"[k]}) ${keyOf(q, o)}${withSol && solutionOf(q) ? ` <span class="exp">— ${rich(solutionOf(q), o).replace(/\n/g, "<br/>")}</span>` : ""}`).join("<br/>") +
           (qs.length > 1 ? `<br/><i>Mỗi ý đúng ${pointsText(qs[0].points)}.</i>` : "")
-        : keyOf(it, o) + (withSol && !it.open && solutionOf(it) ? `<br/><span class="exp">${rich(solutionOf(it), o)}</span>` : "");
+        : keyOf(it, o) + (withSol && !it.open && solutionOf(it) ? `<br/><span class="exp">${rich(solutionOf(it), o).replace(/\n/g, "<br/>")}</span>` : "");
       return `<tr><td class="c">${label}</td><td>${ans}</td><td class="c">${pointsText(pts).replace(" điểm", "")}</td></tr>`;
     });
     html += `<table class="key"><tr><th width="13%">Câu/Bài</th><th>Đáp án</th><th width="11%">Điểm</th></tr>${rows.join("")}</table>`;
