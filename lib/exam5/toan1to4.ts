@@ -433,7 +433,7 @@ const countText = (k: number, name: string) =>
   range(1, k + 1).map((s) => `${s === 1 ? `${name} đơn` : `ghép ${s} hình`}: ${k + 2 - s}`).join("; ") +
   `. Tất cả: ${range(1, k + 1).map((s) => k + 2 - s).join(" + ")} = ${((k + 1) * (k + 2)) / 2}.`;
 
-const demTamGiac = (ks: number[], asFill: boolean): Generator => (r) => {
+export const demTamGiac = (ks: number[], asFill: boolean): Generator => (r) => {
   const k = pick(r, ks), n = fanTriangleCount(k);
   const exp = `Đếm ${countText(k, "hình")}`;
   if (asFill) return fill("Hình bên có ___ hình tam giác.", String(n), exp, ["đếm hình", "hình vẽ"], fanTrianglesSvg(k));
@@ -444,7 +444,7 @@ const demTamGiac = (ks: number[], asFill: boolean): Generator => (r) => {
   };
 };
 
-const demTuGiac = (ks: number[], name: "hình chữ nhật" | "hình tứ giác", asFill: boolean): Generator => (r) => {
+export const demTuGiac = (ks: number[], name: "hình chữ nhật" | "hình tứ giác", asFill: boolean): Generator => (r) => {
   const k = pick(r, ks), n = stripRectCount(k);
   const exp = `Đếm ${countText(k, "hình")}`;
   if (asFill) return fill(`Hình bên có ___ ${name}.`, String(n), exp, ["đếm hình", "hình vẽ"], stripRectsSvg(k));
@@ -476,7 +476,7 @@ export const xemGio = (mins: number[]): Generator => (r) => {
   };
 };
 
-const doDaiThuoc: Generator = (r) => {
+export const doDaiThuoc: Generator = (r) => {
   const len = int(r, 3, 12);
   const what = pick(r, ["bút chì", "que tính", "băng giấy", "chiếc lược"]);
   return {
@@ -488,7 +488,7 @@ const doDaiThuoc: Generator = (r) => {
   };
 };
 
-const duongGapKhuc = (asProblem: boolean): Generator => (r) => {
+export const duongGapKhuc = (asProblem: boolean): Generator => (r) => {
   const n = int(r, 2, 3);
   const segs = Array.from({ length: n }, () => int(r, 2, 15));
   const total = segs.reduce((s, x) => s + x, 0);
@@ -532,7 +532,7 @@ const nhomHinh: Generator = (r) => retry(() => {
   };
 });
 
-const hinhTron3: Generator = (r) => {
+export const hinhTron3: Generator = (r) => {
   const R = int(r, 2, 9), givenR = chance(r, 0.5);
   const ans = givenR ? 2 * R : R;
   return {
@@ -547,7 +547,7 @@ const hinhTron3: Generator = (r) => {
   };
 };
 
-const hinhCN = (what: "chuVi" | "dienTich"): Generator => (r) => {
+export const hinhCN = (what: "chuVi" | "dienTich"): Generator => (r) => {
   const square = chance(r, 0.4);
   const l = square ? int(r, 3, 12) : int(r, 6, 20), w = square ? l : int(r, 2, l - 2);
   const P = (l + w) * 2, S = l * w;
