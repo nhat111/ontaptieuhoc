@@ -1,6 +1,8 @@
 # Current State
 
-_Last synced with codebase: May 2026_
+_Last synced with codebase: Oct 2026 (sau PR #105)_
+
+> **Bắt đầu phiên mới?** Đọc mục **Việc tiếp theo** ở cuối file trước. Chi tiết kỹ thuật của từng tính năng nằm trong `CLAUDE.md`.
 
 ## Done
 
@@ -52,10 +54,36 @@ _Last synced with codebase: May 2026_
 - `scripts/check-subjects.mjs`: so danh mục môn trong code với DB (chỉ đọc)
 - `schema.sql` + cột mở rộng (`type`, `source_id`, `duration_minutes`, …)
 
+### Đã làm trong Oct 2026 (PR #98–#105)
+- **Xoá bài / đề / chương** (#98): `DELETE /api/lesson/[id]`, `DELETE /api/chapters?id=`; nút xoá ở `/import/chapter/[id]` (từng dòng + cả chương) và trong trang sửa đề.
+- **Tăng tốc** (#99): Supabase ở Mumbai nên mỗi truy vấn nối tiếp tốn ~0,3–0,7 s. Gộp truy vấn bằng embedded join (trang lớp, `/quiz`, `/de-thi`); bảng xếp hạng cache 5 phút và stream trong `Suspense`.
+- **Tiếng Việt theo chủ điểm** (#100 lớp 4, #101 lớp 5): `lib/tvGuide/`, hiện trên tab Tiếng Việt của `/lop/4`, `/lop/5`. Phần Viết lớp 5 lấy dàn ý từ `lib/lamVan.ts`.
+- **Toán theo sách**:
+  - #102: ví dụ giải mẫu trên màn hình bắt đầu mỗi bài.
+  - #103: nút "Kiểm tra" từng câu (chế độ `practice`, chỉ bài theo sách).
+  - #104: bài toán có lời văn lớp 5 trình bày đủ "Bài giải" (`baiGiai()` trong `lib/mathGen/core.ts`, 12 dạng `lv*` mới trong `KNTT5`).
+
+## Việc tiếp theo (ưu tiên từ trên xuống)
+
+1. **Lời giải lớp 2–4 theo mẫu "Bài giải"** (chủ site đã đồng ý). Có khoảng 30 dạng lời văn trong `lib/mathGen/lop{2,3,4}.ts`, `lib/mathGen/kntt/lop{2,3,4}.ts`, `lib/exam5/toan1to4.ts`. Tìm bằng tag `"toán có lời văn"` và đề có "Hỏi".
+   - **Chỉ đổi chuỗi lời giải**, không thêm lần gọi `r()`.
+   - Kiểm chứng như đã làm ở #104: tạo `git worktree` của `master`, chạy mỗi dạng 200 seed, so `câu hỏi | đáp án | r()` sau cùng giữa hai bản, phải giống hệt.
+   - Sửa `lop*.ts` thì chạy `npx tsx scripts/gen-math-sql.ts` và commit kèm `supabase/toan-tu-sinh.sql`.
+2. **Thêm bài toán có lời văn mới cho lớp 2–4.** Hiện chỉ phủ L2 4/14, L3 6/16, L4 4/13 chủ đề. Mỗi dạng viết trong `kntt/lop<N>.ts` kèm case trong `recheck<N>` (`scripts/sgk-toan-check.ts`), rồi gắn 2 câu vào `mix` các bài trong `lib/sgk/books/toan<N>.ts`.
+3. **Lớp 1**: chưa có dạng lời văn nào. Dạng hợp lứa tuổi: "Viết phép tính thích hợp" (không trình bày Bài giải).
+4. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
+5. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
+
+### Cần chủ site làm hoặc duyệt (không phải việc code)
+- **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.
+- **Duyệt nội dung viết tay**:
+  - `lib/tvGuide/lop4.ts`, `lop5.ts`: công dụng dấu gạch ngang (lớp 5 có ghi cả "phần chú thích"), dấu ngoặc kép, các gợi ý đọc hiểu (viết theo tên chủ điểm). TV5 tập 2 bài 6 chưa tìm được phần Nói và nghe.
+  - Tình huống trong 12 dạng lời văn lớp 5 (`lv*` trong `lib/mathGen/kntt/lop5.ts`).
+- **Dọn dữ liệu rác trong DB** bằng nút xoá: chương "tập đọc" lớp 1 (bài abc, fff), chương "aâ" lớp 3, đề "uu" lớp 1.
+
 ## Not done / deferred
 
 - AI tutor, subscription
-- Test suite (`npm run lint` only; `tsc --noEmit` thủ công)
 - Enforce `lessons.status` locked/completed trên UI (DB có, app chủ yếu dùng `active`)
 
 ## Removed / obsolete docs
@@ -69,4 +97,14 @@ _Last synced with codebase: May 2026_
 - Refresh `/quiz` → về màn Start (timer không persist)
 - Refresh `/result` không có `sessionStorage` → redirect `/`
 - Guest vẫn làm quiz; `quiz_results.user_id` = null
-- Leaderboard cần service role + `auth.admin.listUsers`
+- Leaderboard cần service role; tra email bằng `auth.admin.getUserById` cho top 10, cache 5 phút
+- Có bộ test: `npm test` (`tests/*.test.ts`) và `npm run check` (lint + typecheck + test + mọi `scripts/*-check.ts`)
+
+## Lưu ý vận hành (rút ra từ các phiên trước)
+
+- **`next dev` tự sinh `AGENTS.md`** ở gốc repo: xoá trước khi commit, đừng đưa vào PR.
+- **Tắt dev server:** đừng `pkill -f "next dev"` trong cùng lệnh vừa khởi động nó, vì pattern sẽ khớp với chính shell đó và giết luôn shell. Dùng `ps -eo pid,args | grep -E "[n]ext dev -p <port>|[n]ext-server"` ở một lệnh riêng.
+- **Chạy thử không cần Supabase:** đặt `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9`, các key là `x`. Trang theo sách (Toán, Tiếng Việt chủ điểm) vẫn chạy; lỗi "fetch failed" của Supabase là do chính cấu hình này.
+- **Chromium cho Playwright:** `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+- **Đọc thử DB thật:** publishable key nằm sẵn trong bundle JS của site nên dùng REST được, nhưng chỉ đọc (`GET /rest/v1/...`), không ghi.
+- **Phân tích HTML từ loigiaihay:** trang dùng Unicode tổ hợp (NFD). Phải `unicodedata.normalize('NFC', …)` trước khi so chuỗi tiếng Việt. Mục lục bị chia trang (`.../e<id>/2.html`, `3.html`…), các trang sau không có tiêu đề "Tuần".
