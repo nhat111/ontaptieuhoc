@@ -35,6 +35,8 @@ export default function PdfPreview({ html, fileName, title, onPrint, onClose }: 
   const [result, setResult] = useState<PdfResult | null>(null);
   const [error, setError] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  // Trang mà máy không hiện được ảnh xem trước (hiếm, máy thiếu bộ nhớ ảnh).
+  const [broken, setBroken] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let alive = true;
@@ -112,9 +114,20 @@ export default function PdfPreview({ html, fileName, title, onPrint, onClose }: 
             <p className="text-center text-xs font-semibold text-white/80">
               File PDF đã được tải về máy. Không thấy file? Bấm “Tải file PDF”.
             </p>
-            {result.pages.map((src, i) => (
+            {result.pages.map((src, i) => broken.has(i) ? (
+              <div key={i} className="rounded bg-white px-5 py-8 text-center text-sm text-slate-600 shadow-pop">
+                <p className="font-bold text-slate-800">Trang {i + 1}</p>
+                <p className="mt-1">Máy không hiện được ảnh xem trước của trang này. File PDF vẫn có đủ trang — bấm nút mở PDF ở trên để xem.</p>
+              </div>
+            ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={src} alt={`Trang ${i + 1}`} className="block w-full rounded bg-white shadow-pop" />
+              <img
+                key={i}
+                src={src}
+                alt={`Trang ${i + 1}`}
+                onError={() => setBroken((b) => new Set(b).add(i))}
+                className="block w-full rounded bg-white shadow-pop"
+              />
             ))}
           </div>
         )}
