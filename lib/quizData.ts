@@ -105,6 +105,19 @@ function normalizeTyped(s: string): string {
 //   multi:   JSON.stringify(string[]) of selected option texts
 //   short:   raw user input
 //   numeric: raw user input (may contain ',' as decimal separator)
+/** Đáp án đúng để hiện cho người xem: multi nối bằng "; ", short lấy cách viết đầu tiên. */
+export function displayAnswer(q: Question): string {
+  if (q.type === "multi") {
+    try {
+      return (JSON.parse(q.correctAnswer) as string[]).join("; ");
+    } catch {
+      return q.correctAnswer;
+    }
+  }
+  if (q.type === "short") return q.correctAnswer.split("|")[0];
+  return q.correctAnswer;
+}
+
 export function scoreAnswer(q: Question, answer: string | null): boolean {
   if (answer === null || answer === "") return false;
   switch (q.type) {
