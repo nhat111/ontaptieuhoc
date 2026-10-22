@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import { isSpeechSupported, speakSegments, stopSpeaking, type SpeakSegment } from "@/lib/speech";
 import { speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
+import NoVoiceNotice from "@/components/NoVoiceNotice";
 import { useRecordedClips } from "@/lib/recordedClips";
 import { addStars, pick } from "@/lib/games";
 import { isAutoVoice, setAutoVoice, subscribeAutoVoice } from "@/lib/gameVoice";
@@ -408,6 +409,10 @@ export default function GameShell({
               🔊 {autoVoice ? "Nghe lại" : "Nghe"}
             </button>
           </div>
+        )}
+        {/* Trò có file mp3 (lớp 1) không cần giọng máy. */}
+        {speech && !clips && (
+          <NoVoiceNotice className="mx-auto mt-3 max-w-md" />
         )}
 
         <div key={`b${index}`}>{board}</div>

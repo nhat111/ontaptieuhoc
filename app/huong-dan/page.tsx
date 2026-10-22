@@ -43,6 +43,7 @@ const STEPS: GuideStep[] = [
       <>Mỗi câu có nút <b>Nghe</b> — máy đọc câu hỏi và các đáp án.</>,
       <>Nút <b>Nghe cả bài</b> ở đầu trang đọc lần lượt từng câu và tự cuộn tới câu đang đọc.</>,
       <>Chỉnh tốc độ <b>Chậm / Vừa / Nhanh</b> ngay cạnh nút. Mặc định là <b>Vừa</b> — đã chậm hơn giọng máy bình thường để bé nghe kịp.</>,
+      <>Web dùng giọng đọc có sẵn trong máy. Nếu máy <b>chưa có giọng tiếng Việt</b> (hay gặp ở máy tính Windows dùng Chrome), web sẽ không đọc phần tiếng Việt — giọng nước ngoài đọc sẽ sai dấu — và hiện hướng dẫn cài thêm giọng. Cách nhanh nhất trên máy tính là mở web bằng <b>Microsoft Edge</b>.</>,
     ],
     tip: "Không nghe thấy tiếng? Tăng âm lượng, và trên iPhone hãy gạt tắt chế độ im lặng (công tắc bên hông máy).",
   },

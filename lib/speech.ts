@@ -17,7 +17,9 @@ const VI_CHARS =
  * không có dấu, còn đề tiếng Việt thì gần như câu nào cũng có ít nhất một dấu.
  */
 export function detectLang(text: string): SpeechLang {
-  return VI_CHARS.test(text) ? "vi-VN" : "en-US";
+  // NFC: gõ bằng Unikey kiểu "Unicode tổ hợp" thì dấu là ký tự riêng (a + ̆),
+  // không khớp bảng trên — cả câu tiếng Việt sẽ bị đọc bằng giọng Anh.
+  return VI_CHARS.test(text.normalize("NFC")) ? "vi-VN" : "en-US";
 }
 
 /**
@@ -52,11 +54,16 @@ export function isSpeechSupported(): boolean {
 // vào giữa là mất quyền phát tiếng.
 
 let voiceCache: SpeechSynthesisVoice[] = [];
+// Khai báo trước `refreshVoices` — hàm đó chạy ngay khi nạp module.
+const listenersVoice = new Set<() => void>();
 
 function refreshVoices() {
   if (!isSpeechSupported()) return;
   const v = window.speechSynthesis.getVoices();
-  if (v.length) voiceCache = v;
+  if (!v.length || v.length === voiceCache.length) return;
+  voiceCache = v;
+  // Danh sách nạp muộn: báo cho VoicePicker / NoVoiceNotice vẽ lại.
+  listenersVoice.forEach((l) => l());
 }
 
 if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -111,6 +118,19 @@ export function voicesFor(lang: SpeechLang): SpeechSynthesisVoice[] {
     .map((x) => x.v);
 }
 
+/**
+ * Máy đã nạp danh sách giọng mà không có giọng nào cho `lang`.
+ *
+ * Khi đó trình duyệt tự lấy giọng mặc định (thường là tiếng Anh) để đọc chữ
+ * Việt — nghe "Tây", sai hết dấu. Với bé đang học vần thì thà không đọc còn hơn,
+ * nên `speakSegments` bỏ các đoạn này và giao diện báo cách cài giọng
+ * (NoVoiceNotice). Danh sách còn rỗng (chưa nạp, hoặc trình duyệt không liệt
+ * kê) thì coi như chưa biết và vẫn đọc như cũ.
+ */
+export function missingVoice(lang: SpeechLang): boolean {
+  return voiceCache.length > 0 && voicesFor(lang).length === 0;
+}
+
 function pickVoice(lang: SpeechLang): SpeechSynthesisVoice | null {
   const preferred = getPreferredVoice(lang);
   if (preferred) {
@@ -140,7 +160,6 @@ export function setPreferredVoice(lang: SpeechLang, voiceURI: string | null) {
   listenersVoice.forEach((l) => l());
 }
 
-const listenersVoice = new Set<() => void>();
 export function subscribeVoice(cb: () => void) {
   listenersVoice.add(cb);
   return () => {
@@ -253,18 +272,21 @@ export function speakSegments(
   ss.cancel();
   stopKeepAlive();
 
+  // Nạp lại trước khi lọc theo giọng; vẫn đọc được khi chưa nạp xong vì `lang`
+  // đủ để trình duyệt tự chọn. Lần sau cache đã sẵn nên chọn được giọng hay hơn.
+  refreshVoices();
   const clean = segments
-    .map((s) => ({ ...s, text: stripForSpeech(s.text) }))
-    .filter((s) => s.text.length > 0);
+    .map((s) => {
+      const text = stripForSpeech(s.text);
+      return { ...s, text, lang: s.lang ?? detectLang(text) };
+    })
+    .filter((s) => s.text.length > 0 && !missingVoice(s.lang));
   if (!clean.length) {
     opts.onEnd?.();
     return;
   }
 
   const rate = opts.rate ?? getSpeechRate();
-  // Giọng có thể chưa nạp xong ở lần bấm đầu; vẫn đọc được vì `lang` đủ để
-  // trình duyệt tự chọn. Lần sau cache đã sẵn nên chọn được giọng hay hơn.
-  refreshVoices();
   startKeepAlive();
 
   let i = 0;
@@ -288,7 +310,7 @@ export function speakSegments(
     const seg = clean[i++];
     opts.onSegmentStart?.(seg.mark);
 
-    const lang = seg.lang ?? detectLang(seg.text);
+    const lang = seg.lang;
     const u = new SpeechSynthesisUtterance(seg.text);
     u.lang = lang;
     u.rate = rate;

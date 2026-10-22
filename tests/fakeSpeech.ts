@@ -6,13 +6,15 @@ export type FakeUtterance = { text: string; onend?: () => void; onerror?: () => 
 export const fake = {
   spoken: [] as string[],
   current: null as FakeUtterance | null,
+  /** Giọng máy có; rỗng = trình duyệt chưa liệt kê (coi như chưa biết). */
+  voices: [] as { name: string; lang: string; voiceURI: string; default?: boolean }[],
 };
 
 const g = globalThis as Record<string, unknown>;
 g.window = {
   speechSynthesis: {
     speaking: false,
-    getVoices: () => [],
+    getVoices: () => fake.voices,
     addEventListener: () => {},
     speak(u: FakeUtterance) {
       fake.spoken.push(u.text);
