@@ -10,7 +10,7 @@
 // Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
 
 import { mulberry32, sign, type Draft } from "../lib/mathGen/core";
-import { KNTT1, KNTT2, KNTT3, KNTT4 } from "../lib/mathGen";
+import { KNTT1, KNTT2, KNTT3, KNTT4, KNTT5 } from "../lib/mathGen";
 import { EMOJI, cap } from "../lib/mathGen/shared";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
@@ -607,6 +607,108 @@ function recheck4(name: string, d: Draft): string | null {
   return `chưa có cách tính lại dạng ${name}`;
 }
 
+/** "1.234,56" → 1234.56 */
+const vn = (s: string) => Number(s.replace(/\./g, "").replace(",", "."));
+const near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+function recheck5(name: string, d: Draft): string | null {
+  const q = d.question, a = answerOf(d), N = numsOf(q);
+  const opts = d.type === "multiple_choice" ? d.options.map((o) => o.text) : [];
+  const want = (v: number | string, why: string) => (typeof v === "number" ? (near(vn(a), v) ? null : `${why}: ${v} ≠ ${a}`) : v === a ? null : `${why}: ${v} ≠ ${a}`);
+  let m: RegExpMatchArray | null;
+  switch (name) {
+    case "phanSoTP": {
+      const tp = (o: string) => /^\d+\/(10|100|1\.000)$/.test(o);
+      return tp(a) && opts.filter(tp).length === 1 ? null : "phân số thập phân sai";
+    }
+    case "vietSTP": {
+      const v = (q.match(/(\d+) đơn vị/) ? +q.match(/(\d+) đơn vị/)![1] : 0) + (q.match(/(\d+) phần mười/) ? +q.match(/(\d+) phần mười/)![1] / 10 : 0) + (q.match(/(\d+) phần trăm/) ? +q.match(/(\d+) phần trăm/)![1] / 100 : 0);
+      return want(v, "viết số thập phân");
+    }
+    case "lamTronSTP": {
+      m = q.match(/^Làm tròn số ([\d.,]+) đến hàng (đơn vị|phần mười|phần trăm)/)!;
+      const places = { "đơn vị": 0, "phần mười": 1, "phần trăm": 2 }[m[2]]!;
+      const x = vn(m[1]), f = 10 ** places;
+      // Làm tròn nửa lên trên số nguyên (tránh lỗi float khi nhân).
+      const scaled = Math.round(x * f * 1000) / 1000, v = Math.floor(scaled + 0.5) / f;
+      const shownPlaces = (a.split(",")[1] ?? "").length;
+      if (shownPlaces !== places) return `số chữ số thập phân của đáp án sai: ${a}`;
+      if (opts.filter((o) => near(vn(o), v) && (o.split(",")[1] ?? "").length === places).length !== 1) return "có hai lựa chọn đúng";
+      return want(v, "làm tròn");
+    }
+    case "kmHa": {
+      const x = vn(q.split(" ")[0]);
+      if (/km² = ___ ha/.test(q)) return want(x * 100, "km² → ha");
+      if (/ha = ___ m²/.test(q)) return want(x * 10000, "ha → m²");
+      if (/ha = ___ km²/.test(q)) return want(x / 100, "ha → km²");
+      return want(x / 10000, "m² → ha");
+    }
+    case "tiSo": {
+      if ((m = q.match(/^Viết thành tỉ số phần trăm: (\d+)\/(\d+) = ___%$/))) return want((+m[1] * 100) / +m[2], "phần trăm");
+      const [x, y] = numsOf(q.replace("Lớp 5A", "")).slice(-2);
+      return want(`${x} : ${y}`, "tỉ số");
+    }
+    case "tiLeBanDo": {
+      const S = numsOf(q.match(/tỉ lệ 1 : ([\d.]+)/)![1])[0];
+      const toCm = (v: number, u: string) => v * (u === "km" ? 100000 : 100);
+      if ((m = q.match(/dài (\d+) cm\. Độ dài thật của đoạn đường đó là ___ (m|km)\./))) return want((+m[1] * S) / (m[2] === "km" ? 100000 : 100), "độ dài thật");
+      m = q.match(/^Quãng đường thật dài ([\d.]+) (m|km)\./)!;
+      return want(toCm(vn(m[1]), m[2]) / S, "độ dài trên bản đồ");
+    }
+    case "phanTramLoiVan": {
+      const base = N[0], p = +q.match(/(\d+)%/)![1];
+      return want((base * p) / 100, "phần trăm của một số");
+    }
+    case "theTichHinh": {
+      if ((m = q.match(/mỗi hàng (\d+) hình, mỗi lớp (\d+) hàng, xếp (\d+) lớp/))) return want(+m[1] * +m[2] * +m[3], "đếm hình lập phương");
+      m = q.match(/Hình A gồm (\d+) .+ hình B gồm (\d+)/)!;
+      return want(+m[1] > +m[2] ? "Hình A" : "Hình B", "so sánh thể tích");
+    }
+    case "donViTheTich": {
+      if ((m = q.match(/^Chọn đơn vị thích hợp: .+ (\d+) …$/))) {
+        // Độ lớn hợp lí của vật (tính ra cm³) theo từng đơn vị — đáp án đúng phải là đơn vị duy nhất cho ra cỡ hợp lí.
+        const RANGE: [RegExp, number, number][] = [
+          [/xúc xắc/, 0.5, 30], [/hộp sữa/, 50, 1000], [/hộp bút/, 100, 3000],
+          [/can nước|thùng xốp/, 5000, 100000], [/bể bơi|phòng học|xe chở cát/, 1e6, 1e9],
+        ];
+        const rg = RANGE.find(([re]) => re.test(q))!;
+        const U: Record<string, number> = { "cm³": 1, "dm³": 1000, "m³": 1e6 };
+        const ok = opts.filter((u) => { const v = +m![1] * U[u]; return v >= rg[1] && v <= rg[2]; });
+        return ok.length === 1 && ok[0] === a ? null : `đơn vị thể tích: hợp lí ${ok.join("/")}, đáp án ${a}`;
+      }
+      if (/m³ nước/.test(q)) return want(N[0] * 1000, "m³ → lít");
+      return want(N[0], "dm³ → lít");
+    }
+    case "khaiTrien": {
+      if (/hình lập phương gồm/.test(q) || /hình hộp chữ nhật gồm/.test(q)) return want("6", "số mặt");
+      if (/của hình trụ gồm/.test(q)) return want("2 hình tròn và 1 hình chữ nhật", "hình trụ");
+      if (/hình trụ có bán kính đáy/.test(q)) return want(N[0] * 2 * 3.14, "chu vi đáy hình trụ");
+      return want((N[0] + N[1]) * 2, "chu vi đáy hình hộp");
+    }
+    case "chiaThoiGian": {
+      m = q.match(/^(\d+) (giờ|phút) (\d+) (phút|giây) : (\d+) = \?$/)!;
+      const total = +m[1] * 60 + +m[3], k = +m[5];
+      if (total % k) return "không chia hết";
+      const t = total / k, val = (o: string) => { const x = o.match(/^(\d+) \S+ (\d+) \S+$/)!; return +x[1] * 60 + +x[2]; };
+      if (opts.some((o) => +o.match(/ (\d+) \S+$/)![1] >= 60)) return "số phút / giây ≥ 60";
+      if (opts.filter((o) => val(o) === t).length !== 1) return "nhiễu bằng giá trị đáp án";
+      return val(a) === t ? null : `chia thời gian: ${t} ≠ ${a}`;
+    }
+    case "soLieu5": {
+      const vals = q.match(/lần lượt là: ([\d; ]+)\./)![1].split("; ").map(Number), s = [...vals].sort((x, y) => x - y);
+      if ((m = q.match(/số đứng thứ (\d+)/))) return want(s[+m[1] - 1], "sắp xếp số liệu");
+      if (/cao hơn bạn thấp nhất/.test(q)) return want(s[s.length - 1] - s[0], "chênh lệch");
+      m = q.match(/cao hơn (\d+) cm\.$/)!;
+      return want(vals.filter((v) => v > +m![1]).length, "đếm số liệu");
+    }
+    case "tiSoLanLap": {
+      const [t, s] = [N[N.length - 2], N[N.length - 1]];
+      return want(`${s}/${t}`, "tỉ số số lần");
+    }
+  }
+  return `chưa có cách tính lại dạng ${name}`;
+}
+
 // Mỗi bộ dạng câu KNTT<N> đi kèm hàm tính lại của nó. Dạng số học thuần (phép tính, so
 // sánh, liền trước – liền sau) đã được scripts/gen-math-check.ts tính lại nên trả null ở đây.
 const RECHECK: [string, Record<string, (r: ReturnType<typeof mulberry32>) => Draft>, (name: string, d: Draft) => string | null][] = [
@@ -614,6 +716,7 @@ const RECHECK: [string, Record<string, (r: ReturnType<typeof mulberry32>) => Dra
   ["KNTT2", KNTT2, recheck2],
   ["KNTT3", KNTT3, recheck3],
   ["KNTT4", KNTT4, recheck4],
+  ["KNTT5", KNTT5, recheck5],
 ];
 for (const [label, gens, recheck] of RECHECK) {
   for (const [name, gen] of Object.entries(gens)) {

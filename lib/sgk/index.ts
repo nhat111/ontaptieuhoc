@@ -7,12 +7,13 @@ import { TOAN1 } from "./books/toan1";
 import { TOAN2 } from "./books/toan2";
 import { TOAN3 } from "./books/toan3";
 import { TOAN4 } from "./books/toan4";
+import { TOAN5 } from "./books/toan5";
 import type { SgkBook, SgkLesson, SgkTopic } from "./types";
 
 export type { SgkBook, SgkLesson, SgkTopic } from "./types";
 
 /** Mọi cuốn sách đã có mục lục. */
-export const SGK_BOOKS: SgkBook[] = [TOAN1, TOAN2, TOAN3, TOAN4];
+export const SGK_BOOKS: SgkBook[] = [TOAN1, TOAN2, TOAN3, TOAN4, TOAN5];
 
 export const QUESTIONS_PER_LESSON = 10;
 
