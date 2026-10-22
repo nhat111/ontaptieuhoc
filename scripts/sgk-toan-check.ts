@@ -6,6 +6,8 @@
 //    nào trùng trong một bộ; đáp án đúng chấm là đúng, đáp án nhiễu chấm là sai
 //    (bằng chính `scoreAnswer` của trang làm bài).
 //    Lời giải trình bày “Bài giải” phải kết thúc bằng “Đáp số: <đáp án> …”.
+//  - ví dụ giải mẫu: bài làm được có 1..MAX_EXAMPLES ví dụ, không trùng, cố định, có lời giải,
+//    đáp án đúng chấm là đúng.
 //  - dạng câu viết riêng theo sách (lib/mathGen/kntt, KNTT<N>): tính lại đáp án độc lập,
 //    phần lớn bằng cách đọc ngược số liệu từ hình vẽ (data-… trong SVG) hoặc từ đề bài.
 // Đáp án các dạng còn lại được tính lại trong scripts/gen-math-check.ts.
@@ -15,7 +17,7 @@ import { KNTT1, KNTT2, KNTT3, KNTT4, KNTT5 } from "../lib/mathGen";
 import { EMOJI, cap } from "../lib/mathGen/shared";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
-import { QUESTIONS_PER_LESSON, SGK_BOOKS, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
+import { MAX_EXAMPLES, QUESTIONS_PER_LESSON, SGK_BOOKS, buildSgkExamples, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
 
 const SEEDS = 300;
 let errors = 0;
@@ -45,6 +47,17 @@ for (const book of SGK_BOOKS) {
     }
     if (!sgkReady(grade, lesson)) continue;
     ready++;
+
+    const ex = buildSgkExamples(grade, lesson);
+    if (ex.length < 1 || ex.length > MAX_EXAMPLES) fail(`${tag}: ${ex.length} ví dụ giải mẫu`);
+    if (JSON.stringify(buildSgkExamples(grade, lesson)) !== JSON.stringify(ex)) fail(`${tag}: ví dụ giải mẫu không cố định`);
+    if (new Set(ex.map((r) => r.content)).size !== ex.length) fail(`${tag}: ví dụ giải mẫu trùng nhau`);
+    ex.forEach((row, i) => {
+      const q = rowToQuestion(row, i + 1);
+      if (!q.explanation?.trim()) fail(`${tag}: ví dụ ${i + 1} không có lời giải — ${row.content}`);
+      const right = row.type === "short" ? row.correct_answer.split("|")[0] : row.correct_answer;
+      if (!scoreAnswer(q, right)) fail(`${tag}: ví dụ ${i + 1} đáp án bị chấm sai — ${row.content}`);
+    });
 
     for (let s = 0; s < SEEDS; s++) {
       const seed = `s${s}`;

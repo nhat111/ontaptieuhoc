@@ -36,6 +36,7 @@ import {
 } from "@/lib/speech";
 import { audioSegments, speakAudioFiles, stopAudioFiles } from "@/lib/audioSpeech";
 import ReadingCard from "./ReadingCard";
+import WorkedExamples from "./WorkedExamples";
 
 interface Props {
   initialQuestions: Question[];
@@ -49,6 +50,8 @@ interface Props {
   progressKey?: string;
   /** Nút thứ hai ở trang kết quả (mặc định: Tạo đề khác → /tao-de). */
   backLink?: { href: string; label: string };
+  /** Ví dụ giải mẫu hiện dưới thẻ bắt đầu (bài Toán theo sách, lib/sgk → buildSgkExamples). */
+  examples?: Question[];
   /**
    * Chế độ luyện tập (bài Toán theo sách): mỗi câu có nút "Kiểm tra" hiện đúng/sai và lời
    * giải ngay, câu đã kiểm tra bị khoá. Điểm khi nộp tính như thường. Đề kiểm tra không bật.
@@ -56,7 +59,7 @@ interface Props {
   practice?: boolean;
 }
 
-export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, practice }: Props) {
+export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples, practice }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -498,6 +501,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
             )}
             </div>
           </div>
+          {examples && <WorkedExamples examples={examples} />}
         </div>
         {pdfHtml && (
           <PdfPreview
