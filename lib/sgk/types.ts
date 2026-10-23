@@ -6,6 +6,10 @@ import { retry, type Draft, type Generator } from "../mathGen/core";
 export interface SgkLesson {
   /** Số bài trong sách (đánh liên tục cả năm, tập hai nối tiếp tập một). */
   so: number;
+  /** Số bài trong tập, khi sách đánh số lại từ 1 ở tập hai (Tiếng Việt). Hiển thị thay cho `so`. */
+  soTap?: number;
+  /** Nhãn thay cho "Bài N" khi sách không đánh số bài này (VD: "Ôn tập" cuối mỗi chủ đề Tiếng Việt 1). */
+  nhan?: string;
   ten: string;
   /** Dạng câu tự sinh và số câu mỗi dạng trong 10 câu. Không có → bài đang soạn. */
   mix?: [Generator, number][];
@@ -35,6 +39,8 @@ export interface SgkBook {
   book: string;
   /** Nguồn đối chiếu mục lục (ghi lại để lần sau soát). */
   source: string;
+  /** Tên gọi một nhóm bài: "Chủ đề" (Toán, mặc định) hay "Chủ điểm" (Tiếng Việt). */
+  topicLabel?: string;
   topics: SgkTopic[];
 }
 

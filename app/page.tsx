@@ -8,7 +8,7 @@ import TryQuestion from "@/components/home/TryQuestion";
 import HeroArt from "@/components/home/HeroArt";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
 import { getGradeStats } from "@/lib/db";
-import { SGK_BOOKS, hidesOldLessons, sgkLessons, sgkReady } from "@/lib/sgk";
+import { SGK_BOOKS, TV_BOOKS, hidesOldLessons, sgkLessons, sgkReady } from "@/lib/sgk";
 
 // Số bài/đề đếm từ DB; làm mới mỗi 5 phút là đủ, không cần truy vấn mỗi lượt xem.
 export const revalidate = 300;
@@ -17,9 +17,9 @@ export default async function HomePage() {
   // Số bài trên thẻ lớp: không tính bài cũ đã ẩn (lib/sgk → hidesOldLessons), cộng các bài
   // theo sách làm được trên máy — không thì lớp 1–5 bị mờ thành "Sắp ra mắt".
   const stats = await getGradeStats(hidesOldLessons);
-  for (const b of SGK_BOOKS) {
+  for (const b of [...SGK_BOOKS, ...TV_BOOKS]) {
     const s = (stats[b.grade] ??= { lessons: 0, exams: 0 });
-    s.lessons += sgkLessons(b.grade).filter((x) => sgkReady(b.grade, x.lesson)).length;
+    s.lessons += sgkLessons(b.grade, b.slug).filter((x) => sgkReady(b.grade, x.lesson, b.slug)).length;
   }
   const total = Object.values(stats).reduce((n, g) => n + g.lessons + g.exams, 0);
 

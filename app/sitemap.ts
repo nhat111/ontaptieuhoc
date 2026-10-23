@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getIndexableLessonIds } from "@/lib/db";
 import { SITE_URL } from "@/lib/siteUrl";
 import { GUIDES } from "@/lib/lamVan";
-import { SGK_BOOKS, hidesOldLessons, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
+import { SGK_BOOKS, TV_BOOKS, hidesOldLessons, sgkHref, sgkLessons, sgkReady } from "@/lib/sgk";
 import { GRADES, SUBJECTS_BY_GRADE, getDefaultSubject } from "@/lib/subjects";
 
 // Lessons are created through /import at runtime, so the sitemap has to be
@@ -25,11 +25,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/phieu-bai-tap?loai=ai`, lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/huong-dan`, lastModified, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/lam-van/lop-5`, lastModified, changeFrequency: "monthly", priority: 0.7 },
-    // Toán theo từng bài sách: mục lục và mọi bài đã luyện được trên máy.
-    ...SGK_BOOKS.map((b) => b.grade).flatMap((g) => [
-      { url: `${SITE_URL}${sgkToanHref(g)}`, lastModified, changeFrequency: "weekly" as const, priority: 0.8 },
-      ...sgkLessons(g).filter((x) => sgkReady(g, x.lesson))
-        .map((x) => ({ url: `${SITE_URL}${sgkToanHref(g, x.lesson.so)}`, lastModified, changeFrequency: "monthly" as const, priority: 0.6 })),
+    // Toán, Tiếng Việt theo từng bài sách: mục lục và mọi bài đã luyện được trên máy.
+    ...[...SGK_BOOKS, ...TV_BOOKS].flatMap(({ grade: g, slug }) => [
+      { url: `${SITE_URL}${sgkHref(g, slug)}`, lastModified, changeFrequency: "weekly" as const, priority: 0.8 },
+      ...sgkLessons(g, slug).filter((x) => sgkReady(g, x.lesson, slug))
+        .map((x) => ({ url: `${SITE_URL}${sgkHref(g, slug, x.lesson.so)}`, lastModified, changeFrequency: "monthly" as const, priority: 0.6 })),
     ]),
     ...GUIDES.map((g) => ({ url: `${SITE_URL}/lam-van/lop-5/${g.id}`, lastModified, changeFrequency: "monthly" as const, priority: 0.6 })),
     { url: `${SITE_URL}/huong-dan/soan-de`, lastModified, changeFrequency: "monthly", priority: 0.5 },

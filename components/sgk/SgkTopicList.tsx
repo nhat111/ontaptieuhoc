@@ -10,6 +10,8 @@ import { getProgress, getServerProgress, lessonState, subscribeProgress } from "
 
 export type SgkRow = {
   so: number;
+  /** Nhãn hiện trên dòng ("Bài 3", "Ôn tập"); mặc định "Bài <so>". */
+  label?: string;
   ten: string;
   href: string;
   progressKey: string;
@@ -19,7 +21,7 @@ export type SgkRow = {
 };
 export type SgkTopicView = { so: number; ten: string; rows: SgkRow[] };
 
-export default function SgkTopicList({ topics, accent }: { topics: SgkTopicView[]; accent: string }) {
+export default function SgkTopicList({ topics, accent, topicLabel = "Chủ đề" }: { topics: SgkTopicView[]; accent: string; topicLabel?: string }) {
   const progress = useSyncExternalStore(subscribeProgress, getProgress, getServerProgress);
 
   return (
@@ -34,7 +36,7 @@ export default function SgkTopicList({ topics, accent }: { topics: SgkTopicView[
                 {t.so}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="font-extrabold leading-snug text-slate-900">Chủ đề {t.so}. {t.ten}</h3>
+                <h3 className="font-extrabold leading-snug text-slate-900">{topicLabel} {t.so}. {t.ten}</h3>
                 {ready.length > 0 && (
                   <div className="mt-1 flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -52,7 +54,7 @@ export default function SgkTopicList({ topics, accent }: { topics: SgkTopicView[
                 return (
                   <li key={r.so}>
                     <Link href={r.href} className="group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
-                      <span className="w-12 flex-shrink-0 text-xs font-bold tabular-nums text-slate-400">Bài {r.so}</span>
+                      <span className="w-12 flex-shrink-0 text-xs font-bold tabular-nums text-slate-400">{r.label ?? `Bài ${r.so}`}</span>
                       <span className={`min-w-0 flex-1 text-sm leading-snug ${r.status === "ready" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
                         {r.ten}
                       </span>

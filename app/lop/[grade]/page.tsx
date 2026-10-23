@@ -10,7 +10,8 @@ import { getChaptersWithLessons, getLeaderboardByGrade } from "@/lib/db";
 import { getSubjects, getDefaultSubject, resolveSubject } from "@/lib/subjects";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { hasQuickExam } from "@/lib/quickExam";
-import { hidesOldLessons, sgkBook, sgkLessons, sgkReady, sgkToanHref } from "@/lib/sgk";
+import { hidesOldLessons, sgkBook } from "@/lib/sgk";
+import SgkBookBanner from "@/components/sgk/SgkBookBanner";
 import { tvGuide } from "@/lib/tvGuide";
 import TvChuDiemList from "@/components/tvGuide/TvChuDiemList";
 
@@ -91,6 +92,8 @@ export default async function GradePage({
   const book = activeView !== "exam" && hidesOldLessons(gradeNum, activeSubject) ? sgkBook(gradeNum) : null;
   // Tiếng Việt lớp có hướng dẫn (lib/tvGuide): tab Bài tập hiện các chủ điểm sách kèm cách làm bài, trên các chương trong DB.
   const guide = activeView !== "exam" && activeSubject === "Tiếng Việt" ? tvGuide(gradeNum) : null;
+  // Tiếng Việt lớp có sách bài tập (lib/sgk TV_BOOKS): thêm lối vào bài tập theo từng bài, giữ các chương trong DB.
+  const tvBook = activeView !== "exam" && activeSubject === "Tiếng Việt" ? sgkBook(gradeNum, "tieng-viet") : null;
   const chapters =
     activeSubject && !book
       ? await getChaptersWithLessons(gradeNum, activeSubject, activeView === "exam" ? "exam" : "lesson")
@@ -225,38 +228,11 @@ export default async function GradePage({
           {/* Chapter / Exam list */}
           <div className="lg:col-span-2 space-y-4">
             {guide && <TvChuDiemList guide={guide} />}
+            {tvBook && <SgkBookBanner grade={gradeNum} slug="tieng-viet" />}
             {book ? (
-              <div className="overflow-hidden rounded-2xl border border-success-200 bg-white shadow-soft">
-                <Link href={sgkToanHref(gradeNum)} className="group flex items-center gap-3 border-b border-success-100 bg-gradient-to-r from-success-50 to-white px-4 py-3">
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-500 text-white shadow-sm" aria-hidden>
-                    <BookOpenCheck className="h-6 w-6" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-extrabold text-slate-900">Toán {gradeNum} theo từng bài sách</span>
-                    <span className="block text-sm text-slate-600">
-                      {book.book} · {sgkLessons(gradeNum).filter((x) => sgkReady(gradeNum, x.lesson)).length} bài luyện trên máy, mỗi lần một bộ câu mới
-                    </span>
-                  </span>
-                  <span className="inline-flex items-center gap-0.5 rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-success-200">
-                    Vào học
-                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </span>
-                </Link>
-                <ul className="divide-y divide-slate-100">
-                  {book.topics.map((t) => (
-                    <li key={t.so}>
-                      <Link href={sgkToanHref(gradeNum)} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-50">
-                        <span className="w-[4.75rem] flex-shrink-0 whitespace-nowrap font-bold text-slate-400">Chủ đề {t.so}</span>
-                        <span className="min-w-0 flex-1 font-semibold text-slate-800">{t.ten}</span>
-                        <span className="flex-shrink-0 text-xs font-semibold text-slate-400">{t.bai.length} bài</span>
-                        <ChevronRight className="h-4 w-4 flex-shrink-0 text-slate-300" aria-hidden />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <SgkBookBanner grade={gradeNum} slug="toan" />
             ) : chapters.length === 0 ? (
-              guide ? null : (
+              guide || tvBook ? null : (
               <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
                 <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-400" aria-hidden>
                   {activeView === "exam" ? <FileText className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
