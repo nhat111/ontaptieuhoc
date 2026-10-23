@@ -62,6 +62,23 @@ export async function checkPassword(input: unknown): Promise<boolean> {
 }
 
 /**
+ * Chặn route XOÁ khi chưa có quyền — và từ chối luôn khi chưa đặt mật khẩu.
+ *
+ * Khác `blockIfNoImportAccess` (chưa đặt mật khẩu thì mở): xoá không có thùng
+ * rác, không khôi phục được, nên không để ai vào trang `/import/chapter/[id]`
+ * là xoá được cả chương. Giống hộp thư góp ý (`/api/feedback/resolve`).
+ */
+export async function blockDeleteUnlessLocked(req: Request): Promise<Response | null> {
+  if (!isImportProtected()) {
+    return new Response(
+      JSON.stringify({ error: "Chưa đặt mật khẩu soạn đề (IMPORT_PASSWORD) nên chức năng xoá đang khoá." }),
+      { status: 403, headers: { "content-type": "application/json" } }
+    );
+  }
+  return blockIfNoImportAccess(req);
+}
+
+/**
  * Chặn route ghi dữ liệu khi chưa có quyền. Trả về `null` nghĩa là cho đi tiếp.
  *
  * Bắt buộc phải gọi ở TỪNG route ghi: `proxy.ts` không chạy cho `/api/*`, nên
