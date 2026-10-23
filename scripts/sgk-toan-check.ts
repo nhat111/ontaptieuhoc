@@ -111,6 +111,29 @@ function recheck3(name: string, d: Draft): string | null {
   const q = d.question, a = answerOf(d), svg = svgOf(d);
   let m: RegExpMatchArray | null;
   switch (name) {
+    // Bài toán có lời văn mới (lvTinh3 …): tính lại từ số trong đề, đáp án viết có dấu chấm nghìn.
+    case "lvNhan2": case "lvChia2": case "lvNhan3": case "lvChia3": case "lvCong4": case "lvTru4": case "lvNhan4": case "lvChia4":
+    case "lvCong5": case "lvTru5": case "lvNhan5": case "lvChia5": {
+      const N3 = numsOf(q), op = name.slice(2, -1);
+      const v = op === "Cong" ? 2 * N3[0] + N3[1] : op === "Tru" ? N3[0] - N3[1] - N3[2] : op === "Nhan" ? N3[0] * N3[1] : N3[0] / N3[1];
+      if (!Number.isInteger(v) || v <= 0) return `kết quả không là số tự nhiên: ${v}`;
+      const d3 = +name.slice(-1);
+      if (String(v).length > d3) return `kết quả vượt số có ${d3} chữ số: ${v}`;
+      return n(a) === v ? null : `${name}: ${v} ≠ ${a}`;
+    }
+    case "lvChiaDu": {
+      const [x, k] = numsOf(q.replace("Lớp 3A", ""));
+      if (x % k === 0) return "chia hết, không phải chia có dư";
+      return n(a) === (/ít nhất/.test(q) ? Math.floor(x / k) + 1 : Math.floor(x / k)) ? null : "chia có dư sai";
+    }
+    case "lvMm": { const [x, y] = numsOf(q); return n(a) === x - y ? null : "mi-li-mét sai"; }
+    case "lvGam": { const [x, y] = numsOf(q); return n(a) === 2 * x + y && 2 * x + y <= 1000 ? null : "gam sai"; }
+    case "lvMl": { const [x, k, c] = numsOf(q); return n(a) === x - k * c && x - k * c > 0 ? null : "mi-li-lít sai"; }
+    case "lvChuVi3": {
+      if (/hình vuông/.test(q)) return n(a) === numsOf(q)[0] * 4 ? null : "chu vi hình vuông sai";
+      const [x, y] = numsOf(q); return n(a) === (x + y) * 2 ? null : "chu vi hình chữ nhật sai";
+    }
+    case "lvDienTich3": { const [x, k] = numsOf(q); return n(a) === x * (x - k) ? null : "diện tích sai"; }
     case "nhietDo":
       if ((m = svg.match(/data-t="(\d+)"/))) return n(a) === +m[1] ? null : `nhiệt kế ${m[1]} → ${a}`;
       if ((m = q.match(/là (\d+) °C, đến .* (tăng thêm|giảm đi) (\d+) °C/))) return +a === (m[2] === "tăng thêm" ? +m[1] + +m[3] : +m[1] - +m[3]) ? null : "tăng giảm sai";
@@ -435,6 +458,15 @@ function recheck2(name: string, d: Draft): string | null {
       if (borrows(x, y, op) !== (name.endsWith("Nho") ? 1 : 0)) return "số lần nhớ sai";
       return want(op === "+" ? x + y : x - y, "tính");
     }
+    case "lvDoDai2": {
+      if ((m = q.match(/dài (\d+) m\. .* đi được (\d+) m\./))) return want(+m[1] - +m[2], "quãng đường còn lại");
+      return want(N[0] + N[1], "cộng độ dài");
+    }
+    case "lvTien2": {
+      const [x, y] = numsOf(q);
+      const v = /còn lại/.test(q) ? x - y : x + y;
+      return String(v) === a.replace(/\./g, "") ? null : `tiền Việt Nam: ${v} ≠ ${a}`;
+    }
     case "kiemDem": {
       const list = graphemes(q.match(/^Đếm rồi trả lời: (\S+)  /u)![1]);
       const count = (n: string) => list.filter((g) => g === EMOJI.find((e) => e.n === n)!.e).length;
@@ -501,6 +533,30 @@ function recheck4(name: string, d: Draft): string | null {
   const want = (v: number | string, why: string) => (typeof v === "number" ? (A === v ? null : `${why}: ${v} ≠ ${a}`) : v === a ? null : `${why}: ${v} ≠ ${a}`);
   let m: RegExpMatchArray | null;
   switch (name) {
+    // Bài toán có lời văn mới: tính lại từ số liệu trong đề.
+    case "lvKhoiLuong4": {
+      m = q.match(/chở (\d+) tấn (\d+) tạ gạo, .* ít hơn xe thứ nhất (\d+) tạ/)!;
+      const x1 = +m[1] * 10 + +m[2];
+      return want(x1 + x1 - +m[3], "yến tạ tấn");
+    }
+    case "lvLatGach": {
+      m = q.match(/chiều dài (\d+) m, chiều rộng (\d+) m\. .* cạnh (\d+) dm/)!;
+      const S = (+m[1] * 10) * (+m[2] * 10), g = Number(m[3]) ** 2;
+      return S % g ? "không lát vừa số viên nguyên" : want(S / g, "số viên gạch");
+    }
+    case "lvGiay": {
+      m = q.match(/hết (\d+) phút (\d+) giây, Hùng chạy hết (\d+) giây/)!;
+      return want(+m[1] * 60 + +m[2] - +m[3], "giây");
+    }
+    case "lvCongPS": case "lvTruPS": case "lvNhanPS": case "lvChiaPS": {
+      const F = [...q.matchAll(/(\d+)\/(\d+)/g)].map((x) => +x[1] / +x[2]);
+      const v = name === "lvCongPS" ? F[0] + F[1] : name === "lvTruPS" ? F[0] - F[1] : name === "lvNhanPS" ? F[0] * F[1] : F[0] / F[1];
+      const val = (o: string) => { const x = o.match(/^(\d+)\/(\d+)$/)!; return +x[1] / +x[2]; };
+      const [an, ad] = a.split("/").map(Number);
+      if (gcd2(an, ad) !== 1) return `đáp án chưa tối giản: ${a}`;
+      if (opts.filter((o) => Math.abs(val(o) - v) < 1e-9).length !== 1) return "nhiễu bằng giá trị đáp án";
+      return Math.abs(val(a) - v) < 1e-9 ? null : `${name}: ${v} ≠ ${a}`;
+    }
     case "chanLe": {
       if ((m = q.match(/^Số nào dưới đây là số (chẵn|lẻ)\?$/))) {
         const p = m[1] === "chẵn" ? 0 : 1, ok = (o: string) => numsOf(o)[0] % 2 === p;

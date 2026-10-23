@@ -780,10 +780,132 @@ export const khaNang: Generator = (r) => {
   }
 };
 
+/* ═════════════ Bài toán có lời văn theo từng bài (lời giải trình bày đủ "Bài giải") ═════════════
+   recheck3 tính lại đáp án từ số liệu trong đề. */
+
+const lv3 = (question: string, unit: string, answer: number, explanation: string, tags: string[], hint: string) => ({
+  type: "fill_blank" as const, difficulty: "medium" as const, tags: ["toán có lời văn", ...tags],
+  question: `${question} Trả lời: ___ ${unit}.`, ...blanks(fmtInt(answer)), explanation, hint,
+});
+
+/**
+ * Cộng, trừ (2 bước), nhân, chia (1 bước) với số có `d` chữ số — bài 23, 26, 36, 37, 54–57, 63, 64, 70, 71.
+ * Kết quả luôn còn trong phạm vi số có `d` chữ số (lớp 3 học tới 100 000).
+ */
+export const lvTinh3 = (op: "+" | "-" | "×" | ":", d: 2 | 3 | 4 | 5): Generator => (r) => retry(() => {
+  const lo = 10 ** (d - 1), hi = 10 ** d - 1, f = fmtInt;
+  switch (op) {
+    case "+": {
+      const A = int(r, lo, Math.floor(hi / 2.4)), B = int(r, Math.max(1, Math.floor(lo / 10)), Math.floor(A / 3)), nay = A + B, cong = A + nay;
+      if (cong > hi) return null;
+      return lv3(`Năm ngoái trường em trồng được ${f(A)} cây. Năm nay trường em trồng được nhiều hơn năm ngoái ${f(B)} cây. Hỏi cả hai năm trường em trồng được bao nhiêu cây?`,
+        "cây", cong, baiGiai([
+          ["Năm nay trường em trồng được số cây là:", `${f(A)} + ${f(B)} = ${f(nay)} (cây)`],
+          ["Cả hai năm trường em trồng được số cây là:", `${f(A)} + ${f(nay)} = ${f(cong)} (cây)`],
+        ], `${f(cong)} cây`), ["phép cộng"], "Tìm số cây năm nay trước, rồi cộng cả hai năm.");
+    }
+    case "-": {
+      const A = int(r, Math.max(lo, 30), hi), B = int(r, Math.max(1, Math.floor(A / 6)), Math.floor(A / 2)), C = int(r, Math.max(1, Math.floor(A / 8)), Math.floor(A / 3)), con = A - B - C;
+      if (con < 1) return null;
+      return lv3(`Một kho có ${f(A)} kg gạo. Ngày thứ nhất kho xuất ${f(B)} kg gạo, ngày thứ hai xuất ${f(C)} kg gạo. Hỏi kho còn lại bao nhiêu ki-lô-gam gạo?`,
+        "kg", con, baiGiai([
+          ["Cả hai ngày kho xuất số ki-lô-gam gạo là:", `${f(B)} + ${f(C)} = ${f(B + C)} (kg)`],
+          ["Kho còn lại số ki-lô-gam gạo là:", `${f(A)} - ${f(B + C)} = ${f(con)} (kg)`],
+        ], `${f(con)} kg gạo`), ["phép trừ"], "Tính số gạo xuất cả hai ngày trước.");
+    }
+    case "×": {
+      const k = int(r, 2, 9), A = int(r, lo, Math.floor(hi / k)), v = A * k;
+      if (A < lo) return null;
+      const [what, unit] = pick(r, [["quyển vở", "quyển vở"], ["viên gạch", "viên gạch"], ["kg hàng", "ki-lô-gam hàng"]] as const);
+      const box = what === "quyển vở" ? "thùng" : "xe";
+      return lv3(`Mỗi ${box} chở ${f(A)} ${what}. Hỏi ${k} ${box} như thế chở được bao nhiêu ${unit}?`,
+        what === "kg hàng" ? "kg" : what, v, baiGiai([[`${k} ${box} chở được số ${unit} là:`, `${f(A)} × ${k} = ${f(v)} (${what === "kg hàng" ? "kg" : what})`]],
+        `${f(v)} ${what}`), ["phép nhân"], `Mỗi ${box} bằng nhau nên làm phép nhân.`);
+    }
+    case ":": {
+      const k = int(r, 2, 9), q = int(r, Math.ceil(lo / k), Math.floor(hi / k)), A = q * k;
+      if (A < lo) return null;
+      return lv3(`Người ta chia đều ${f(A)} quyển vở cho ${k} lớp. Hỏi mỗi lớp nhận được bao nhiêu quyển vở?`,
+        "quyển vở", q, baiGiai([["Mỗi lớp nhận được số quyển vở là:", `${f(A)} : ${k} = ${f(q)} (quyển vở)`]], `${f(q)} quyển vở`),
+        ["phép chia"], "Chia đều thì làm phép chia.");
+    }
+  }
+});
+
+/** Bài 25: chia có dư trong bài toán — "ít nhất" thì thêm 1, "nhiều nhất" thì lấy thương. */
+export const lvChiaDu: Generator = (r) => retry(() => {
+  const k = int(r, 2, 6), q = int(r, 4, 15), du = int(r, 1, k - 1), n = q * k + du;
+  if (chance(r, 0.5))
+    return lv3(`Lớp 3A có ${n} học sinh, mỗi bàn ngồi ${k} bạn. Hỏi cần ít nhất bao nhiêu bàn để tất cả học sinh đều có chỗ ngồi?`,
+      "bàn", q + 1, baiGiai([
+        ["Ta có:", `${n} : ${k} = ${q} (dư ${du})`],
+        [`${q} bàn ngồi đủ ${q * k} bạn, còn ${du} bạn cần thêm 1 bàn nữa. Cần ít nhất số bàn là:`, `${q} + 1 = ${q + 1} (bàn)`],
+      ], `${q + 1} bàn`), ["chia có dư"], "Còn dư thì phải thêm 1 bàn cho số bạn còn lại.");
+  return lv3(`Mẹ hái được ${n} quả cam. Mẹ xếp cam vào các túi, mỗi túi đựng ${k} quả. Hỏi mẹ xếp được nhiều nhất bao nhiêu túi như thế?`,
+    "túi", q, baiGiai([["Mẹ xếp được nhiều nhất số túi là:", `${n} : ${k} = ${q} (dư ${du})`]], `${q} túi, còn thừa ${du} quả cam`),
+    ["chia có dư"], "Số túi xếp đầy là thương của phép chia.");
+});
+
+/** Bài 30: mi-li-mét. */
+export const lvMm: Generator = (r) => {
+  const a = int(r, 120, 190), b = int(r, 40, a - 30), v = a - b;
+  return lv3(`Một chiếc bút chì dài ${a} mm. Sau khi gọt, bút chì còn dài ${b} mm. Hỏi bút chì đã ngắn đi bao nhiêu mi-li-mét?`,
+    "mm", v, baiGiai([["Bút chì đã ngắn đi số mi-li-mét là:", `${a} - ${b} = ${v} (mm)`]], `${v} mm`), ["mi-li-mét"], "Lấy độ dài lúc đầu trừ độ dài còn lại.");
+};
+
+/** Bài 31: gam (2 bước). */
+export const lvGam: Generator = (r) => retry(() => {
+  const a = int(r, 10, 40) * 10, b = int(r, 2, 20) * 10, c = a + b, s = a + c;
+  if (s >= 1000) return null;
+  return lv3(`Một gói kẹo cân nặng ${a} g. Một gói bánh nặng hơn gói kẹo ${b} g. Hỏi cả hai gói cân nặng bao nhiêu gam?`,
+    "g", s, baiGiai([
+      ["Gói bánh cân nặng là:", `${a} + ${b} = ${c} (g)`],
+      ["Cả hai gói cân nặng là:", `${a} + ${c} = ${s} (g)`],
+    ], `${s} g`), ["gam"], "Tìm cân nặng gói bánh trước.");
+});
+
+/** Bài 32: mi-li-lít (2 bước). */
+export const lvMl: Generator = (r) => retry(() => {
+  const a = pick(r, [500, 750, 1000]), k = int(r, 2, 4), c = int(r, 5, 25) * 10, rot = c * k, con = a - rot;
+  if (con < 50) return null;
+  return lv3(`Một chai có ${fmtInt(a)} ml nước. Mai rót nước từ chai ra ${k} cốc, mỗi cốc ${c} ml. Hỏi trong chai còn lại bao nhiêu mi-li-lít nước?`,
+    "ml", con, baiGiai([
+      [`Mai đã rót ra ${k} cốc số mi-li-lít nước là:`, `${c} × ${k} = ${rot} (ml)`],
+      ["Trong chai còn lại số mi-li-lít nước là:", `${fmtInt(a)} - ${rot} = ${con} (ml)`],
+    ], `${con} ml nước`), ["mi-li-lít"], "Tính số nước đã rót ra trước.");
+});
+
+/** Bài 50: chu vi trong bài toán rào vườn. */
+export const lvChuVi3: Generator = (r) => {
+  if (chance(r, 0.6)) {
+    const a = int(r, 12, 60), b = int(r, 5, a - 2), P = (a + b) * 2;
+    return lv3(`Một mảnh vườn hình chữ nhật có chiều dài ${a} m, chiều rộng ${b} m. Người ta rào xung quanh mảnh vườn. Hỏi hàng rào dài bao nhiêu mét?`,
+      "m", P, baiGiai([["Hàng rào dài là (chu vi mảnh vườn):", `(${a} + ${b}) × 2 = ${P} (m)`]], `${P} m`), ["chu vi"], "Chu vi hình chữ nhật = (dài + rộng) × 2.");
+  }
+  const a = int(r, 6, 40), P = a * 4;
+  return lv3(`Một cái ao hình vuông có cạnh ${a} m. Người ta làm hàng rào quanh ao. Hỏi hàng rào dài bao nhiêu mét?`,
+    "m", P, baiGiai([["Hàng rào dài là (chu vi cái ao):", `${a} × 4 = ${P} (m)`]], `${P} m`), ["chu vi"], "Chu vi hình vuông = cạnh × 4.");
+};
+
+/** Bài 52: diện tích hình chữ nhật khi chiều rộng cho qua chiều dài (2 bước). */
+export const lvDienTich3: Generator = (r) => retry(() => {
+  const a = int(r, 8, 30), k = int(r, 2, a - 3), b = a - k, S = a * b;
+  if (S > 600) return null;
+  return lv3(`Một tấm bìa hình chữ nhật có chiều dài ${a} cm, chiều rộng ngắn hơn chiều dài ${k} cm. Tính diện tích tấm bìa đó.`,
+    "cm²", S, baiGiai([
+      ["Chiều rộng tấm bìa là:", `${a} - ${k} = ${b} (cm)`],
+      ["Diện tích tấm bìa là:", `${a} × ${b} = ${S} (cm²)`],
+    ], `${S} cm²`), ["diện tích"], "Tìm chiều rộng trước, rồi lấy dài nhân rộng.");
+});
+
 export const KNTT3 = {
   so4ChuSo, soSanh10000, sapXep10000, chiaHetCoDu, soLonGapMayLan, nhan2ChuSo, chia2ChuSo,
   cong10000: phepTinh10000("cong"), tru10000: phepTinh10000("tru"),
   nhan10000: phepTinh10000("nhan"), chia10000: phepTinh10000("chia"),
   diemOGiua, trungDiem, banKinhDuongKinh, gocVuong, hinhPhang3, khoiHop, haiBuocTinh, nhietDo,
   chuViDaGiac, dienTichO, xemLich, bangSoLieu, khaNang,
+  lvNhan2: lvTinh3("×", 2), lvChia2: lvTinh3(":", 2), lvNhan3: lvTinh3("×", 3), lvChia3: lvTinh3(":", 3),
+  lvCong4: lvTinh3("+", 4), lvTru4: lvTinh3("-", 4), lvNhan4: lvTinh3("×", 4), lvChia4: lvTinh3(":", 4),
+  lvCong5: lvTinh3("+", 5), lvTru5: lvTinh3("-", 5), lvNhan5: lvTinh3("×", 5), lvChia5: lvTinh3(":", 5),
+  lvChiaDu, lvMm, lvGam, lvMl, lvChuVi3, lvDienTich3,
 };

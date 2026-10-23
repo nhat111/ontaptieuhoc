@@ -9,7 +9,7 @@
 // Các generator cũ ở lop2.ts giữ nguyên để đề đã import và link đề đã chia sẻ không đổi.
 // scripts/sgk-toan-check.ts (recheck2) tính lại đáp án từ chữ trong đề và từ hình vẽ.
 
-import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, sign, baiGiai } from "../core";
+import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, sign, baiGiai, fmtInt } from "../core";
 import { NAMES, GIVERS, THINGS, EMOJI, cap } from "../shared";
 import { type PictoIcon, pictographSvg, pointsOnLineSvg } from "../../exam5/figures";
 
@@ -614,6 +614,45 @@ export const bieuDoTranh: Generator = (r) => {
   }
 };
 
+/* ═════════════ Bài 55, 56: bài toán có lời văn về độ dài, tiền Việt Nam ═════════════
+   recheck2 tính lại đáp án từ số liệu trong đề. */
+
+/** Bài 55: cộng, trừ số đo độ dài (m, dm, km) trong phạm vi 100. */
+export const lvDoDai2: Generator = (r) => {
+  const [n1, n2] = shuffle(r, NAMES).slice(0, 2);
+  switch (pick(r, ["conLai", "daiHon", "diTiep"] as const)) {
+    case "conLai": {
+      const a = int(r, 40, 100), b = int(r, 12, a - 8), v = a - b;
+      return fill(`Quãng đường từ nhà ${n1} đến trường dài ${a} m. ${n1} đã đi được ${b} m. Hỏi ${n1} còn phải đi bao nhiêu mét nữa thì đến trường? Trả lời: ___ m.`, v,
+        baiGiai([[`${n1} còn phải đi số mét là:`, `${a} - ${b} = ${v} (m)`]], `${v} m`), ["độ dài", "toán có lời văn"], "Lấy cả quãng đường trừ đi phần đã đi.");
+    }
+    case "daiHon": {
+      const a = int(r, 15, 70), b = int(r, 5, 100 - a), v = a + b;
+      return fill(`Sợi dây đỏ dài ${a} dm, sợi dây xanh dài hơn sợi dây đỏ ${b} dm. Hỏi sợi dây xanh dài bao nhiêu đề-xi-mét? Trả lời: ___ dm.`, v,
+        baiGiai([["Sợi dây xanh dài là:", `${a} + ${b} = ${v} (dm)`]], `${v} dm`), ["độ dài", "toán có lời văn"], "Dài hơn thì làm phép cộng.");
+    }
+    case "diTiep": {
+      const a = int(r, 20, 70), b = int(r, 8, 100 - a), v = a + b;
+      return fill(`Một ô tô đi được ${a} km thì dừng lại nghỉ, sau đó đi tiếp ${b} km nữa. Hỏi ô tô đã đi được tất cả bao nhiêu ki-lô-mét? Trả lời: ___ km.`, v,
+        baiGiai([["Ô tô đã đi được tất cả số ki-lô-mét là:", `${a} + ${b} = ${v} (km)`]], `${v} km`), ["độ dài", "toán có lời văn"], "Gộp hai quãng đường lại.");
+    }
+  }
+};
+
+/** Bài 56: tiền Việt Nam (tờ 100, 200, 500, 1.000 đồng), cộng trừ trong phạm vi 1.000. */
+export const lvTien2: Generator = (r) => {
+  const name = pick(r, NAMES);
+  if (chance(r, 0.5)) {
+    const a = pick(r, [500, 1000]), b = int(r, 1, a / 100 - 1) * 100, v = a - b;
+    const item = pick(r, ["một chiếc bút chì", "một quyển vở", "một chiếc tẩy", "một gói bánh"]);
+    return fill(`${name} có ${fmtInt(a)} đồng, ${name} mua ${item} hết ${fmtInt(b)} đồng. Hỏi ${name} còn lại bao nhiêu tiền? Trả lời: ___ đồng.`, fmtInt(v),
+      baiGiai([[`${name} còn lại số tiền là:`, `${fmtInt(a)} - ${fmtInt(b)} = ${fmtInt(v)} (đồng)`]], `${fmtInt(v)} đồng`), ["tiền Việt Nam", "toán có lời văn"], "Tiêu đi thì làm phép trừ.");
+  }
+  const a = int(r, 1, 8) * 100, b = int(r, 1, 10 - a / 100) * 100, v = a + b;
+  return fill(`Mẹ cho ${name} ${fmtInt(a)} đồng, bà cho ${name} ${fmtInt(b)} đồng. Hỏi ${name} có tất cả bao nhiêu tiền? Trả lời: ___ đồng.`, fmtInt(v),
+    baiGiai([[`${name} có tất cả số tiền là:`, `${fmtInt(a)} + ${fmtInt(b)} = ${fmtInt(v)} (đồng)`]], `${fmtInt(v)} đồng`), ["tiền Việt Nam", "toán có lời văn"], "Gộp lại thì làm phép cộng.");
+};
+
 export const KNTT2 = {
   tiaSo, honKem, them20: loiVan20("them"), nhieuIt20: loiVan20("nhieu"), kiLoGam, lit,
   cong21: congTruCoNho("cong21"), cong22: congTruCoNho("cong22"), tru21: congTruCoNho("tru21"), tru22: congTruCoNho("tru22"),
@@ -623,5 +662,5 @@ export const KNTT2 = {
   khoiTruCau, tramChucNghin, tronTramChuc, soSanhTron, docViet3, vietTong, donViDai,
   cong1000: phepTinh1000("+", false), cong1000Nho: phepTinh1000("+", true),
   tru1000: phepTinh1000("-", false), tru1000Nho: phepTinh1000("-", true),
-  kiemDem, bieuDoTranh,
+  kiemDem, bieuDoTranh, lvDoDai2, lvTien2,
 };

@@ -58,6 +58,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 - **Xoá bài / đề / chương** (#98): `DELETE /api/lesson/[id]`, `DELETE /api/chapters?id=`; nút xoá ở `/import/chapter/[id]` (từng dòng + cả chương) và trong trang sửa đề.
 - **Tăng tốc** (#99): Supabase ở Mumbai nên mỗi truy vấn nối tiếp tốn ~0,3–0,7 s. Gộp truy vấn bằng embedded join (trang lớp, `/quiz`, `/de-thi`); bảng xếp hạng cache 5 phút và stream trong `Suspense`.
 - **Tiếng Việt theo chủ điểm** (#100 lớp 4, #101 lớp 5): `lib/tvGuide/`, hiện trên tab Tiếng Việt của `/lop/4`, `/lop/5`. Phần Viết lớp 5 lấy dàn ý từ `lib/lamVan.ts`.
+- **Toán 2–4 lời văn** (#107 viết lại lời giải thành “Bài giải”; PR “lời văn mới lớp 2–4” thêm 2 câu lời văn vào mỗi bài phép tính, đo lường, chu vi/diện tích, phân số — chi tiết trong `CLAUDE.md`, mục Toán tự sinh).
 - **Toán theo sách**:
   - #102: ví dụ giải mẫu trên màn hình bắt đầu mỗi bài.
   - #103: nút "Kiểm tra" từng câu (chế độ `practice`, chỉ bài theo sách).
@@ -66,10 +67,9 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 
 ## Việc tiếp theo (ưu tiên từ trên xuống)
 
-1. **Thêm bài toán có lời văn mới cho lớp 2–4.** Hiện chỉ phủ L2 4/14, L3 6/16, L4 4/13 chủ đề. Mỗi dạng viết trong `kntt/lop<N>.ts` kèm case trong `recheck<N>` (`scripts/sgk-toan-check.ts`), rồi gắn 2 câu vào `mix` các bài trong `lib/sgk/books/toan<N>.ts`.
-2. **Lớp 1**: chưa có dạng lời văn nào. Dạng hợp lứa tuổi: "Viết phép tính thích hợp" (không trình bày Bài giải).
-3. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
-4. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
+1. **Lớp 1**: chưa có dạng lời văn nào. Dạng hợp lứa tuổi: "Viết phép tính thích hợp" (không trình bày Bài giải).
+2. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
+3. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
 
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
 - **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.
