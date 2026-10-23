@@ -59,6 +59,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 - **Tăng tốc** (#99): Supabase ở Mumbai nên mỗi truy vấn nối tiếp tốn ~0,3–0,7 s. Gộp truy vấn bằng embedded join (trang lớp, `/quiz`, `/de-thi`); bảng xếp hạng cache 5 phút và stream trong `Suspense`.
 - **Tiếng Việt theo chủ điểm** (#100 lớp 4, #101 lớp 5, PR lớp 3): `lib/tvGuide/`, hiện trên tab Tiếng Việt của `/lop/3`, `/lop/4`, `/lop/5`. Phần Viết lớp 5 lấy dàn ý từ `lib/lamVan.ts`. Lớp 3 xếp bài khác (`ltvcBai: "chan"`: Luyện từ và câu + luyện viết đoạn nằm trong phần Luyện tập của bài chẵn; bài lẻ có Nghe – viết, Kể chuyện / Nói và nghe); một mục có thể trỏ tới hai dạng (`ky: ["…", "…"]`).
 - **Toán 2–4 lời văn** (#107 viết lại lời giải thành “Bài giải”; PR “lời văn mới lớp 2–4” thêm 2 câu lời văn vào mỗi bài phép tính, đo lường, chu vi/diện tích, phân số — chi tiết trong `CLAUDE.md`, mục Toán tự sinh).
+- **Phiếu hoạt động AI lớp 1–3** (`lib/aiSheets/lop1.ts`, `lop2.ts`, `lop3.ts`): 12 phiếu mỗi lớp theo QĐ 2422, đủ mã yêu cầu cần đạt cốt lõi; `/phieu-bai-tap?loai=ai` giờ có đủ lớp 1–5.
 - **Bài tập Tiếng Việt 1 theo từng bài** (`/lop/1/tieng-viet`): 139 bài; tập một hỏi bằng tiếng bé đã học tới bài đó (`lib/tvGen/am.ts` tách tiếng thành âm, vần, dấu), tập hai theo 8 chủ đề.
 - **Bài tập Tiếng Việt 2 theo từng bài** (`/lop/2/tieng-viet`): 62 bài, mỗi bài 10 câu trắc nghiệm theo đúng phần Nghe – viết và Luyện tập của bài; bộ sinh câu trong `lib/tvGen/`, sách trong `lib/sgk/books/tv2.ts`.
 - **Tạo đề nhanh Tiếng Việt lớp 3**: `lib/exam5/tvContent3.ts` (8 bài đọc tự soạn, ngân hàng LTVC lớp 3, đề đoạn văn), nối vào `TV_CONTENT`.
@@ -76,6 +77,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
 - **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.
 - **Duyệt nội dung viết tay**:
+  - `lib/aiSheets/lop1.ts`, `lop2.ts`, `lop3.ts` (mới): tình huống, đáp án và tiến trình 36 phiếu AI; đối chiếu tên chủ đề, mã yêu cầu với QĐ 2422.
   - `lib/sgk/books/tv1.ts` (mới): tên bài tập một theo mục lục và kế hoạch dạy học, nên soát lại với sách in (đặc biệt bài 6, 7, 9: dấu thanh đi kèm, bài 62–67).
   - `lib/tvGen/am.ts`, `lop1.ts` (mới): kho tiếng lớp 1, câu điền từ theo chủ đề tập hai.
   - `lib/tvGen/spell.ts`, `ltvc.ts` (mới): kho vần lớp 2, từ hỏi/ngã, từ chỉ sự vật – hoạt động – đặc điểm, câu mẫu, chủ đề mở rộng vốn từ, tên riêng / câu viết hoa.

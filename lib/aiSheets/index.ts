@@ -5,13 +5,16 @@
 // Mỗi phiếu = 1 tiết = 1 trang A4 cho học sinh (+ 1 trang cho thầy cô nếu chọn).
 // Mọi hoạt động làm trên giấy, không cần máy.
 //
-// Nội dung soạn tay (lib/aiSheets/lop4.ts, lop5.ts…), không sinh bằng code. Tên chủ đề và mã
+// Nội dung soạn tay (lib/aiSheets/lop1.ts … lop5.ts), không sinh bằng code. Tên chủ đề và mã
 // yêu cầu cần đạt lấy theo Quyết định 2422 — sửa thì đối chiếu lại văn bản gốc.
 // scripts/ai-sheet-check.ts kiểm tra đủ mã cốt lõi, đủ đáp án, HTML không lỗi.
 //
 // Bố cục chỉ dùng bảng (Word bỏ qua CSS grid/flex khi mở .doc dạng HTML).
 
 import { escapeHtml } from "../exportLesson";
+import { LOP1 } from "./lop1";
+import { LOP2 } from "./lop2";
+import { LOP3 } from "./lop3";
 import { LOP4 } from "./lop4";
 import { LOP5 } from "./lop5";
 
@@ -63,7 +66,7 @@ export interface AiGrade {
 }
 
 /** Các khối đã soạn. Khối chưa có thì giao diện hiện "đang soạn". */
-export const AI_GRADES: AiGrade[] = [LOP4, LOP5];
+export const AI_GRADES: AiGrade[] = [LOP1, LOP2, LOP3, LOP4, LOP5];
 export const aiGrade = (g: number) => AI_GRADES.find((x) => x.grade === g);
 
 /* ═══════════════ Xuất HTML (Word .doc / in PDF) ═══════════════ */

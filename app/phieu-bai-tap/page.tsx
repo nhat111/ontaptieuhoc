@@ -20,9 +20,9 @@ const META = {
     url: "/phieu-bai-tap?loai=hang-ngay",
   },
   ai: {
-    title: "Phiếu hoạt động AI lớp 4, lớp 5 – 12 tiết theo Quyết định 2422",
+    title: "Phiếu hoạt động AI lớp 1–5 – 12 tiết theo Quyết định 2422",
     description:
-      "Phiếu hoạt động giáo dục trí tuệ nhân tạo lớp 4, lớp 5 (12 tiết mỗi lớp) theo khung Quyết định 2422/QĐ-BGDĐT: làm trên giấy, không cần máy, kèm trang giáo viên có tiến trình và đáp án. In PDF miễn phí.",
+      "Phiếu hoạt động giáo dục trí tuệ nhân tạo lớp 1 đến lớp 5 (12 tiết mỗi lớp) theo khung Quyết định 2422/QĐ-BGDĐT: làm trên giấy, không cần máy, kèm trang giáo viên có tiến trình và đáp án. In PDF miễn phí.",
     url: "/phieu-bai-tap?loai=ai",
   },
 } as const;
