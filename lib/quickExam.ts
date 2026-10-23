@@ -2,7 +2,7 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 4–5, đều theo cấu
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 3–5, đều theo cấu
 // trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts). Mỗi đề là
 // một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
