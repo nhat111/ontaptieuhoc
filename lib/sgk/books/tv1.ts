@@ -256,6 +256,17 @@ export const TV1: SgkBook = {
   topics,
 };
 
+/** Âm, vần, dấu thanh bé đã học hết bài `so` của tập một (đề Tạo đề nhanh lớp 1 dùng để soát bài đọc). */
+export function knownAtBai(so: number): Known {
+  const k: Known = { onsets: new Set(), rhymes: new Set(), tones: new Set() };
+  for (const [, n] of TAP1.slice(0, so)) {
+    n?.o?.forEach((x) => k.onsets.add(x));
+    n?.v?.forEach((x) => k.rhymes.add(x));
+    n?.t?.forEach((x) => k.tones.add(x));
+  }
+  return k;
+}
+
 /** Mọi âm đầu, vần dạy ở tập một (cho scripts/sgk-tv-check.ts soát kho tiếng). */
 export const TV1_TAUGHT = {
   onsets: new Set(TAP1.flatMap(([, n]) => n?.o ?? [])),

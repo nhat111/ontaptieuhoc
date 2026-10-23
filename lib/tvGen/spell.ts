@@ -140,14 +140,15 @@ const plain = (w: string) => w.replace(/\[([^\]]+)\]/g, "$1");
 
 /**
  * Điền âm đầu / vần còn thiếu. `only` thu hẹp lựa chọn trong một kho (VD "r-d-gi" chỉ lấy d / gi),
- * khi đó chỉ chọn từ có chỗ trống thuộc các lựa chọn đó.
+ * khi đó chỉ chọn từ có chỗ trống thuộc các lựa chọn đó. `keep` lọc thêm theo từ đã điền
+ * (VD đề lớp 1 giữa học kì I chỉ lấy từ bé đọc được).
  */
-export function chinhTa(id: string, only?: string[]): Generator {
+export function chinhTa(id: string, only?: string[], keep?: (word: string) => boolean): Generator {
   const b = bank(id);
   const options = only ?? b.options;
   const isVan = b.part === "van";
   const key = (x: string) => (isVan ? stripTone(x) : x);
-  const pool = b.words.filter((w) => blanks(w).some((x) => options.includes(key(x))));
+  const pool = b.words.filter((w) => blanks(w).some((x) => options.includes(key(x))) && (!keep || keep(plain(w))));
   if (pool.length < 4) throw new Error(`Kho ${id} (${options.join("/")}) quá ít từ`);
   return (r) => {
     const w = pick(r, pool);

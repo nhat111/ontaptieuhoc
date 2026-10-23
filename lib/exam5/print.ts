@@ -11,7 +11,7 @@
 import { escapeHtml, latexToPlain } from "../exportLesson";
 import type { AnswerMode } from "../worksheetExport";
 import {
-  type ExamPaper, type PaperItem, type PaperQuestion, isGroup, pointsText, questionsOf,
+  type ExamPaper, type PaperItem, type PaperQuestion, type PaperSection, isGroup, pointsText, questionsOf,
 } from "./paper";
 import { RUBRIC, formOfPrompt, guideForPrompt } from "../lamVan";
 
@@ -103,29 +103,62 @@ function header(p: ExamPaper, o: PrintOptions): string {
   return `<table class="hd"><tr>` +
     `<td width="44%" class="hl">TRƯỜNG TIỂU HỌC ……………………<br/>Họ và tên: ………………………………<br/>Lớp: ${p.grade}……</td>` +
     `<td width="56%" class="hr"><b>ĐỀ KIỂM TRA ${escapeHtml(p.kindLabel.toUpperCase())}</b><br/><b>NĂM HỌC ${escapeHtml(o.schoolYear)}</b><br/>` +
-    `Môn: ${escapeHtml(p.subject)} – Lớp ${p.grade}<br/><i>Thời gian làm bài: ${p.writing ? `${p.minutes} phút (đọc hiểu) + ${p.writing.minutes} phút (viết)` : `${p.minutes} phút`}</i></td>` +
+    `Môn: ${escapeHtml(p.subject)} – Lớp ${p.grade}<br/><i>Thời gian làm bài: ${vietMinutes(p) ? `${p.minutes} phút (đọc hiểu) + ${vietMinutes(p)} phút (viết)` : `${p.minutes} phút`}</i></td>` +
     `</tr></table>` +
     `<table class="score"><tr><th width="22%">Điểm</th><th>Nhận xét của giáo viên</th></tr>` +
     `<tr><td class="sc">&nbsp;</td><td>${DOTS.slice(0, 36)}<br/>${DOTS.slice(0, 36)}</td></tr></table>`;
 }
 
+/** Thời gian phần B. Kiểm tra viết (Tiếng Việt), 0 nếu đề không có. */
+const vietMinutes = (p: ExamPaper) => p.viet?.minutes ?? p.writing?.minutes ?? 0;
+
+const sectionsOf = (p: ExamPaper, part?: "viet") => p.sections.filter((s) => s.part === part);
+const pointsOf = (secs: PaperSection[]) => secs.flatMap((s) => s.items.flatMap(questionsOf)).reduce((a, q) => a + q.points, 0);
+
 function readingHtml(p: ExamPaper, o: PrintOptions): string {
   if (!p.reading) return "";
   const paras = p.reading.text.split(/\n\s*\n/).map((t) => `<p class="rp">${rich(t.trim(), o)}</p>`).join("");
+  const heading = p.reading.heading ?? "II. Đọc hiểu và kiến thức tiếng Việt";
   return `<h2>A. KIỂM TRA ĐỌC (10 điểm)</h2>` +
     `<p class="sub"><b>I. Đọc thành tiếng (${p.readAloudPoints ?? 3} điểm)</b> – <i>giáo viên kiểm tra riêng từng học sinh.</i></p>` +
-    `<p class="sub"><b>II. Đọc hiểu và kiến thức tiếng Việt (7 điểm)</b> – <i>${p.minutes} phút</i></p>` +
-    `<p class="note">Đọc thầm bài văn sau:</p>` +
+    `<p class="sub"><b>${escapeHtml(heading)} (${pointsText(pointsOf(sectionsOf(p)))})</b> – <i>${p.minutes} phút</i></p>` +
+    `<p class="note">${p.viet ? "Đọc thầm bài sau:" : "Đọc thầm bài văn sau:"}</p>` +
     `<table class="read"><tr><td><p class="rt">${escapeHtml(p.reading.title.toUpperCase())}</p>${paras}</td></tr></table>`;
 }
 
+/** Tiếng Việt lớp 1–2: B. Kiểm tra viết = chính tả nghe – viết + bài tập + (lớp 2) viết đoạn văn. */
+function vietHtml(p: ExamPaper, o: PrintOptions): string {
+  if (!p.viet) return "";
+  const d = p.viet.dictation;
+  let html = `<div class="pb"><h2>B. KIỂM TRA VIẾT (10 điểm) – ${p.viet.minutes} phút</h2>` +
+    `<p class="sub"><b>I. ${escapeHtml(d.title)} (${pointsText(d.points)})</b> – <i>giáo viên đọc cho học sinh viết.</i></p>${lines(d.lines)}`;
+  let n = 1;
+  for (const sec of sectionsOf(p, "viet")) {
+    n++;
+    html += `<p class="sub"><b>${ROMAN[n]}. ${escapeHtml(sec.title)} (${pointsText(pointsOf([sec]))})</b></p>` +
+      (sec.note ? `<p class="note">${escapeHtml(sec.note)}</p>` : "") +
+      sec.items.map((it, i) => itemHtml(it, `${sec.label} ${i + 1}`, o)).join("");
+  }
+  if (p.writing) {
+    n++;
+    html += `<p class="sub"><b>${ROMAN[n]}. ${escapeHtml(p.writing.title)} (${pointsText(p.writing.points)})</b></p>` +
+      `<p class="q"><b>Đề bài:</b> ${escapeHtml(p.writing.prompt)}</p>${lines(p.writing.lines ?? 10)}`;
+  }
+  return html + `</div>`;
+}
+
+const ROMAN = ["", "I", "II", "III", "IV", "V"];
+
 function writingHtml(p: ExamPaper): string {
-  if (!p.writing) return "";
+  if (!p.writing || p.viet) return "";
   return `<div class="pb"><h2>${escapeHtml(p.writing.title)} (${p.writing.points} điểm) – ${p.writing.minutes} phút</h2>` +
     `<p class="q"><b>Đề bài:</b> ${escapeHtml(p.writing.prompt)}</p><p class="bg">Bài làm</p>${lines(22)}</div>`;
 }
 
 /* ───────────── Hướng dẫn chấm ───────────── */
+
+const rubricList = (rows: [string, number][]) =>
+  `<ul>${rows.map(([label, pts]) => `<li>${escapeHtml(label)}: ${pointsText(pts)}.</li>`).join("")}</ul>`;
 
 function keyOf(q: PaperQuestion, o: PrintOptions): string {
   if (q.open) return escapeHtml(q.open.answerHint);
@@ -141,7 +174,11 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
   const withSol = o.answers === "solutions";
   let html = `<div class="pb"><h1>HƯỚNG DẪN CHẤM VÀ ĐÁP ÁN</h1><p class="meta">${escapeHtml(p.title)} (dành cho giáo viên, phụ huynh)</p>`;
 
-  if (p.readAloudPoints) {
+  if (p.readAloud) {
+    html += `<h3>A. KIỂM TRA ĐỌC (10 điểm)</h3><p><b>I. Đọc thành tiếng (${pointsText(p.readAloud.points)}):</b> ${escapeHtml(p.readAloud.task)}</p>` +
+      rubricList(p.readAloud.rubric) +
+      `<p><b>${escapeHtml(p.reading?.heading ?? "II. Đọc hiểu")} (${pointsText(pointsOf(sectionsOf(p)))})</b></p>`;
+  } else if (p.readAloudPoints) {
     html += `<h3>A. KIỂM TRA ĐỌC (10 điểm)</h3><p><b>I. Đọc thành tiếng (${p.readAloudPoints} điểm):</b> học sinh đọc một đoạn khoảng 110–120 tiếng trong bài đọc trên (hoặc bài đã học) và trả lời một câu hỏi về nội dung đoạn đọc.</p>` +
       `<ul><li>Đọc vừa đủ nghe, rõ ràng; tốc độ khoảng 100–120 tiếng/phút: 1 điểm.</li><li>Đọc đúng tiếng, đúng từ: 1 điểm.</li>` +
       `<li>Ngắt nghỉ hơi đúng ở dấu câu, giọng đọc có biểu cảm: 0,5 điểm.</li><li>Trả lời đúng câu hỏi về nội dung đoạn đọc: 0,5 điểm.</li></ul>` +
@@ -149,6 +186,12 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
   }
 
   for (const sec of p.sections) {
+    if (sec.part === "viet" && sec === sectionsOf(p, "viet")[0] && p.viet) {
+      const d = p.viet.dictation;
+      html += `<h3>B. KIỂM TRA VIẾT (10 điểm)</h3><p><b>I. ${escapeHtml(d.title)} (${pointsText(d.points)}):</b> giáo viên đọc từng cụm từ cho học sinh viết đoạn sau:</p>` +
+        `<table class="read"><tr><td><p class="rp">${escapeHtml(d.text)}</p></td></tr></table>` + rubricList(d.rubric);
+    }
+    if (sec.part === "viet") html += `<p><b>${ROMAN[sectionsOf(p, "viet").indexOf(sec) + 2]}. ${escapeHtml(sec.title)} (${pointsText(pointsOf([sec]))})</b></p>`;
     if (!p.readAloudPoints) html += `<h3>${escapeHtml(sec.title)} (${pointsText(sec.items.flatMap(questionsOf).reduce((s, q) => s + q.points, 0))})</h3>`;
     const rows = sec.items.map((it, i) => {
       const label = `${sec.label} ${i + 1}`;
@@ -166,7 +209,9 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
     }
   }
 
-  if (p.writing) {
+  if (p.writing?.rubric) {
+    html += `<p><b>${ROMAN[sectionsOf(p, "viet").length + 2]}. ${escapeHtml(p.writing.title)} (${pointsText(p.writing.points)})</b></p>` + rubricList(p.writing.rubric);
+  } else if (p.writing) {
     const rubric = RUBRIC[formOfPrompt(p.writing.prompt)].map(([label, pts]) => `${label} ${pointsText(pts)}`).join("; ");
     html += `<h3>B. KIỂM TRA VIẾT (${p.writing.points} điểm)</h3><p>Gợi ý biểu điểm: ${escapeHtml(rubric)}.</p>`;
     // Lớp 5: kèm dàn ý của dạng bài (trang /lam-van/lop-5) để phụ huynh chấm có căn cứ.
@@ -183,7 +228,7 @@ export function buildPaperHtml(p: ExamPaper, o: PrintOptions): string {
   const body =
     header(p, o) +
     readingHtml(p, o) +
-    p.sections.map((sec) => {
+    sectionsOf(p).map((sec) => {
       const pts = sec.items.flatMap(questionsOf).reduce((s, q) => s + q.points, 0);
       // Đề Tiếng Việt: tiêu đề "II. Đọc hiểu…" đã in ngay trên bài đọc, không lặp lại.
       return (p.reading ? "" : `<h2>${escapeHtml(sec.title)} (${pointsText(pts)})</h2>`) +
@@ -191,6 +236,7 @@ export function buildPaperHtml(p: ExamPaper, o: PrintOptions): string {
         sec.items.map((it, i) => itemHtml(it, `${sec.label} ${i + 1}`, o)).join("");
     }).join("") +
     writingHtml(p) +
+    vietHtml(p, o) +
     answersHtml(p, o);
 
   return `<!DOCTYPE html>

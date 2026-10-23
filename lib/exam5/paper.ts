@@ -41,6 +41,8 @@ export interface PaperSection {
   /** "Câu 1." hay "Bài 1." */
   label: "Câu" | "Bài";
   items: PaperItem[];
+  /** Tiếng Việt lớp 1–2: mục thuộc phần B. Kiểm tra viết (in sau bài chính tả). */
+  part?: "viet";
 }
 
 export interface Reading {
@@ -48,6 +50,8 @@ export interface Reading {
   /** Đoạn văn, các đoạn cách nhau bởi dòng trống. */
   text: string;
   source?: string;
+  /** Tiêu đề phần đọc hiểu khi in; mặc định "II. Đọc hiểu và kiến thức tiếng Việt". */
+  heading?: string;
 }
 
 export interface Writing {
@@ -55,6 +59,27 @@ export interface Writing {
   prompt: string;
   points: number;
   minutes: number;
+  /** Biểu điểm riêng; không có thì lấy RUBRIC của lib/lamVan.ts theo dạng đề. */
+  rubric?: [string, number][];
+  /** Số dòng kẻ để học sinh viết bài. */
+  lines?: number;
+}
+
+/** Đọc thành tiếng: giáo viên kiểm tra riêng, chỉ in trong hướng dẫn chấm. */
+export interface ReadAloud {
+  points: number;
+  /** Học sinh đọc gì. */
+  task: string;
+  rubric: [string, number][];
+}
+
+/** Tiếng Việt lớp 1–2: chính tả nghe – viết. Học sinh chỉ thấy dòng kẻ; đoạn đọc in ở hướng dẫn chấm. */
+export interface Dictation {
+  title: string;
+  text: string;
+  points: number;
+  lines: number;
+  rubric: [string, number][];
 }
 
 export interface ExamPaper {
@@ -68,9 +93,16 @@ export interface ExamPaper {
   reading?: Reading;
   /** Tiếng Việt: điểm đọc thành tiếng (giáo viên kiểm tra riêng, chỉ ghi trong hướng dẫn chấm). */
   readAloudPoints?: number;
+  /** Cách chấm đọc thành tiếng; không có thì dùng cách chấm của lớp 3–5. */
+  readAloud?: ReadAloud;
   sections: PaperSection[];
   /** Tiếng Việt: phần B. Kiểm tra viết — chỉ in. */
   writing?: Writing;
+  /**
+   * Tiếng Việt lớp 1–2: phần B gồm chính tả nghe – viết (in), các mục `part: "viet"` (máy
+   * chấm được) rồi tới `writing` nếu có; `minutes` là thời gian cả phần B.
+   */
+  viet?: { minutes: number; dictation: Dictation };
 }
 
 /** Mọi câu của một mục, tách nhóm thành từng ý. */
