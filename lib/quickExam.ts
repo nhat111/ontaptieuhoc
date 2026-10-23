@@ -2,8 +2,8 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 3–5, đều theo cấu
-// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts). Mỗi đề là
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 1–5, đều theo cấu
+// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts, tv12.ts). Mỗi đề là
 // một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
 // mở lại đúng đề đó (server và trình duyệt trùng nhau).
@@ -19,6 +19,11 @@ import { paperRows, type ExamPaper } from "./exam5/paper";
 import { buildToan5 } from "./exam5/toan5";
 import { buildToan1to4, isSmallGrade, toanCount, toanMinutes } from "./exam5/toan1to4";
 import { TV_CONTENT, buildTiengViet, passagesFor } from "./exam5/tiengViet";
+import { TV12_MINUTES, buildTv12, tv12Passages, type Tv12Content } from "./exam5/tv12";
+import { TV1_EXAM } from "./exam5/tvContent1";
+import { TV2_EXAM } from "./exam5/tvContent2";
+
+const TV12: Record<number, Tv12Content> = { 1: TV1_EXAM, 2: TV2_EXAM };
 
 export const EXAM_KINDS = [
   { key: "giua-hk1", label: "Giữa học kì I", short: "Giữa HK I" },
@@ -106,6 +111,28 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
   // Chỉ hạ chữ đầu: "Cuối học kì I" → "cuối học kì I" (toLowerCase sẽ biến "I" thành "i").
   const title = `Đề kiểm tra ${lowerFirst(kindLabel)} – ${subject} lớp ${grade}`;
   const base = { id: `${slug}-${grade}-${kind}`, grade, subject, kind, title };
+
+  if (subject === "Tiếng Việt" && TV12[grade]) {
+    const tv = TV12[grade];
+    const passages = tv12Passages(tv, kind).map((p) => `“${p.title}”`).join(" hoặc ");
+    return {
+      ...base,
+      scope: grade === 1
+        ? [
+          `Đọc hiểu: một bài đọc ngắn (${passages}) và 3 câu hỏi`,
+          `Bài tập chính tả: ${tv.spellingNames[kind]}`,
+          "Đọc thành tiếng và viết chính tả nghe – viết (giáo viên, phụ huynh kiểm tra trên giấy)",
+        ]
+        : [
+          `Đọc hiểu: một bài đọc mới (${passages}) và 4 câu hỏi`,
+          `Luyện từ và câu: ${tv.ltvc![kind].names}`,
+          `Bài tập chính tả: ${tv.spellingNames[kind]}`,
+          "Chính tả nghe – viết và viết đoạn văn 4–5 câu (in kèm, chấm trên giấy)",
+        ],
+      count: grade === 1 ? 6 : 9, minutes: TV12_MINUTES[grade as 1 | 2][0] + 10,
+      paper: (seed) => buildTv12(tv, kind, kindLabel, seed),
+    };
+  }
 
   if (subject === "Tiếng Việt") {
     const tv = TV_CONTENT[grade];
