@@ -22,7 +22,8 @@ export type TvSkill = {
   link?: { href: string; label: string };
 };
 
-export type TvBaiRef = { ten: string; ky: string };
+/** `ky` = id trong `skills`; một phần Luyện tập dạy hai dạng thì ghi cả hai. */
+export type TvBaiRef = { ten: string; ky: string | string[] };
 
 /** Một bài trong sách, tên lấy nguyên văn mục lục. */
 export type TvBai = {
@@ -30,11 +31,11 @@ export type TvBai = {
   so: number;
   /** Bài đọc. */
   doc: string;
-  /** Luyện từ và câu (bài lẻ). `ky` = id trong `skills`. */
+  /** Luyện từ và câu (bài lẻ; lớp 3: bài chẵn, xem `ltvcBai`). */
   ltvc?: TvBaiRef;
-  /** Viết. `ky` = id trong `skills`. */
+  /** Viết. */
   viet: TvBaiRef;
-  /** Nói và nghe / Đọc mở rộng (bài chẵn). */
+  /** Nói và nghe / Đọc mở rộng (bài chẵn); lớp 3: Kể chuyện, Nói và nghe (bài lẻ), Ôn chữ viết hoa, Đọc mở rộng (bài chẵn). */
   them?: string;
 };
 
@@ -54,6 +55,8 @@ export type TvGuide = {
   book: string;
   /** Nơi đã đối chiếu mục lục. */
   source: string;
+  /** Bài có Luyện từ và câu: lẻ (lớp 4, 5, mặc định) hay chẵn (lớp 3, nằm trong phần Luyện tập). */
+  ltvcBai?: "le" | "chan";
   chuDiem: TvChuDiem[];
   bai: TvBai[];
   skills: Record<string, TvSkill>;

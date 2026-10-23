@@ -1,11 +1,11 @@
 // lib/exam5/tiengViet.ts
-// Đề kiểm tra Tiếng Việt lớp 4 và lớp 5 theo cấu trúc đề giấy thường gặp:
+// Đề kiểm tra Tiếng Việt lớp 3, 4 và 5 theo cấu trúc đề giấy thường gặp:
 //   A. Kiểm tra đọc (10 điểm): I. Đọc thành tiếng (3 điểm, giáo viên kiểm tra riêng);
 //      II. Đọc hiểu và kiến thức tiếng Việt (7 điểm): câu 1–6 đọc hiểu (0,5 điểm/câu),
 //      câu 7 luyện từ và câu gắn với bài đọc, câu 8–9 luyện từ và câu theo kì, câu 10 câu
 //      hỏi mở (1 điểm/câu).
 //   B. Kiểm tra viết (10 điểm): một đề tập làm văn.
-// Nội dung viết tay ở ./tvContent.ts (lớp 5) và ./tvContent4.ts (lớp 4); ở đây chỉ chọn
+// Nội dung viết tay ở ./tvContent.ts (lớp 5), ./tvContent4.ts (lớp 4), ./tvContent3.ts (lớp 3); ở đây chỉ chọn
 // bài, xáo đáp án và dựng tờ đề. Câu 10 và phần viết không có đáp án máy chấm được → chỉ
 // in, không vào bài làm trên máy.
 
@@ -15,8 +15,9 @@ import type { ExamKind } from "../quickExam";
 import type { ExamPaper, PaperQuestion } from "./paper";
 import { TV5, type TvContent, type TvMcq } from "./tvContent";
 import { TV4 } from "./tvContent4";
+import { TV3 } from "./tvContent3";
 
-export const TV_CONTENT: Record<number, TvContent> = { 4: TV4, 5: TV5 };
+export const TV_CONTENT: Record<number, TvContent> = { 3: TV3, 4: TV4, 5: TV5 };
 
 function mcqRow(m: TvMcq, r: Rng): GenQuestionRow {
   return {

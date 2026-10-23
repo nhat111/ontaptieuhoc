@@ -57,8 +57,9 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 ### Đã làm trong Oct 2026 (PR #98–#105)
 - **Xoá bài / đề / chương** (#98): `DELETE /api/lesson/[id]`, `DELETE /api/chapters?id=`; nút xoá ở `/import/chapter/[id]` (từng dòng + cả chương) và trong trang sửa đề.
 - **Tăng tốc** (#99): Supabase ở Mumbai nên mỗi truy vấn nối tiếp tốn ~0,3–0,7 s. Gộp truy vấn bằng embedded join (trang lớp, `/quiz`, `/de-thi`); bảng xếp hạng cache 5 phút và stream trong `Suspense`.
-- **Tiếng Việt theo chủ điểm** (#100 lớp 4, #101 lớp 5): `lib/tvGuide/`, hiện trên tab Tiếng Việt của `/lop/4`, `/lop/5`. Phần Viết lớp 5 lấy dàn ý từ `lib/lamVan.ts`.
+- **Tiếng Việt theo chủ điểm** (#100 lớp 4, #101 lớp 5, PR lớp 3): `lib/tvGuide/`, hiện trên tab Tiếng Việt của `/lop/3`, `/lop/4`, `/lop/5`. Phần Viết lớp 5 lấy dàn ý từ `lib/lamVan.ts`. Lớp 3 xếp bài khác (`ltvcBai: "chan"`: Luyện từ và câu + luyện viết đoạn nằm trong phần Luyện tập của bài chẵn; bài lẻ có Nghe – viết, Kể chuyện / Nói và nghe); một mục có thể trỏ tới hai dạng (`ky: ["…", "…"]`).
 - **Toán 2–4 lời văn** (#107 viết lại lời giải thành “Bài giải”; PR “lời văn mới lớp 2–4” thêm 2 câu lời văn vào mỗi bài phép tính, đo lường, chu vi/diện tích, phân số — chi tiết trong `CLAUDE.md`, mục Toán tự sinh).
+- **Tạo đề nhanh Tiếng Việt lớp 3**: `lib/exam5/tvContent3.ts` (8 bài đọc tự soạn, ngân hàng LTVC lớp 3, đề đoạn văn), nối vào `TV_CONTENT`.
 - **Toán 1 lời văn**: “Viết phép tính thích hợp” gắn vào bài 10, 11, 29–32.
 - **Toán theo sách**:
   - #102: ví dụ giải mẫu trên màn hình bắt đầu mỗi bài.
@@ -68,12 +69,13 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 
 ## Việc tiếp theo (ưu tiên từ trên xuống)
 
-1. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
-2. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
+1. **Tiếng Việt theo chủ điểm lớp 1–2**, cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay (trang mục lục phân trang `/e<id>/N.html`; tập 1 và tập 2 có HTML khác nhau), nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
 
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
 - **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.
 - **Duyệt nội dung viết tay**:
+  - `lib/exam5/tvContent3.ts` (mới): 8 bài đọc lớp 3, câu hỏi, đáp án nhiễu, ngân hàng luyện từ và câu.
+  - `lib/tvGuide/lop3.ts` (mới): tên phần Luyện tập của bài chẵn là tóm tắt từ các yêu cầu bài tập (mục lục chỉ ghi “Luyện tập”), cách làm và ví dụ của 26 dạng bài, gợi ý đọc hiểu.
   - `lib/tvGuide/lop4.ts`, `lop5.ts`: công dụng dấu gạch ngang (lớp 5 có ghi cả "phần chú thích"), dấu ngoặc kép, các gợi ý đọc hiểu (viết theo tên chủ điểm). TV5 tập 2 bài 6 chưa tìm được phần Nói và nghe.
   - Tình huống trong 12 dạng lời văn lớp 5 (`lv*` trong `lib/mathGen/kntt/lop5.ts`).
 - **Dọn dữ liệu rác trong DB** bằng nút xoá: chương "tập đọc" lớp 1 (bài abc, fff), chương "aâ" lớp 3, đề "uu" lớp 1.

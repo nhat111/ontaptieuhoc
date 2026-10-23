@@ -22,6 +22,7 @@ const fail = (msg: string) => { if (errors.length < 30) errors.push(msg); };
 
 const SUBJECTS: [number, string][] = [
   ...Object.keys(MATH_SCOPE).map((g) => [Number(g), "Toán"] as [number, string]),
+  [3, "Tiếng Việt"],
   [4, "Tiếng Việt"],
   [5, "Tiếng Việt"],
 ];
@@ -67,12 +68,13 @@ for (const [g, subject] of SUBJECTS) {
   }
 }
 
-if (getQuickExam(3, "Tiếng Việt", "cuoi-hk1") !== null) fail("môn chưa có bộ sinh lại ra đề");
+if (getQuickExam(2, "Tiếng Việt", "cuoi-hk1") !== null) fail("môn chưa có bộ sinh lại ra đề");
 if (getQuickExam(6, "Toán", "cuoi-hk1") !== null) fail("Toán lớp 6 chưa có bộ sinh lại ra đề");
 if (getQuickExam(5, "Tiếng Việt", "cuoi-hk1") === null) fail("Tiếng Việt lớp 5 phải có đề");
 if (getQuickExam(4, "Tiếng Việt", "giua-hk1") === null) fail("Tiếng Việt lớp 4 phải có đề");
+if (getQuickExam(3, "Tiếng Việt", "giua-hk2") === null) fail("Tiếng Việt lớp 3 phải có đề");
 if (quickExamById("tieng-viet-5-giua-hk2")?.subject !== "Tiếng Việt") fail("khoá tieng-viet-5-giua-hk2 không đọc lại được");
-for (const bad of ["", "toan-3", "toan-9-cuoi-hk1", "toan-3-cuoi-hk3", "x-toan-3-cuoi-hk1", "tieng-viet-3-cuoi-hk1", "tieng-anh-5-cuoi-hk1", undefined]) {
+for (const bad of ["", "toan-3", "toan-9-cuoi-hk1", "toan-3-cuoi-hk3", "x-toan-3-cuoi-hk1", "tieng-viet-2-cuoi-hk1", "tieng-anh-5-cuoi-hk1", undefined]) {
   if (quickExamById(bad) !== null) fail(`khoá lạ "${bad}" lại ra đề`);
 }
 if (cleanSeed("Ab-12<script>") !== "ab12script") fail(`cleanSeed lọc sai: ${cleanSeed("Ab-12<script>")}`);

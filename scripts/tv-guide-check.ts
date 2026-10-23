@@ -2,13 +2,14 @@
 // Chạy: npx tsx scripts/tv-guide-check.ts
 //  - bài mỗi tập đánh số liền 1..n, không trùng; chủ điểm phủ đúng mọi bài, không chồng nhau;
 //  - bài lẻ có Luyện từ và câu, bài chẵn có phần Nói và nghe / Đọc mở rộng (trừ tiết dành cho
-//    “Bài viết số …”, như Tiếng Việt 5 tập hai bài 6);
+//    “Bài viết số …”, như Tiếng Việt 5 tập hai bài 6); lớp 3 (`ltvcBai: "chan"`) ngược lại:
+//    bài chẵn có Luyện từ và câu, bài lẻ có Kể chuyện / Nói và nghe;
 //  - link sang /lam-van/lop-5/<dạng> trỏ tới dạng có thật;
 //  - mọi `ky` trỏ tới dạng có thật, đúng loại; dạng nào cũng được ít nhất một bài dùng;
 //  - từ trong “ ” ở lời giải Luyện từ và câu có nguyên văn trong câu ví dụ;
 //  - không có ngoặc kép thẳng trong nội dung.
 
-import { TV_GUIDES, baiOf } from "../lib/tvGuide";
+import { TV_GUIDES, baiOf, kyOf } from "../lib/tvGuide";
 import { guideById } from "../lib/lamVan";
 
 let errors = 0;
@@ -30,14 +31,17 @@ for (const g of TV_GUIDES) {
   const used = new Set<string>();
   for (const b of g.bai) {
     const where = `${tag} tập ${b.tap} bài ${b.so}`;
-    if (b.so % 2 === 1 && !b.ltvc) fail(`${where}: bài lẻ thiếu Luyện từ và câu`);
-    if (b.so % 2 === 0 && !b.them && !/Bài viết số/.test(b.viet.ten)) fail(`${where}: bài chẵn thiếu Nói và nghe / Đọc mở rộng`);
+    const ltvcParity = g.ltvcBai === "chan" ? 0 : 1;
+    if (b.so % 2 === ltvcParity && !b.ltvc) fail(`${where}: thiếu Luyện từ và câu`);
+    if (b.so % 2 !== ltvcParity && !b.them && !/Bài viết số/.test(b.viet.ten)) fail(`${where}: thiếu Nói và nghe / Đọc mở rộng`);
     for (const [ref, loai] of [[b.ltvc, "ltvc"], [b.viet, "viet"]] as const) {
       if (!ref) continue;
-      const s = g.skills[ref.ky];
-      if (!s) fail(`${where}: không có dạng “${ref.ky}”`);
-      else if (s.loai !== loai) fail(`${where}: “${ref.ky}” là ${s.loai}, cần ${loai}`);
-      used.add(ref.ky);
+      for (const ky of kyOf(ref)) {
+        const s = g.skills[ky];
+        if (!s) fail(`${where}: không có dạng “${ky}”`);
+        else if (s.loai !== loai) fail(`${where}: “${ky}” là ${s.loai}, cần ${loai}`);
+        used.add(ky);
+      }
     }
   }
 
