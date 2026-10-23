@@ -1,7 +1,7 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { blockDeleteUnlessLocked, isImportProtected } from "@/lib/importAuth";
 import type { QDraft, QImage, QType } from "@/components/import/QuestionCard";
 
 function decodeImages(explanation: unknown): QImage[] {
@@ -123,6 +123,8 @@ export async function GET(
     durationMinutes: (lesson as any).duration_minutes ?? 15,
     questions: qDrafts,
     type: lesson.type === "exam" ? "exam" : "lesson",
+    // Nút xoá chỉ hiện khi đã đặt mật khẩu (DELETE từ chối nếu chưa) — xem blockDeleteUnlessLocked.
+    canDelete: isImportProtected(),
   });
 }
 
@@ -135,7 +137,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const blocked = await blockIfNoImportAccess(req);
+  const blocked = await blockDeleteUnlessLocked(req);
   if (blocked) return blocked;
 
   const { id } = await params;

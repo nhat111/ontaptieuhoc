@@ -3,7 +3,7 @@ import { ensureSubjectId } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { blockDeleteUnlessLocked, blockIfNoImportAccess } from "@/lib/importAuth";
 
 // Chapters are addressed by (grade, subject name) — the subject catalogue lives
 // in lib/subjects.ts, so the client never has to know a `subjects.id`.
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
  * (ON DELETE CASCADE). Giao diện hỏi xác nhận kèm số bài trước khi gọi.
  */
 export async function DELETE(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
+  const blocked = await blockDeleteUnlessLocked(req);
   if (blocked) return blocked;
 
   const id = Number(req.nextUrl.searchParams.get("id"));

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
+import { ACTION_DANGER, ACTION_MD, ACTION_SM } from "./actionStyles";
 
 async function sendDelete(url: string): Promise<string | null> {
   try {
@@ -63,11 +65,9 @@ export function DeleteLessonButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className={
-        className ??
-        "text-xs text-red-600 hover:bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 disabled:opacity-50"
-      }
+      className={className ?? `${ACTION_SM} ${ACTION_DANGER}`}
     >
+      <Trash2 className="h-3.5 w-3.5" aria-hidden />
       {busy ? "Đang xoá..." : `Xoá ${noun}`}
     </button>
   );
@@ -106,8 +106,9 @@ export function DeleteChapterButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="text-xs text-red-600 hover:bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 disabled:opacity-50"
+      className={`${ACTION_MD} ${ACTION_DANGER}`}
     >
+      <Trash2 className="h-4 w-4" aria-hidden />
       {busy ? "Đang xoá..." : "Xoá chương"}
     </button>
   );

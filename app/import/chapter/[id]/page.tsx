@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { getChapterContext, getLessonsInChapter } from "@/lib/db";
+import { BookOpen, Eye, FilePlus2, Lock, Pencil, Plus } from "lucide-react";
 import { DeleteChapterButton, DeleteLessonButton } from "@/components/import/DeleteButtons";
+import { ACTION_MD, ACTION_PRIMARY, ACTION_SECONDARY, ACTION_SM } from "@/components/import/actionStyles";
+import { isImportProtected } from "@/lib/importAuth";
 
 // Editor dashboard — nothing to index.
 export const metadata: Metadata = {
@@ -44,6 +47,8 @@ export default async function ChapterDashboardPage({
     );
   }
 
+  // Chưa đặt mật khẩu thì API xoá từ chối (blockDeleteUnlessLocked) — ẩn nút luôn.
+  const canDelete = isImportProtected();
   const filled = lessons.filter((l) => l.questionCount > 0).length;
   const empty = lessons.length - filled;
 
@@ -82,33 +87,40 @@ export default async function ChapterDashboardPage({
       </section>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h2 className="text-sm font-bold text-gray-700">Danh sách bài</h2>
-          <div className="flex flex-wrap justify-end gap-2">
-            <DeleteChapterButton
-              chapterId={chapterId}
-              title={ctx.chapterTitle}
-              lessonCount={lessons.length}
-              redirectTo={`/lop/${ctx.grade}?subject=${encodeURIComponent(ctx.subjectName)}`}
-            />
-            <Link
-              href="/import"
-              className="text-xs text-blue-600 hover:underline border border-blue-200 hover:border-blue-300 rounded-lg px-3 py-1.5"
-            >
-              + Tạo bài học
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Link href="/import" className={`${ACTION_MD} ${ACTION_PRIMARY}`}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Tạo bài học
             </Link>
-            <Link
-              href="/import/exam"
-              className="text-xs text-orange-600 hover:underline border border-orange-200 hover:border-orange-300 rounded-lg px-3 py-1.5"
-            >
-              + Tạo đề
+            <Link href="/import/exam" className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
+              <FilePlus2 className="h-4 w-4" aria-hidden />
+              Tạo đề
             </Link>
+            {canDelete && (
+              <DeleteChapterButton
+                chapterId={chapterId}
+                title={ctx.chapterTitle}
+                lessonCount={lessons.length}
+                redirectTo={`/lop/${ctx.grade}?subject=${encodeURIComponent(ctx.subjectName)}`}
+              />
+            )}
           </div>
         </div>
 
+        {!canDelete && (
+          <p className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+            Nút xoá bài / xoá chương đang ẩn vì chưa đặt mật khẩu soạn đề (IMPORT_PASSWORD trên Vercel). Đặt mật khẩu xong thì chỉ ai nhập đúng mật khẩu mới xoá được.
+          </p>
+        )}
+
         {lessons.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
-            <p className="text-3xl mb-3">📚</p>
+          <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-10 text-center text-gray-400">
+            <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <BookOpen className="h-6 w-6" aria-hidden />
+            </span>
             <p className="text-sm">Chương này chưa có bài nào.</p>
           </div>
         ) : (
@@ -136,24 +148,24 @@ export default async function ChapterDashboardPage({
                       {l.questionCount} câu · {l.durationMinutes} phút
                     </p>
                   </div>
-                  <Link
-                    href={`/quiz?lessonId=${l.id}`}
-                    className="text-xs text-blue-600 hover:underline px-2 py-1"
-                  >
-                    Xem
-                  </Link>
-                  <Link
-                    href={`/import/edit/${l.id}`}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-3 py-1.5"
-                  >
-                    {filled ? "Sửa" : "Nhập"}
-                  </Link>
-                  <DeleteLessonButton
-                    lessonId={l.id}
-                    title={l.title}
-                    questionCount={l.questionCount}
-                    isExam={isExam}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Link href={`/quiz?lessonId=${l.id}`} className={`${ACTION_SM} ${ACTION_SECONDARY}`}>
+                      <Eye className="h-3.5 w-3.5" aria-hidden />
+                      Xem
+                    </Link>
+                    <Link href={`/import/edit/${l.id}`} className={`${ACTION_SM} ${ACTION_PRIMARY}`}>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      {filled ? "Sửa" : "Nhập"}
+                    </Link>
+                    {canDelete && (
+                      <DeleteLessonButton
+                        lessonId={l.id}
+                        title={l.title}
+                        questionCount={l.questionCount}
+                        isExam={isExam}
+                      />
+                    )}
+                  </div>
                 </li>
               );
             })}
