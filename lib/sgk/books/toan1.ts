@@ -5,7 +5,7 @@
 import type { Draft } from "../../mathGen/core";
 import { LOP1, KNTT1, KNTT3 } from "../../mathGen";
 import { soSanhSo } from "../../mathGen/shared";
-import { daySo, demHinhPhang, doDaiThuoc, soLonNhat, xemGio } from "../../exam5/toan1to4";
+import { daySo, demHinhPhang, doDaiThuoc, phepTinhThichHop, soLonNhat, xemGio } from "../../exam5/toan1to4";
 import { type SgkBook, type SgkTopic, has, only, tagged } from "../types";
 
 /** Đáp án trắc nghiệm là một số nằm trong [lo, hi] (đếm hình 0–5 hay 6–10). */
@@ -16,6 +16,8 @@ const ansIn = (lo: number, hi: number) => (d: Draft) => {
 };
 const cong10 = only(LOP1.congTru10, tagged("phép cộng"));
 const tru10 = only(LOP1.congTru10, tagged("phép trừ"));
+/** "Viết phép tính thích hợp" (lớp 1 chưa học trình bày Bài giải), lọc theo dạng phép tính của bài. */
+const vietPhepTinh = (max: 10 | 100, op: "+" | "-", re: RegExp) => only(phepTinhThichHop(max, op), (d) => re.test(d.explanation));
 
 const topics: SgkTopic[] = [
   { so: 1, tap: 1, ten: "Các số từ 0 đến 10", bai: [
@@ -32,8 +34,8 @@ const topics: SgkTopic[] = [
     { so: 9, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 3, tap: 1, ten: "Phép cộng, phép trừ trong phạm vi 10", bai: [
-    { so: 10, ten: "Phép cộng trong phạm vi 10", mix: [[cong10, 8], [only(LOP1.dungSai1, has(/\+/)), 2]] },
-    { so: 11, ten: "Phép trừ trong phạm vi 10", mix: [[tru10, 8], [only(LOP1.dungSai1, has(/ - /)), 2]] },
+    { so: 10, ten: "Phép cộng trong phạm vi 10", mix: [[cong10, 6], [only(LOP1.dungSai1, has(/\+/)), 2], [vietPhepTinh(10, "+", /^Phép tính: /), 2]] },
+    { so: 11, ten: "Phép trừ trong phạm vi 10", mix: [[tru10, 6], [only(LOP1.dungSai1, has(/ - /)), 2], [vietPhepTinh(10, "-", /^Phép tính: /), 2]] },
     { so: 12, ten: "Bảng cộng, bảng trừ trong phạm vi 10", mix: [[LOP1.congTru10, 7], [LOP1.dungSai1, 3]] },
     { so: 13, ten: "Luyện tập chung", luyen: true },
   ] },
@@ -61,10 +63,10 @@ const topics: SgkTopic[] = [
     { so: 28, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 8, tap: 2, ten: "Phép cộng, phép trừ (không nhớ) trong phạm vi 100", bai: [
-    { so: 29, ten: "Phép cộng số có hai chữ số với số có một chữ số", mix: [[KNTT1.cong21, 10]] },
-    { so: 30, ten: "Phép cộng số có hai chữ số với số có hai chữ số", mix: [[KNTT1.cong22, 10]] },
-    { so: 31, ten: "Phép trừ số có hai chữ số cho số có một chữ số", mix: [[KNTT1.tru21, 10]] },
-    { so: 32, ten: "Phép trừ số có hai chữ số cho số có hai chữ số", mix: [[KNTT1.tru22, 10]] },
+    { so: 29, ten: "Phép cộng số có hai chữ số với số có một chữ số", mix: [[KNTT1.cong21, 8], [vietPhepTinh(100, "+", /^Phép tính: \d{2} \+ \d = /), 2]] },
+    { so: 30, ten: "Phép cộng số có hai chữ số với số có hai chữ số", mix: [[KNTT1.cong22, 8], [vietPhepTinh(100, "+", /^Phép tính: \d{2} \+ \d{2} = /), 2]] },
+    { so: 31, ten: "Phép trừ số có hai chữ số cho số có một chữ số", mix: [[KNTT1.tru21, 8], [vietPhepTinh(100, "-", /^Phép tính: \d{2} - \d = /), 2]] },
+    { so: 32, ten: "Phép trừ số có hai chữ số cho số có hai chữ số", mix: [[KNTT1.tru22, 8], [vietPhepTinh(100, "-", /^Phép tính: \d{2} - \d{2} = /), 2]] },
     { so: 33, ten: "Luyện tập chung", luyen: true },
   ] },
   { so: 9, tap: 2, ten: "Thời gian, giờ và lịch", bai: [
