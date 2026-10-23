@@ -22,6 +22,10 @@ export interface PaperQuestion {
   lines?: number;
   /** Câu mở: in ra, không chấm trên máy. `answerHint` là gợi ý đáp án cho hướng dẫn chấm. */
   open?: { answerHint: string };
+  /** Câu trắc nghiệm chỉ làm trên giấy (VD nghe: người lớn đọc lời), không vào bài làm trên máy. */
+  printOnly?: boolean;
+  /** Lời đọc cho câu nghe — in ở hướng dẫn chấm (và trang dành cho người coi thi). */
+  script?: string;
 }
 
 /** Một bài nhiều ý a), b), c)… dùng chung một lời dẫn ("Đặt tính rồi tính:"). */
@@ -38,11 +42,13 @@ export const isGroup = (it: PaperItem): it is PaperGroup => "parts" in it;
 export interface PaperSection {
   title: string;
   note?: string;
-  /** "Câu 1." hay "Bài 1." */
-  label: "Câu" | "Bài";
+  /** "Câu 1.", "Bài 1." hay "Question 1." (Tiếng Anh) */
+  label: "Câu" | "Bài" | "Question";
   items: PaperItem[];
   /** Tiếng Việt lớp 1–2: mục thuộc phần B. Kiểm tra viết (in sau bài chính tả). */
   part?: "viet";
+  /** Bài đọc riêng của mục (Tiếng Anh: Read and choose True or False), in ngay trên các câu. */
+  passage?: { title: string; text: string };
 }
 
 export interface Reading {
@@ -103,6 +109,8 @@ export interface ExamPaper {
    * chấm được) rồi tới `writing` nếu có; `minutes` là thời gian cả phần B.
    */
   viet?: { minutes: number; dictation: Dictation };
+  /** Tiếng Anh: phần nói, giáo viên hỏi riêng — câu hỏi và biểu điểm in ở hướng dẫn chấm. */
+  speaking?: { title: string; points: number; questions: string[]; rubric: [string, number][] };
 }
 
 /** Mọi câu của một mục, tách nhóm thành từng ý. */
@@ -126,8 +134,8 @@ export function paperRows(paper: ExamPaper): GenQuestionRow[] {
   for (const sec of paper.sections) {
     for (const it of sec.items) {
       if (isGroup(it)) {
-        for (const p of it.parts) if (!p.open) out.push({ ...p.row, content: `${it.prompt} ${p.row.content}` });
-      } else if (!it.open) out.push(it.row);
+        for (const p of it.parts) if (!p.open && !p.printOnly) out.push({ ...p.row, content: `${it.prompt} ${p.row.content}` });
+      } else if (!it.open && !it.printOnly) out.push(it.row);
     }
   }
   return out;

@@ -160,8 +160,11 @@ function writingHtml(p: ExamPaper): string {
 const rubricList = (rows: [string, number][]) =>
   `<ul>${rows.map(([label, pts]) => `<li>${escapeHtml(label)}: ${pointsText(pts)}.</li>`).join("")}</ul>`;
 
+const scriptOf = (q: PaperQuestion) => (q.script ? `<br/><span class="exp">Lời đọc: ${escapeHtml(q.script)}</span>` : "");
+
 function keyOf(q: PaperQuestion, o: PrintOptions): string {
   if (q.open) return escapeHtml(q.open.answerHint);
+  if (q.script) return `<b>${LETTERS[q.row.options.indexOf(q.row.correct_answer)]}</b>. ${rich(q.row.correct_answer, o)}${scriptOf(q)}`;
   if (q.row.type === "mcq") {
     const i = q.row.options.indexOf(q.row.correct_answer);
     return `<b>${LETTERS[i]}</b>. ${rich(q.row.correct_answer, o)}`;
@@ -169,8 +172,32 @@ function keyOf(q: PaperQuestion, o: PrintOptions): string {
   return rich(q.row.correct_answer.split("|")[0], o);
 }
 
+/** Phần nói (Tiếng Anh): câu hỏi giáo viên hỏi và biểu điểm. */
+function speakingKey(p: ExamPaper): string {
+  if (!p.speaking) return "";
+  const s = p.speaking;
+  return `<h3>${escapeHtml(s.title)} (${pointsText(s.points)})</h3><p>Hỏi riêng từng học sinh các câu sau (học sinh trả lời bằng câu đầy đủ):</p>` +
+    `<ol>${s.questions.map((q) => `<li>${escapeHtml(q)}</li>`).join("")}</ol>` + rubricList(s.rubric);
+}
+
+/**
+ * Không in đáp án nhưng đề có phần người lớn phải đọc (nghe – viết, câu nghe, câu hỏi nói):
+ * vẫn in riêng trang đó, không thì không ai biết đọc gì cho bé.
+ */
+function scriptsHtml(p: ExamPaper): string {
+  const listen = p.sections.flatMap((sec) => sec.items.flatMap(questionsOf).filter((q) => q.script).map((q) => `<li>${escapeHtml(q.script!)}</li>`));
+  if (!p.viet && !listen.length && !p.speaking) return "";
+  let html = `<div class="pb"><h1>PHẦN DÀNH CHO NGƯỜI COI THI</h1><p class="meta">${escapeHtml(p.title)} — đọc cho học sinh, không đưa trang này cho học sinh</p>`;
+  if (p.viet) {
+    html += `<h3>${escapeHtml(p.viet.dictation.title)}</h3><p>Đọc từng cụm từ cho học sinh viết đoạn sau:</p>` +
+      `<table class="read"><tr><td><p class="rp">${escapeHtml(p.viet.dictation.text)}</p></td></tr></table>`;
+  }
+  if (listen.length) html += `<h3>Listening</h3><p>Đọc mỗi câu hai lần, chậm và rõ:</p><ol>${listen.join("")}</ol>`;
+  return html + speakingKey(p) + `</div>`;
+}
+
 function answersHtml(p: ExamPaper, o: PrintOptions): string {
-  if (o.answers === "none") return "";
+  if (o.answers === "none") return scriptsHtml(p);
   const withSol = o.answers === "solutions";
   let html = `<div class="pb"><h1>HƯỚNG DẪN CHẤM VÀ ĐÁP ÁN</h1><p class="meta">${escapeHtml(p.title)} (dành cho giáo viên, phụ huynh)</p>`;
 
@@ -221,7 +248,7 @@ function answersHtml(p: ExamPaper, o: PrintOptions): string {
         guide.outline.map((o) => `<p><b>${escapeHtml(o.part)}:</b> ${escapeHtml(o.points.join(" "))}</p>`).join("");
     }
   }
-  return html + `</div>`;
+  return html + speakingKey(p) + `</div>`;
 }
 
 export function buildPaperHtml(p: ExamPaper, o: PrintOptions): string {
@@ -233,10 +260,12 @@ export function buildPaperHtml(p: ExamPaper, o: PrintOptions): string {
       // Đề Tiếng Việt: tiêu đề "II. Đọc hiểu…" đã in ngay trên bài đọc, không lặp lại.
       return (p.reading ? "" : `<h2>${escapeHtml(sec.title)} (${pointsText(pts)})</h2>`) +
         (sec.note ? `<p class="note">${escapeHtml(sec.note)}</p>` : "") +
+        (sec.passage ? `<table class="read"><tr><td><p class="rt">${escapeHtml(sec.passage.title)}</p>${sec.passage.text.split(/\n\s*\n/).map((t) => `<p class="rp">${rich(t.trim(), o)}</p>`).join("")}</td></tr></table>` : "") +
         sec.items.map((it, i) => itemHtml(it, `${sec.label} ${i + 1}`, o)).join("");
     }).join("") +
     writingHtml(p) +
     vietHtml(p, o) +
+    (p.speaking ? `<h2>${escapeHtml(p.speaking.title)} (${pointsText(p.speaking.points)})</h2><p class="note">Giáo viên (phụ huynh) hỏi riêng từng học sinh — câu hỏi ở trang hướng dẫn chấm.</p>` : "") +
     answersHtml(p, o);
 
   return `<!DOCTYPE html>

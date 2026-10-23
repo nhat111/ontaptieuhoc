@@ -203,6 +203,8 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             <p className="text-xs leading-relaxed text-slate-500">
               {spec.subject === "Tiếng Việt"
                 ? "Bài đọc và câu hỏi do Ôn Tập Phổ Thông tự soạn theo chủ điểm sách giáo khoa; mỗi lần bấm chọn bài đọc, câu hỏi và đề văn khác. Câu viết và bài tập làm văn chấm trên giấy."
+                : spec.subject === "Tiếng Anh"
+                ? "Câu hỏi và bài đọc do Ôn Tập Phổ Thông tự soạn theo chủ đề, mẫu câu của từng Unit sách Global Success; mỗi lần bấm ra một đề mới. Phần Listening: người lớn đọc lời in ở trang hướng dẫn chấm, mỗi câu hai lần. Listening và Speaking chấm trên giấy."
                 : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Đề theo cấu trúc đề giấy (trắc nghiệm, tự luận, có hình vẽ) và thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
             </p>
             {spec.subject === "Tiếng Việt" && grade === 5 && (
@@ -222,7 +224,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             <BookOpen className="mx-auto mb-2 h-6 w-6 text-slate-400" aria-hidden />
             <p className="font-bold text-slate-700">Môn {subject} lớp {grade} chưa có đề tạo tự động</p>
             <p className="mt-1 text-sm text-slate-500">
-              Hiện máy tạo được đề Toán lớp 1–5 và Tiếng Việt lớp 1–5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
+              Hiện máy tạo được đề Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
             </p>
             <Link
               href={`/lop/${grade}?subject=${encodeURIComponent(subject)}&view=exam`}

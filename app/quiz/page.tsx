@@ -62,7 +62,9 @@ export default async function QuizPage({ searchParams }: Props) {
     ? [
         paperRows(paper).map((r, i) => rowToQuestion(r, i + 1)),
         {
-          reading: paper.reading ? { title: paper.reading.title, text: paper.reading.text } : undefined,
+          reading: paper.reading
+            ? { title: paper.reading.title, text: paper.reading.text }
+            : paper.sections.find((x) => x.passage)?.passage,
           id: 0,
           title: quick.spec.title,
           grade: quick.spec.grade,

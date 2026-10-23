@@ -28,6 +28,7 @@ const SUBJECTS: [number, string][] = [
   [3, "Tiếng Việt"],
   [4, "Tiếng Việt"],
   [5, "Tiếng Việt"],
+  [5, "Tiếng Anh"],
 ];
 
 for (const [g, subject] of SUBJECTS) {
@@ -51,7 +52,7 @@ for (const [g, subject] of SUBJECTS) {
       const paper = spec.paper(seed);
       const pts = paper.viet
         ? sectionPoints({ ...paper, sections: paper.sections.filter((x) => !x.part) }) + (paper.readAloud?.points ?? 0)
-        : sectionPoints(paper) + (subject === "Tiếng Việt" ? 3 : 0);
+        : sectionPoints(paper) + (paper.speaking?.points ?? 0) + (subject === "Tiếng Việt" ? 3 : 0);
       if (pts !== 10) fail(`${spec.id}/${seed}: tổng điểm ${pts}`);
       if (rows.length !== spec.count) fail(`${spec.id}/${seed}: ${rows.length} câu, cần ${spec.count}`);
       const keys = rows.map((r) => r.content + "\u0000" + r.options.join("\u0000"));
@@ -75,6 +76,8 @@ for (const [g, subject] of SUBJECTS) {
 }
 
 if (getQuickExam(2, "Tiếng Anh", "cuoi-hk1") !== null) fail("môn chưa có bộ sinh lại ra đề");
+if (getQuickExam(5, "Tiếng Anh", "giua-hk1") === null) fail("Tiếng Anh lớp 5 phải có đề");
+if (quickExamById("tieng-anh-5-cuoi-hk2")?.subject !== "Tiếng Anh") fail("khoá tieng-anh-5-cuoi-hk2 không đọc lại được");
 if (getQuickExam(1, "Tiếng Việt", "giua-hk1") === null) fail("Tiếng Việt lớp 1 phải có đề");
 if (getQuickExam(2, "Tiếng Việt", "cuoi-hk2") === null) fail("Tiếng Việt lớp 2 phải có đề");
 if (getQuickExam(6, "Toán", "cuoi-hk1") !== null) fail("Toán lớp 6 chưa có bộ sinh lại ra đề");
@@ -82,7 +85,7 @@ if (getQuickExam(5, "Tiếng Việt", "cuoi-hk1") === null) fail("Tiếng Việt
 if (getQuickExam(4, "Tiếng Việt", "giua-hk1") === null) fail("Tiếng Việt lớp 4 phải có đề");
 if (getQuickExam(3, "Tiếng Việt", "giua-hk2") === null) fail("Tiếng Việt lớp 3 phải có đề");
 if (quickExamById("tieng-viet-5-giua-hk2")?.subject !== "Tiếng Việt") fail("khoá tieng-viet-5-giua-hk2 không đọc lại được");
-for (const bad of ["", "toan-3", "toan-9-cuoi-hk1", "toan-3-cuoi-hk3", "x-toan-3-cuoi-hk1", "tieng-viet-6-cuoi-hk1", "tieng-anh-5-cuoi-hk1", undefined]) {
+for (const bad of ["", "toan-3", "toan-9-cuoi-hk1", "toan-3-cuoi-hk3", "x-toan-3-cuoi-hk1", "tieng-viet-6-cuoi-hk1", "tieng-anh-6-cuoi-hk1", undefined]) {
   if (quickExamById(bad) !== null) fail(`khoá lạ "${bad}" lại ra đề`);
 }
 if (cleanSeed("Ab-12<script>") !== "ab12script") fail(`cleanSeed lọc sai: ${cleanSeed("Ab-12<script>")}`);

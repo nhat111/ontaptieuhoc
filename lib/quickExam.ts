@@ -2,8 +2,8 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5 và Tiếng Việt lớp 1–5, đều theo cấu
-// trúc đề giấy thật, có hình vẽ (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts, tv12.ts). Mỗi đề là
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 5, đều
+// theo cấu trúc đề giấy thật (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts, tv12.ts, tiengAnh.ts). Mỗi đề là
 // một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
 // mở lại đúng đề đó (server và trình duyệt trùng nhau).
@@ -22,6 +22,11 @@ import { TV_CONTENT, buildTiengViet, passagesFor } from "./exam5/tiengViet";
 import { TV12_MINUTES, buildTv12, tv12Passages, type Tv12Content } from "./exam5/tv12";
 import { TV1_EXAM } from "./exam5/tvContent1";
 import { TV2_EXAM } from "./exam5/tvContent2";
+import { EN_UNITS, buildTiengAnh, enPassages, unitsFor, type EnContent } from "./exam5/tiengAnh";
+import { EN5 } from "./exam5/enContent5";
+
+/** Tiếng Anh theo sách Global Success; lớp nào có nội dung thì có đề. */
+const EN: Record<number, EnContent> = { 5: EN5 };
 
 const TV12: Record<number, Tv12Content> = { 1: TV1_EXAM, 2: TV2_EXAM };
 
@@ -100,7 +105,7 @@ const FIGURE_NOTE: Record<1 | 2 | 3 | 4, string> = {
   4: "Có câu hình vẽ (góc, hình bình hành – hình thoi, biểu đồ cột, phân số), đặt tính và bài giải như đề thật",
 };
 
-const SUBJECT_SLUG: Record<string, string> = { "Toán": "toan", "Tiếng Việt": "tieng-viet" };
+const SUBJECT_SLUG: Record<string, string> = { "Toán": "toan", "Tiếng Việt": "tieng-viet", "Tiếng Anh": "tieng-anh" };
 const lowerFirst = (s: string) => s.replace(/^./, (c) => c.toLowerCase());
 
 /** Đề tạo được cho (lớp, môn, kì); null khi môn đó chưa có bộ sinh câu hỏi. */
@@ -111,6 +116,23 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
   // Chỉ hạ chữ đầu: "Cuối học kì I" → "cuối học kì I" (toLowerCase sẽ biến "I" thành "i").
   const title = `Đề kiểm tra ${lowerFirst(kindLabel)} – ${subject} lớp ${grade}`;
   const base = { id: `${slug}-${grade}-${kind}`, grade, subject, kind, title };
+
+  if (subject === "Tiếng Anh") {
+    const en = EN[grade];
+    if (!en) return null;
+    const [a, b] = EN_UNITS[kind];
+    return {
+      ...base,
+      scope: [
+        `${en.book}: Unit ${a}–${b} (${unitsFor(en, kind).map((u) => u.title).join(", ")})`,
+        `Reading: chọn từ khác loại, đọc đoạn văn (${enPassages(en, kind).map((p) => p.title).join(" hoặc ")}) và chọn True / False`,
+        "Writing: chọn đáp án đúng, chọn câu đúng thứ tự từ",
+        "Listening (người lớn đọc lời in kèm) và Speaking (hỏi đáp) chấm trên giấy",
+      ],
+      count: 12, minutes: 35,
+      paper: (seed) => buildTiengAnh(en, kind, kindLabel, seed),
+    };
+  }
 
   if (subject === "Tiếng Việt" && TV12[grade]) {
     const tv = TV12[grade];
@@ -172,7 +194,7 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
 
 /** Đọc lại spec từ khoá trong URL (`?de=`); khoá lạ → null. */
 export function quickExamById(id: string | undefined | null): QuickExamSpec | null {
-  const m = id?.match(/^(toan|tieng-viet)-(\d)-(giua-hk[12]|cuoi-hk[12])$/);
+  const m = id?.match(/^(toan|tieng-viet|tieng-anh)-(\d)-(giua-hk[12]|cuoi-hk[12])$/);
   if (!m || !isExamKind(m[3])) return null;
   const subject = Object.keys(SUBJECT_SLUG).find((k) => SUBJECT_SLUG[k] === m[1])!;
   return getQuickExam(Number(m[2]), subject, m[3]);
