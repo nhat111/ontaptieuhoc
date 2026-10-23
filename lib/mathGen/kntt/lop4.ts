@@ -8,7 +8,7 @@
 // Các generator cũ ở lop4.ts giữ nguyên để đề đã import và link đề đã chia sẻ không đổi.
 // scripts/sgk-toan-check.ts (recheck4) tính lại đáp án từ chữ trong đề và từ hình vẽ.
 
-import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, gcd } from "../core";
+import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, gcd, baiGiai } from "../core";
 import { cap } from "../shared";
 import { protractorSvg, rectLabelSvg } from "../../exam5/figures";
 
@@ -69,18 +69,29 @@ export const baBuoc: Generator = (r) => {
     case "kho": {
       const b = int(r, 20, 90), c = int(r, 20, 90), d = int(r, 15, 80), a = b + c + int(r, 30, 300);
       return fill(`Kho có ${a} bao gạo. Ngày thứ nhất xuất ${b} bao, ngày thứ hai xuất ${c} bao, ngày thứ ba nhập thêm ${d} bao. Kho còn ___ bao gạo.`, a - b - c + d,
-        `Sau hai ngày xuất: ${a} - ${b} - ${c} = ${a - b - c} (bao). Nhập thêm: ${a - b - c} + ${d} = ${a - b - c + d} (bao).`, ["ba bước tính", "toán có lời văn"], "Làm lần lượt theo từng ngày.");
+        baiGiai([
+          ["Sau hai ngày xuất, kho còn lại số bao gạo là:", `${a} - ${b} - ${c} = ${a - b - c} (bao)`],
+          ["Sau khi nhập thêm, kho có số bao gạo là:", `${a - b - c} + ${d} = ${a - b - c + d} (bao)`],
+        ], `${a - b - c + d} bao gạo`), ["ba bước tính", "toán có lời văn"], "Làm lần lượt theo từng ngày.");
     }
     case "thung": {
       const n = int(r, 3, 9), k = int(r, 12, 30), b = int(r, 5, n * k - 5), d = int(r, 10, 60);
       return fill(`Cửa hàng có ${n} thùng, mỗi thùng ${k} chai nước. Cửa hàng đã bán ${b} chai, sau đó nhập thêm ${d} chai. Cửa hàng có ___ chai nước.`, n * k - b + d,
-        `Lúc đầu: ${k} × ${n} = ${n * k} (chai). Sau khi bán: ${n * k} - ${b} = ${n * k - b} (chai). Nhập thêm: ${n * k - b} + ${d} = ${n * k - b + d} (chai).`, ["ba bước tính", "toán có lời văn"], "Tìm số chai lúc đầu trước.");
+        baiGiai([
+          ["Lúc đầu cửa hàng có số chai nước là:", `${k} × ${n} = ${n * k} (chai)`],
+          ["Sau khi bán, cửa hàng còn lại số chai nước là:", `${n * k} - ${b} = ${n * k - b} (chai)`],
+          ["Sau khi nhập thêm, cửa hàng có số chai nước là:", `${n * k - b} + ${d} = ${n * k - b + d} (chai)`],
+        ], `${n * k - b + d} chai nước`), ["ba bước tính", "toán có lời văn"], "Tìm số chai lúc đầu trước.");
     }
     case "mua": {
       const n = int(r, 2, 6), p = int(r, 5, 15) * 1000, q = int(r, 3, 12) * 1000;
       const t = Math.ceil((n * p + q + 1000) / 50000) * 50000;
       return fill(`Mẹ mua ${n} quyển vở, mỗi quyển giá ${fmtInt(p)} đồng và một chiếc bút giá ${fmtInt(q)} đồng. Mẹ đưa cô bán hàng ${fmtInt(t)} đồng. Cô bán hàng trả lại mẹ ___ đồng.`, t - n * p - q,
-        `Tiền vở: ${fmtInt(p)} × ${n} = ${fmtInt(n * p)} (đồng). Tiền vở và bút: ${fmtInt(n * p)} + ${fmtInt(q)} = ${fmtInt(n * p + q)} (đồng). Trả lại: ${fmtInt(t)} - ${fmtInt(n * p + q)} = ${fmtInt(t - n * p - q)} (đồng).`,
+        baiGiai([
+          [`Mua ${n} quyển vở hết số tiền là:`, `${fmtInt(p)} × ${n} = ${fmtInt(n * p)} (đồng)`],
+          ["Mua vở và bút hết số tiền là:", `${fmtInt(n * p)} + ${fmtInt(q)} = ${fmtInt(n * p + q)} (đồng)`],
+          ["Cô bán hàng trả lại mẹ số tiền là:", `${fmtInt(t)} - ${fmtInt(n * p + q)} = ${fmtInt(t - n * p - q)} (đồng)`],
+        ], `${fmtInt(t - n * p - q)} đồng`),
         ["ba bước tính", "toán có lời văn"], "Tính tổng số tiền phải trả trước.");
     }
   }
@@ -242,11 +253,20 @@ export const rutVeDonVi: Generator = (r) => {
   const n1 = int(r, 2, 9), n2 = retry(() => { const x = int(r, 2, 12); return x !== n1 ? x : null; });
   switch (pick(r, ["vo", "xe", "oto"] as const)) {
     case "vo": { const u = int(r, 4, 15) * 1000; return fill(`Mua ${n1} quyển vở hết ${fmtInt(u * n1)} đồng. Mua ${n2} quyển vở như thế hết ___ đồng.`, u * n2,
-      `Giá một quyển vở: ${fmtInt(u * n1)} : ${n1} = ${fmtInt(u)} (đồng). ${n2} quyển: ${fmtInt(u)} × ${n2} = ${fmtInt(u * n2)} (đồng).`, ["rút về đơn vị"], "Tìm giá tiền một quyển trước."); }
+      baiGiai([
+        ["Giá tiền một quyển vở là:", `${fmtInt(u * n1)} : ${n1} = ${fmtInt(u)} (đồng)`],
+        [`Mua ${n2} quyển vở như thế hết số tiền là:`, `${fmtInt(u)} × ${n2} = ${fmtInt(u * n2)} (đồng)`],
+      ], `${fmtInt(u * n2)} đồng`), ["rút về đơn vị"], "Tìm giá tiền một quyển trước."); }
     case "xe": { const u = int(r, 20, 60); return fill(`${n1} xe tải chở được ${u * n1} bao xi măng. Hỏi ${n2} xe như thế chở được bao nhiêu bao xi măng? Trả lời: ___ bao.`, u * n2,
-      `Một xe chở: ${u * n1} : ${n1} = ${u} (bao). ${n2} xe chở: ${u} × ${n2} = ${u * n2} (bao).`, ["rút về đơn vị"], "Tìm số bao một xe chở trước."); }
+      baiGiai([
+        ["Một xe tải chở được số bao xi măng là:", `${u * n1} : ${n1} = ${u} (bao)`],
+        [`${n2} xe tải như thế chở được số bao xi măng là:`, `${u} × ${n2} = ${u * n2} (bao)`],
+      ], `${u * n2} bao xi măng`), ["rút về đơn vị"], "Tìm số bao một xe chở trước."); }
     case "oto": { const u = int(r, 35, 60); return fill(`Một ô tô đi ${n1} giờ được ${u * n1} km. Với vận tốc như thế, ô tô đi ${n2} giờ được ___ km.`, u * n2,
-      `Một giờ đi: ${u * n1} : ${n1} = ${u} (km). ${n2} giờ đi: ${u} × ${n2} = ${u * n2} (km).`, ["rút về đơn vị"], "Tìm quãng đường đi trong 1 giờ trước."); }
+      baiGiai([
+        ["Mỗi giờ ô tô đi được số ki-lô-mét là:", `${u * n1} : ${n1} = ${u} (km)`],
+        [`${n2} giờ ô tô đi được số ki-lô-mét là:`, `${u} × ${n2} = ${u * n2} (km)`],
+      ], `${u * n2} km`), ["rút về đơn vị"], "Tìm quãng đường đi trong 1 giờ trước."); }
   }
 };
 
@@ -336,7 +356,7 @@ export const phanSoCuaSo: Generator = (r) => {
   switch (pick(r, ["so", "so", "lop", "gio"] as const)) {
     case "so": { const x = d * int(r, 2, 20); return fill(`${n}/${d} của ${x} là ___`, (x / d) * n, `${x} × ${n} : ${d} = ${(x / d) * n}.`, ["phân số của một số"], `Lấy ${x} nhân ${n} rồi chia ${d}.`); }
     case "lop": { const x = d * int(r, 4, 6); if (x < 24 || x > 40) return phanSoCuaSo(r);
-      return fill(`Lớp 4A có ${x} học sinh, số học sinh nữ bằng ${n}/${d} số học sinh cả lớp. Lớp 4A có ___ học sinh nữ.`, (x / d) * n, `${x} × ${n} : ${d} = ${(x / d) * n} (học sinh).`, ["phân số của một số", "toán có lời văn"], "Tìm phân số của số học sinh cả lớp."); }
+      return fill(`Lớp 4A có ${x} học sinh, số học sinh nữ bằng ${n}/${d} số học sinh cả lớp. Lớp 4A có ___ học sinh nữ.`, (x / d) * n, baiGiai([["Lớp 4A có số học sinh nữ là:", `${x} × ${n} : ${d} = ${(x / d) * n} (học sinh)`]], `${(x / d) * n} học sinh nữ`), ["phân số của một số", "toán có lời văn"], "Tìm phân số của số học sinh cả lớp."); }
     case "gio": { const dd = pick(r, [2, 3, 4, 5, 6, 10, 12]), nn = retry(() => { const x = int(r, 1, dd - 1); return gcd(x, dd) === 1 ? x : null; });
       return fill(`${nn}/${dd} giờ = ___ phút`, (60 / dd) * nn, `1 giờ = 60 phút; 60 × ${nn} : ${dd} = ${(60 / dd) * nn} (phút).`, ["phân số của một số", "thời gian"], "1 giờ = 60 phút."); }
   }

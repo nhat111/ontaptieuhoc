@@ -7,7 +7,7 @@
 // Đáp án do máy tính tính; hình vẽ là SVG đen trắng (lib/exam5/figures.ts) mang số liệu
 // trong thuộc tính data-… để scripts/sgk-toan-check.ts đọc ngược lại mà kiểm tra.
 
-import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, sign } from "../core";
+import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, fmtInt, sign, baiGiai } from "../core";
 import { NAMES, DAYS, cap } from "../shared";
 import { HANG3 } from "../lop3";
 import {
@@ -213,14 +213,14 @@ export const soLonGapMayLan: Generator = (r) => {
       hint: "Lấy số lớn chia cho số bé." };
   const [n1, n2] = shuffle(r, NAMES).slice(0, 2);
   const s = pick(r, [
-    { q: `Đoạn dây thứ nhất dài ${a} cm, đoạn dây thứ hai dài ${b} cm. Hỏi đoạn dây thứ nhất dài gấp mấy lần đoạn dây thứ hai?`, unit: "lần" },
-    { q: `${n1} có ${a} viên bi, ${n2} có ${b} viên bi. Hỏi số bi của ${n1} gấp mấy lần số bi của ${n2}?`, unit: "lần" },
-    { q: `Một con gà cân nặng ${b} kg, một con lợn cân nặng ${a} kg. Hỏi con lợn nặng gấp mấy lần con gà?`, unit: "lần" },
-    { q: `Giờ ra chơi, lớp em có ${b} bạn đá cầu và ${a} bạn nhảy dây. Hỏi số bạn nhảy dây gấp mấy lần số bạn đá cầu?`, unit: "lần" },
+    { q: `Đoạn dây thứ nhất dài ${a} cm, đoạn dây thứ hai dài ${b} cm. Hỏi đoạn dây thứ nhất dài gấp mấy lần đoạn dây thứ hai?`, unit: "lần", l: "Đoạn dây thứ nhất dài gấp đoạn dây thứ hai số lần là:" },
+    { q: `${n1} có ${a} viên bi, ${n2} có ${b} viên bi. Hỏi số bi của ${n1} gấp mấy lần số bi của ${n2}?`, unit: "lần", l: `Số bi của ${n1} gấp số bi của ${n2} số lần là:` },
+    { q: `Một con gà cân nặng ${b} kg, một con lợn cân nặng ${a} kg. Hỏi con lợn nặng gấp mấy lần con gà?`, unit: "lần", l: "Con lợn nặng gấp con gà số lần là:" },
+    { q: `Giờ ra chơi, lớp em có ${b} bạn đá cầu và ${a} bạn nhảy dây. Hỏi số bạn nhảy dây gấp mấy lần số bạn đá cầu?`, unit: "lần", l: "Số bạn nhảy dây gấp số bạn đá cầu số lần là:" },
   ]);
   return { type: "fill_blank", difficulty: "medium", tags: ["số lớn gấp mấy lần số bé", "toán có lời văn"],
     question: `${s.q} Trả lời: ___ ${s.unit}.`, ...blanks(String(k)),
-    explanation: `Lấy số lớn chia cho số bé: ${a} : ${b} = ${k} (lần).`,
+    explanation: baiGiai([[s.l, `${a} : ${b} = ${k} (lần)`]], `${k} lần`),
     hint: "“Gấp mấy lần” → lấy số lớn chia cho số bé." };
 };
 
@@ -458,37 +458,55 @@ export const haiBuocTinh: Generator = (r) => {
       const a = int(r, 12, 60), b = int(r, 3, 25);
       return { ...base, question: `${n1} có ${a} ${thing}, ${n2} có nhiều hơn ${n1} ${b} ${thing}. Hỏi cả hai bạn có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
         ...blanks(String(a + a + b)),
-        explanation: `Bước 1 — số ${thing} của ${n2}: ${a} + ${b} = ${a + b}. Bước 2 — cả hai bạn: ${a} + ${a + b} = ${2 * a + b} (${thing}).` };
+        explanation: baiGiai([
+          [`Số ${thing} của ${n2} là:`, `${a} + ${b} = ${a + b} (${thing})`],
+          [`Cả hai bạn có số ${thing} là:`, `${a} + ${a + b} = ${2 * a + b} (${thing})`],
+        ], `${2 * a + b} ${thing}`) };
     }
     case "itHonTong": {
       const a = int(r, 25, 80), b = int(r, 3, 20);
       return { ...base, question: `${n1} có ${a} ${thing}, ${n2} có ít hơn ${n1} ${b} ${thing}. Hỏi cả hai bạn có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
         ...blanks(String(a + a - b)),
-        explanation: `Bước 1 — số ${thing} của ${n2}: ${a} - ${b} = ${a - b}. Bước 2 — cả hai bạn: ${a} + ${a - b} = ${2 * a - b} (${thing}).` };
+        explanation: baiGiai([
+          [`Số ${thing} của ${n2} là:`, `${a} - ${b} = ${a - b} (${thing})`],
+          [`Cả hai bạn có số ${thing} là:`, `${a} + ${a - b} = ${2 * a - b} (${thing})`],
+        ], `${2 * a - b} ${thing}`) };
     }
     case "banNhap": {
       const a = int(r, 200, 600), b = int(r, 40, a - 50), c = int(r, 30, 300);
       return { ...base, question: `Một cửa hàng có ${a} kg gạo. Buổi sáng bán được ${b} kg, buổi chiều cửa hàng nhập thêm ${c} kg. Hỏi lúc này cửa hàng có bao nhiêu ki-lô-gam gạo? Trả lời: ___ kg.`,
         ...blanks(String(a - b + c)),
-        explanation: `Bước 1 — sau khi bán còn: ${a} - ${b} = ${a - b} (kg). Bước 2 — sau khi nhập thêm: ${a - b} + ${c} = ${a - b + c} (kg).` };
+        explanation: baiGiai([
+          ["Sau khi bán, cửa hàng còn lại số ki-lô-gam gạo là:", `${a} - ${b} = ${a - b} (kg)`],
+          ["Lúc này cửa hàng có số ki-lô-gam gạo là:", `${a - b} + ${c} = ${a - b + c} (kg)`],
+        ], `${a - b + c} kg gạo`) };
     }
     case "goiLe": {
       const k = int(r, 4, 9), n = int(r, 3, 9), m = int(r, 1, k - 1);
       return { ...base, question: `Mỗi hộp có ${k} ${thing}. ${n1} có ${n} hộp như thế và thêm ${m} ${thing} lẻ. Hỏi ${n1} có tất cả bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
         ...blanks(String(k * n + m)),
-        explanation: `Bước 1 — ${n} hộp có: ${k} × ${n} = ${k * n} (${thing}). Bước 2 — thêm số lẻ: ${k * n} + ${m} = ${k * n + m} (${thing}).` };
+        explanation: baiGiai([
+          [`Số ${thing} có trong ${n} hộp là:`, `${k} × ${n} = ${k * n} (${thing})`],
+          [`${n1} có tất cả số ${thing} là:`, `${k * n} + ${m} = ${k * n + m} (${thing})`],
+        ], `${k * n + m} ${thing}`) };
     }
     case "gapTong": {
       const a = int(r, 4, 15), k = int(r, 2, 6);
       return { ...base, question: `${n1} có ${a} ${thing}, số ${thing} của ${n2} gấp ${k} lần số ${thing} của ${n1}. Hỏi cả hai bạn có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
         ...blanks(String(a + a * k)),
-        explanation: `Bước 1 — số ${thing} của ${n2}: ${a} × ${k} = ${a * k}. Bước 2 — cả hai bạn: ${a} + ${a * k} = ${a + a * k} (${thing}).` };
+        explanation: baiGiai([
+          [`Số ${thing} của ${n2} là:`, `${a} × ${k} = ${a * k} (${thing})`],
+          [`Cả hai bạn có số ${thing} là:`, `${a} + ${a * k} = ${a + a * k} (${thing})`],
+        ], `${a + a * k} ${thing}`) };
     }
     case "chiaConLai": {
       const k = int(r, 2, 9), q = int(r, 3, 12), b = int(r, 5, 40), a = q * k + b;
       return { ...base, question: `Một thùng có ${a} lít nước mắm. Người ta đã bán ${b} lít, số nước mắm còn lại rót đều vào ${k} can. Hỏi mỗi can có bao nhiêu lít nước mắm? Trả lời: ___ lít.`,
         ...blanks(String(q)),
-        explanation: `Bước 1 — số nước mắm còn lại: ${a} - ${b} = ${a - b} (lít). Bước 2 — mỗi can: ${a - b} : ${k} = ${q} (lít).` };
+        explanation: baiGiai([
+          ["Số lít nước mắm còn lại là:", `${a} - ${b} = ${a - b} (l)`],
+          ["Mỗi can có số lít nước mắm là:", `${a - b} : ${k} = ${q} (l)`],
+        ], `${q} l nước mắm`) };
     }
   }
 };

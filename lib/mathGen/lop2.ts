@@ -1,7 +1,7 @@
 // lib/mathGen/lop2.ts — Toán lớp 2 (Chương trình GDPT 2018)
 
 import {
-  type Generator, type Rng, int, pick, chance, mcOptions, blanks, fmtInt, retry,
+  type Generator, type Rng, int, pick, chance, mcOptions, blanks, fmtInt, retry, baiGiai,
 } from "./core";
 import { NAMES, THINGS, DAYS, cap, xemDongHo, ngayTrongTuan, soSanhSo, sapXepSo } from "./shared";
 
@@ -74,8 +74,7 @@ export const nhieuHonItHon: Generator = (r) => {
     type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", more ? "nhiều hơn" : "ít hơn"],
     question: `${n1} có ${a} ${thing}. ${n2} có ${more ? "nhiều" : "ít"} hơn ${n1} ${d} ${thing}. Hỏi ${n2} có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
     ...blanks(String(c)),
-    explanation: more ? `"Nhiều hơn" thì làm phép cộng: ${a} + ${d} = ${c} (${thing}).`
-      : `"Ít hơn" thì làm phép trừ: ${a} - ${d} = ${c} (${thing}).`,
+    explanation: baiGiai([[`Số ${thing} của ${n2} là:`, `${a} ${more ? "+" : "-"} ${d} = ${c} (${thing})`]], `${c} ${thing}`),
     hint: "Nhiều hơn → cộng, ít hơn → trừ.",
   };
 };
@@ -108,11 +107,11 @@ export const nhanChiaLoiVan: Generator = (r) => {
     return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "phép nhân"],
       question: `Mỗi bạn có ${k} ${thing}. Hỏi ${x} bạn có tất cả bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(k * x)),
-      explanation: `${x} bạn, mỗi bạn ${k} ${thing}: ${k} × ${x} = ${k * x} (${thing}).`, hint: "Mỗi bạn có như nhau → dùng phép nhân." };
+      explanation: baiGiai([[`Số ${thing} của ${x} bạn là:`, `${k} × ${x} = ${k * x} (${thing})`]], `${k * x} ${thing}`), hint: "Mỗi bạn có như nhau → dùng phép nhân." };
   return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "phép chia"],
     question: `Có ${k * x} ${thing} chia đều cho ${k} bạn. Hỏi mỗi bạn được mấy ${thing}? Trả lời: ___ ${thing}.`,
     ...blanks(String(x)),
-    explanation: `Chia đều → phép chia: ${k * x} : ${k} = ${x} (${thing}).`, hint: "Chia đều → dùng phép chia." };
+    explanation: baiGiai([[`Mỗi bạn được số ${thing} là:`, `${k * x} : ${k} = ${x} (${thing})`]], `${x} ${thing}`), hint: "Chia đều → dùng phép chia." };
 };
 
 /* ───── Số đến 1000 ───── */
@@ -151,13 +150,14 @@ export const donViDo2: Generator = (r) => {
       hint: `Nhớ: 1 ${conv[0]} = ${fmtInt(conv[2])} ${conv[1]}.` };
   const unit = pick(r, ["kg", "l"]);
   const a = int(r, 10, 60), b = int(r, 5, 35);
-  const label = unit === "kg" ? "ki-lô-gam" : "lít";
   return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", unit === "kg" ? "ki-lô-gam" : "lít"],
     question: unit === "kg"
       ? `Bao gạo nặng ${a} kg, bao ngô nặng ${b} kg. Cả hai bao nặng ___ kg.`
       : `Can thứ nhất đựng ${a} l nước, can thứ hai đựng ${b} l nước. Cả hai can đựng ___ l nước.`,
     ...blanks(String(a + b)),
-    explanation: `"Cả hai" → phép cộng: ${a} + ${b} = ${a + b} (${label}).`, hint: "Cộng hai số đo lại, nhớ ghi đơn vị." };
+    explanation: unit === "kg"
+      ? baiGiai([["Cả hai bao nặng là:", `${a} + ${b} = ${a + b} (kg)`]], `${a + b} kg`)
+      : baiGiai([["Cả hai can đựng được số lít nước là:", `${a} + ${b} = ${a + b} (l)`]], `${a + b} l nước`), hint: "Cộng hai số đo lại, nhớ ghi đơn vị." };
 };
 
 /* ───── Đường gấp khúc ───── */

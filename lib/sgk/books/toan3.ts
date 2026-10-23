@@ -9,8 +9,8 @@ import { demTamGiac, demTuGiac, doDaiThuoc, duongGapKhuc, hinhCN, hinhTron3, tie
 import { type SgkBook, type SgkTopic, has, only, tagged } from "../types";
 
 const bang = (k: number) => tagged(`bảng ${k}`);
-/** Lời văn một bước của bảng nhân k (lời giải bắt đầu bằng "k × …" hoặc "… : k = …"). */
-const loiVanBang = (k: number) => (d: { explanation: string }) => new RegExp(`(^|: )${k} × |: ${k} = `).test(d.explanation);
+/** Lời văn một bước của bảng nhân k (dòng phép tính của "Bài giải" là "k × …" hoặc "… : k = …"). */
+const loiVanBang = (k: number) => (d: { explanation: string }) => new RegExp(`(^|: )${k} × |: ${k} = `, "m").test(d.explanation);
 
 // Nhân, chia với số có một chữ số tách theo số chữ số của thừa số / số bị chia.
 const nhan3 = only(LOP3.nhanChiaMotChuSo, has(/^\d{3} × \d = ___$/));

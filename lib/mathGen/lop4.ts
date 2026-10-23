@@ -5,7 +5,7 @@
 
 import {
   type Generator, type Rng, int, pick, chance, shuffle, retry, gcd,
-  fmtInt, sign, mcOptions, fixedOptions, blanks,
+  fmtInt, sign, mcOptions, fixedOptions, blanks, baiGiai,
 } from "./core";
 
 /* ═════ Số có nhiều chữ số ═════ */
@@ -208,7 +208,10 @@ export const loiVanCongTru4: Generator = (r) => {
     type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "hai bước"],
     question: `${place} tháng thứ nhất ${verb} ${fmtInt(a)} ${item}, tháng thứ hai ${verb} ${less ? "ít" : "nhiều"} hơn tháng thứ nhất ${fmtInt(more)} ${item}. Hỏi cả hai tháng ${verb} bao nhiêu ${item}? Trả lời: ___ ${item}.`,
     ...blanks(fmtInt(total)),
-    explanation: `Tháng thứ hai: ${fmtInt(a)} ${less ? "-" : "+"} ${fmtInt(more)} = ${fmtInt(second)} (${item}). Cả hai tháng: ${fmtInt(a)} + ${fmtInt(second)} = ${fmtInt(total)} (${item}).`,
+    explanation: baiGiai([
+      [`Tháng thứ hai ${verb} số ${item} là:`, `${fmtInt(a)} ${less ? "-" : "+"} ${fmtInt(more)} = ${fmtInt(second)} (${item})`],
+      [`Cả hai tháng ${verb} số ${item} là:`, `${fmtInt(a)} + ${fmtInt(second)} = ${fmtInt(total)} (${item})`],
+    ], `${fmtInt(total)} ${item}`),
     hint: "Tìm số của tháng thứ hai trước, rồi cộng cả hai tháng.",
   };
 };
@@ -276,12 +279,12 @@ export const loiVanNhanChia4: Generator = (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép nhân"],
       question: `Mỗi ${box} có ${k} ${unit}. Hỏi ${n} ${box} như thế có tất cả bao nhiêu ${unit}? Trả lời: ___ ${unit}.`,
       ...blanks(fmtInt(k * n)),
-      explanation: `${n} ${box}, mỗi ${box} ${k} ${unit}: ${k} × ${n} = ${fmtInt(k * n)} (${unit}).`,
+      explanation: baiGiai([[`Số ${unit} có trong ${n} ${box} là:`, `${k} × ${n} = ${fmtInt(k * n)} (${unit})`]], `${fmtInt(k * n)} ${unit}`),
       hint: "Mỗi phần bằng nhau → dùng phép nhân." };
   return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "phép chia"],
     question: `Người ta xếp ${fmtInt(k * n)} ${unit} vào các ${box}, mỗi ${box} ${k} ${unit}. Hỏi xếp được bao nhiêu ${box}? Trả lời: ___ ${box}.`,
     ...blanks(fmtInt(n)),
-    explanation: `Mỗi ${box} ${k} ${unit} → phép chia: ${fmtInt(k * n)} : ${k} = ${n} (${box}).`,
+    explanation: baiGiai([[`Xếp được số ${box} là:`, `${fmtInt(k * n)} : ${k} = ${n} (${box})`]], `${n} ${box}`),
     hint: `Tìm xem ${fmtInt(k * n)} gồm bao nhiêu lần ${k}.` };
 };
 
@@ -310,7 +313,10 @@ export const trungBinhCong: Generator = (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["trung bình cộng", "toán có lời văn"],
       question: `Một cửa hàng ba ngày bán được lần lượt ${fmtInt(xs[0])} kg, ${fmtInt(xs[1])} kg và ${fmtInt(xs[2])} kg gạo. Hỏi trung bình mỗi ngày cửa hàng bán được bao nhiêu ki-lô-gam gạo? Trả lời: ___ kg.`,
       ...blanks(fmtInt(avg)),
-      explanation: `Tổng ba ngày: ${xs.map(fmtInt).join(" + ")} = ${fmtInt(sum)} (kg). Trung bình mỗi ngày: ${fmtInt(sum)} : 3 = ${fmtInt(avg)} (kg).`,
+      explanation: baiGiai([
+        ["Cả ba ngày cửa hàng bán được số ki-lô-gam gạo là:", `${xs.map(fmtInt).join(" + ")} = ${fmtInt(sum)} (kg)`],
+        ["Trung bình mỗi ngày cửa hàng bán được số ki-lô-gam gạo là:", `${fmtInt(sum)} : 3 = ${fmtInt(avg)} (kg)`],
+      ], `${fmtInt(avg)} kg gạo`),
       hint: "Cộng cả ba ngày rồi chia cho 3." };
   return { type: "fill_blank", difficulty: "medium", tags: ["trung bình cộng"],
     question: `Số trung bình cộng của ${list} là ___`, ...blanks(fmtInt(avg)),
@@ -337,8 +343,8 @@ export const tongHieu: Generator = (r) => {
       question: `Tổng số tuổi của mẹ và con là ${tong} tuổi. Mẹ hơn con ${hon} tuổi. Hỏi ${askMe ? "mẹ" : "con"} bao nhiêu tuổi? Trả lời: ___ tuổi.`,
       ...blanks(String(askMe ? con + hon : con)),
       explanation: askMe
-        ? `Tuổi mẹ (số lớn) = (${tong} + ${hon}) : 2 = ${con + hon} (tuổi).`
-        : `Tuổi con (số bé) = (${tong} - ${hon}) : 2 = ${con} (tuổi).`,
+        ? baiGiai([["Tuổi mẹ là:", `(${tong} + ${hon}) : 2 = ${con + hon} (tuổi)`]], `${con + hon} tuổi`)
+        : baiGiai([["Tuổi con là:", `(${tong} - ${hon}) : 2 = ${con} (tuổi)`]], `${con} tuổi`),
       hint: "Số lớn = (tổng + hiệu) : 2; số bé = (tổng - hiệu) : 2." };
   }
   if (kind === "cay") {
@@ -346,7 +352,7 @@ export const tongHieu: Generator = (r) => {
     return { type: "fill_blank", difficulty: "hard", tags: ["tổng và hiệu", "toán có lời văn"],
       question: `Hai lớp ${a} và ${b} trồng được ${fmtInt(sum)} cây. Lớp ${a} trồng được nhiều hơn lớp ${b} ${fmtInt(diff)} cây. Hỏi lớp ${askBig ? a : b} trồng được bao nhiêu cây? Trả lời: ___ cây.`,
       ...blanks(ans),
-      explanation: `Lớp ${askBig ? a : b} trồng được ${askBig ? "nhiều hơn (số lớn)" : "ít hơn (số bé)"}. ${how}`,
+      explanation: baiGiai([[`Số cây lớp ${askBig ? a : b} trồng được là:`, `(${fmtInt(sum)} ${askBig ? "+" : "-"} ${fmtInt(diff)}) : 2 = ${ans} (cây)`]], `${ans} cây`),
       hint: "Số lớn = (tổng + hiệu) : 2; số bé = (tổng - hiệu) : 2." };
   }
   return { type: "fill_blank", difficulty: "medium", tags: ["tổng và hiệu"],
