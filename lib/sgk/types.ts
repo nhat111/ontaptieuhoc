@@ -8,6 +8,8 @@ export interface SgkLesson {
   so: number;
   /** Số bài trong tập, khi sách đánh số lại từ 1 ở tập hai (Tiếng Việt). Hiển thị thay cho `so`. */
   soTap?: number;
+  /** Nhãn thay cho "Bài N" khi sách không đánh số bài này (VD: "Ôn tập" cuối mỗi chủ đề Tiếng Việt 1). */
+  nhan?: string;
   ten: string;
   /** Dạng câu tự sinh và số câu mỗi dạng trong 10 câu. Không có → bài đang soạn. */
   mix?: [Generator, number][];

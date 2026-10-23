@@ -10,8 +10,8 @@ import { getProgress, getServerProgress, lessonState, subscribeProgress } from "
 
 export type SgkRow = {
   so: number;
-  /** Số hiện trên dòng (số bài trong tập); mặc định = `so`. */
-  label?: number;
+  /** Nhãn hiện trên dòng ("Bài 3", "Ôn tập"); mặc định "Bài <so>". */
+  label?: string;
   ten: string;
   href: string;
   progressKey: string;
@@ -54,7 +54,7 @@ export default function SgkTopicList({ topics, accent, topicLabel = "Chủ đề
                 return (
                   <li key={r.so}>
                     <Link href={r.href} className="group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
-                      <span className="w-12 flex-shrink-0 text-xs font-bold tabular-nums text-slate-400">Bài {r.label ?? r.so}</span>
+                      <span className="w-12 flex-shrink-0 text-xs font-bold tabular-nums text-slate-400">{r.label ?? `Bài ${r.so}`}</span>
                       <span className={`min-w-0 flex-1 text-sm leading-snug ${r.status === "ready" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
                         {r.ten}
                       </span>

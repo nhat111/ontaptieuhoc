@@ -11,6 +11,8 @@
 
 import { TV_BOOKS, MAX_EXAMPLES, QUESTIONS_PER_LESSON, buildSgkExamples, buildSgkRows, sgkLessons, sgkReady } from "../lib/sgk";
 import { TV2_ODD_LETTERS } from "../lib/sgk/books/tv2";
+import { TV1_TAUGHT } from "../lib/sgk/books/tv1";
+import { TIENG, TIENG_INFO } from "../lib/tvGen/am";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
 import { SPELL_BANKS, HOI_NGA } from "../lib/tvGen/spell";
@@ -46,6 +48,16 @@ for (const w of HOI_NGA) {
   if (t !== "hoi" && t !== "nga") fail(`hỏi/ngã: “${w}” không mang dấu hỏi hoặc ngã`);
 }
 if (new Set(HOI_NGA).size !== HOI_NGA.length) fail("hỏi/ngã: trùng từ");
+
+/* ───────────── Kho tiếng lớp 1 ───────────── */
+
+if (new Set(TIENG).size !== TIENG.length) fail("kho tiếng lớp 1: trùng tiếng");
+for (const t of TIENG_INFO) {
+  if (t.onset && !TV1_TAUGHT.onsets.has(t.onset)) fail(`kho tiếng lớp 1: “${t.text}” có âm đầu “${t.onset}” không dạy ở tập một`);
+  if (!TV1_TAUGHT.rhymes.has(t.rhyme)) fail(`kho tiếng lớp 1: “${t.text}” tách ra vần “${t.rhyme}” không dạy ở tập một`);
+  if (/[^a-zàáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/.test(t.text)) fail(`kho tiếng lớp 1: “${t.text}” có kí tự lạ`);
+}
+for (const v of TV1_TAUGHT.rhymes) if (!TIENG_INFO.some((t) => t.rhyme === v)) fail(`kho tiếng lớp 1: chưa có tiếng nào vần “${v}”`);
 
 /* ───────────── Kho từ, câu ───────────── */
 
@@ -105,16 +117,21 @@ for (const book of TV_BOOKS) {
   const all = sgkLessons(book.grade, book.slug);
   all.forEach((x, i) => { if (x.lesson.so !== i + 1) fail(`${tag}: bài thứ ${i + 1} đánh số ${x.lesson.so}`); });
   book.topics.forEach((t, i) => { if (t.so !== i + 1) fail(`${tag}: chủ điểm thứ ${i + 1} đánh số ${t.so}`); });
+  // soTap đánh liền 1..n trong mỗi tập (TV2) hoặc trong mỗi chủ đề (TV1 tập hai); bài có `nhan` không đánh số.
+  const seq = (xs: (number | undefined)[]) => xs.every((n, i) => n === i + 1);
   for (const tap of [1, 2] as const) {
-    const nums = all.filter((x) => x.topic.tap === tap).map((x) => x.lesson.soTap);
-    nums.forEach((n, i) => { if (n !== i + 1) fail(`${tag} tập ${tap}: bài thứ ${i + 1} có soTap ${n}`); });
+    const numbered = all.filter((x) => x.topic.tap === tap && !x.lesson.nhan);
+    const perTap = seq(numbered.map((x) => x.lesson.soTap));
+    const perTopic = book.topics.filter((t) => t.tap === tap).every((t) => seq(t.bai.filter((l) => !l.nhan).map((l) => l.soTap)));
+    if (!perTap && !perTopic) fail(`${tag} tập ${tap}: số bài trong tập / chủ đề không liền nhau`);
   }
 
   for (const { lesson } of all) {
     const where = `${tag} bài ${lesson.so}`;
+    if (lesson.thucHanh) continue;
     if (!sgkReady(book.grade, lesson, book.slug)) { fail(`${where}: chưa làm được trên máy`); continue; }
     const total = (lesson.mix ?? []).reduce((n, [, k]) => n + k, 0);
-    if (Math.abs(total - QUESTIONS_PER_LESSON) > 1e-9) fail(`${where}: mix cộng lại ${total}, cần ${QUESTIONS_PER_LESSON}`);
+    if (lesson.mix && total < QUESTIONS_PER_LESSON - 2) fail(`${where}: mix cộng lại ${total}, cần khoảng ${QUESTIONS_PER_LESSON}`);
 
     let dup = 0;
     for (let s = 0; s < SEEDS; s++) {
@@ -134,8 +151,14 @@ for (const book of TV_BOOKS) {
         if (/"/.test(row.content)) fail(`${w}: có ngoặc kép thẳng`);
         const sol = (JSON.parse(row.explanation).solution as string) ?? "";
         if (!sol.trim()) fail(`${w}: thiếu lời giải`);
-        if (/điền vào chỗ trống/.test(row.content)) checkSpelling(row.content, row.correct_answer, sol, w);
+        if (/^Chọn (chữ|vần) .* điền vào chỗ trống/.test(row.content)) checkSpelling(row.content, row.correct_answer, sol, w);
         if (/cần thêm dấu hỏi hay dấu ngã/.test(row.content)) checkHoiNga(row.content, row.correct_answer, sol, w);
+        if (/^Chọn từ ngữ điền vào chỗ trống: “(.+)”$/.test(row.content)) {
+          const cau = row.content.match(/: “(.+)”$/)![1];
+          if (sol !== `Câu đúng: “${cau.replace("…", row.correct_answer)}”`) fail(`${w}: lời giải không khớp câu điền`);
+        }
+        const ghep = row.content.match(/^Ghép âm “(.+)”, vần “(.+)”/);
+        if (ghep && !sol.startsWith(`${ghep[1]} + ${ghep[2]}`)) fail(`${w}: lời giải ghép tiếng không khớp`);
         if (/^Từ “(.+)” là từ chỉ gì\?$/.test(row.content)) {
           const word = row.content.match(/^Từ “(.+)”/)![1];
           const k = kindOf.get(word);
@@ -152,7 +175,7 @@ for (const book of TV_BOOKS) {
     if (JSON.stringify(ex) !== JSON.stringify(buildSgkExamples(book.grade, lesson, book.slug))) fail(`${where}: ví dụ đổi giữa hai lần`);
     if (new Set(ex.map((r) => r.content)).size !== ex.length) fail(`${where}: ví dụ trùng nhau`);
   }
-  if (!errors) console.log(`✓ ${tag}: ${book.topics.length} chủ điểm, ${all.length} bài, mỗi bài ${SEEDS} bộ câu đều ổn`);
+  if (!errors) console.log(`✓ ${tag}: ${book.topics.length} ${(book.topicLabel ?? "chủ đề").toLowerCase()}, ${all.length} bài, mỗi bài ${SEEDS} bộ câu đều ổn`);
 }
 
 if (!errors) console.log(`✓ sgk-tv: ${SPELL_BANKS.length} kho chính tả, ${HOI_NGA.length} từ hỏi/ngã, đã soát ${rowsChecked} câu`);

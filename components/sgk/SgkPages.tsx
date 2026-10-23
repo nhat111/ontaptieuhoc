@@ -92,13 +92,13 @@ export function sgkLessonMetadata(grade: number, slug: string, bai: string): Met
   if (!x) return {};
   const { book, topic, lesson } = x;
   const n = baiLabel(lesson);
-  const tap = book.topics.some((t) => t.tap === 2) && lesson.soTap ? ` tập ${tapName(topic.tap)}` : "";
-  const title = `Bài ${n}: ${lesson.ten} – ${book.subject} ${grade}${tap} ${book.book}`;
+  const tap = lesson.soTap || lesson.nhan ? ` tập ${tapName(topic.tap)}` : "";
+  const title = `${n}: ${lesson.ten} – ${book.subject} ${grade}${tap} ${book.book}`;
   const ready = sgkReady(grade, lesson, slug);
   const label = (book.topicLabel ?? "Chủ đề").toLowerCase();
   const description = ready
-    ? `Luyện tập ${book.subject} lớp ${grade}${tap} bài ${n} "${lesson.ten}" (sách ${book.book}, ${label} ${topic.so}): 10 câu làm trên máy, chấm điểm ngay, có lời giải, mỗi lần một bộ câu mới.`
-    : `${book.subject} lớp ${grade} bài ${n} "${lesson.ten}" (sách ${book.book}).`;
+    ? `Luyện tập ${book.subject} lớp ${grade}${tap} ${n.toLowerCase()} "${lesson.ten}" (sách ${book.book}, ${label} ${topic.so}): 10 câu làm trên máy, chấm điểm ngay, có lời giải, mỗi lần một bộ câu mới.`
+    : `${book.subject} lớp ${grade} ${n.toLowerCase()} "${lesson.ten}" (sách ${book.book}).`;
   const url = sgkHref(grade, slug, lesson.so);
   return {
     title, description,
@@ -125,11 +125,11 @@ export function SgkLessonView({ grade, slug, bai, seed: seedParam }: { grade: nu
           <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500" aria-hidden>
             {lesson.thucHanh ? <PencilRuler className="h-7 w-7" /> : <Clock className="h-7 w-7" />}
           </span>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{book.subject} {grade} · {label} {topic.so} · Bài {n}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{book.subject} {grade} · {label} {topic.so} · {n}</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">{lesson.ten}</h1>
           <p className="mt-3 text-slate-600">
             {lesson.thucHanh
-              ? "Đây là bài thực hành — bé vẽ, đo, ghi chép trên giấy cùng thầy cô và bố mẹ, nên không có bài làm trên máy."
+              ? "Đây là bài thực hành trên giấy (tập viết, vẽ, đo) cùng thầy cô và bố mẹ, nên không có bài làm trên máy."
               : `Bài này đang được soạn câu luyện tập. Trong lúc chờ, bé có thể luyện các bài khác của ${label.toLowerCase()}.`}
           </p>
           <Link href={listHref} className="mt-6 inline-flex min-h-11 items-center gap-1 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-5 font-extrabold text-white hover:bg-primary-700 active:border-b-2">
@@ -145,7 +145,7 @@ export function SgkLessonView({ grade, slug, bai, seed: seedParam }: { grade: nu
   const seed = cleanSeed(seedParam) ?? freshSeed();
   const questions = buildSgkRows(grade, lesson, seed, slug).map((r, i) => rowToQuestion(r, i + 1));
   const examples = buildSgkExamples(grade, lesson, slug).map((r, i) => rowToQuestion(r, i + 1));
-  const tap = lesson.soTap ? ` (tập ${tapName(topic.tap)})` : "";
+  const tap = lesson.soTap || lesson.nhan ? ` (tập ${tapName(topic.tap)})` : "";
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
@@ -153,7 +153,7 @@ export function SgkLessonView({ grade, slug, bai, seed: seedParam }: { grade: nu
         initialQuestions={questions}
         initialLesson={{
           id: 0,
-          title: `Bài ${n}${tap}. ${lesson.ten}`,
+          title: lesson.nhan ? `${lesson.ten}${tap}` : `${n}${tap}. ${lesson.ten}`,
           grade,
           subjectName: book.subject,
           durationMinutes: 15,

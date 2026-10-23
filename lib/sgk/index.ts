@@ -9,6 +9,7 @@ import { TOAN2 } from "./books/toan2";
 import { TOAN3 } from "./books/toan3";
 import { TOAN4 } from "./books/toan4";
 import { TOAN5 } from "./books/toan5";
+import { TV1 } from "./books/tv1";
 import { TV2 } from "./books/tv2";
 import type { SgkBook, SgkLesson, SgkTopic } from "./types";
 
@@ -21,7 +22,7 @@ export const SGK_BOOKS: SgkBook[] = [TOAN1, TOAN2, TOAN3, TOAN4, TOAN5];
  * Sách Tiếng Việt có bài tập làm trên máy (trang /lop/[grade]/tieng-viet). Để riêng khỏi
  * SGK_BOOKS: các bài Tiếng Việt cũ trong DB vẫn hiện trên trang lớp (không bị `hidesOldLessons` ẩn).
  */
-export const TV_BOOKS: SgkBook[] = [TV2];
+export const TV_BOOKS: SgkBook[] = [TV1, TV2];
 
 const ALL_BOOKS = [...SGK_BOOKS, ...TV_BOOKS];
 
@@ -43,8 +44,8 @@ export const sgkHref = (grade: number, slug: string, so?: number) => `/lop/${gra
 export const sgkToanHref = (grade: number, so?: number) => sgkHref(grade, "toan", so);
 /** Khoá tiến độ trên máy (lib/lessonProgress.ts) — tách khỏi id bài trong DB. */
 export const sgkProgressKey = (grade: number, so: number, slug = "toan") => `${sgkBook(grade, slug)?.id ?? `kntt-${slug}-${grade}`}-${so}`;
-/** Số bài hiện cho người dùng: số trong tập nếu sách đánh lại từ 1 ở tập hai. */
-export const baiLabel = (l: SgkLesson) => l.soTap ?? l.so;
+/** Nhãn bài hiện cho người dùng: "Bài N" (số trong tập nếu sách đánh lại từ 1), hoặc `nhan`. */
+export const baiLabel = (l: SgkLesson) => l.nhan ?? `Bài ${l.soTap ?? l.so}`;
 
 export function sgkLessons(grade: number, slug = "toan"): { topic: SgkTopic; lesson: SgkLesson }[] {
   return (sgkBook(grade, slug)?.topics ?? []).flatMap((topic) => topic.bai.map((lesson) => ({ topic, lesson })));

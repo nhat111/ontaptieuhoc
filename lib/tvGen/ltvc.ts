@@ -256,6 +256,21 @@ export const THEMES: Record<string, Theme> = {
     right: ["cá heo", "sao biển", "cá voi", "rùa biển", "con mực", "tôm hùm", "cá mập"],
     wrong: ["con gà", "con mèo", "con voi", "con hổ", "con chim sẻ", "con trâu"],
   },
+  "an-toan": {
+    q: "Việc làm nào dưới đây là việc nên làm?",
+    right: ["rửa tay trước khi ăn", "chào hỏi người lớn", "đi bộ trên vỉa hè", "nói lời cảm ơn", "xin lỗi khi có lỗi", "đội mũ bảo hiểm khi ngồi xe máy"],
+    wrong: ["chơi đùa dưới lòng đường", "đi theo người lạ", "nghịch ổ điện", "vứt rác bừa bãi", "trèo lên lan can", "tự ý ra sông tắm"],
+  },
+  "duc-tinh": {
+    q: "Từ ngữ nào dưới đây chỉ đức tính tốt?",
+    right: ["trung thực", "chăm chỉ", "dũng cảm", "tốt bụng", "lễ phép", "kiên nhẫn"],
+    wrong: ["lười biếng", "nói dối", "ích kỉ", "hỗn láo", "tham lam", "cẩu thả"],
+  },
+  "am-thanh": {
+    q: "Từ ngữ nào dưới đây chỉ âm thanh em nghe thấy?",
+    right: ["tiếng chim hót", "tiếng gà gáy", "tiếng ve kêu", "tiếng mưa rơi", "tiếng sấm", "tiếng trống trường"],
+    wrong: ["màu xanh", "ánh nắng", "mùi thơm", "bông hoa", "đám mây", "cầu vồng"],
+  },
   "truong-hoc": {
     q: "Từ ngữ nào dưới đây chỉ người hoặc nơi ở trường học?",
     right: ["thầy giáo", "cô giáo", "học sinh", "lớp học", "thư viện", "sân trường", "bác bảo vệ"],
