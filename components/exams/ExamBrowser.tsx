@@ -124,7 +124,7 @@ export default function ExamBrowser({ exams, quickSubjects, initial }: Props) {
             </span>
             <span className="min-w-0">
               <span className="block font-extrabold text-slate-900">Tạo đề nhanh</span>
-              <span className="block text-sm text-slate-500">Đề giữa kì, cuối kì Toán, Tiếng Việt lớp 1–5, Tiếng Anh lớp 5 — in hoặc làm trên máy</span>
+              <span className="block text-sm text-slate-500">Đề giữa kì, cuối kì Toán, Tiếng Việt lớp 1–5, Tiếng Anh lớp 3–5 — in hoặc làm trên máy</span>
             </span>
             <ArrowRight className="h-5 w-5 shrink-0 text-primary-600 motion-safe:transition-transform motion-safe:group-hover:translate-x-1" aria-hidden />
           </Link>

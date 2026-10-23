@@ -224,7 +224,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
             <BookOpen className="mx-auto mb-2 h-6 w-6 text-slate-400" aria-hidden />
             <p className="font-bold text-slate-700">Môn {subject} lớp {grade} chưa có đề tạo tự động</p>
             <p className="mt-1 text-sm text-slate-500">
-              Hiện máy tạo được đề Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
+              Hiện máy tạo được đề Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 3–5. Bạn có thể xem các đề {subject} lớp {grade} đã soạn sẵn.
             </p>
             <Link
               href={`/lop/${grade}?subject=${encodeURIComponent(subject)}&view=exam`}
