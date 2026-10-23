@@ -362,9 +362,111 @@ export const phanSoCuaSo: Generator = (r) => {
   }
 };
 
+/* ═════════════ Bài toán có lời văn theo từng bài (lời giải trình bày đủ "Bài giải") ═════════════
+   recheck4 tính lại đáp án từ số liệu trong đề. */
+
+const lv4 = (question: string, unit: string, answer: number, explanation: string, tags: string[], hint: string) =>
+  fill(`${question} Trả lời: ___ ${unit}.`, answer, explanation, ["toán có lời văn", ...tags], hint);
+
+/** Bài 17: yến, tạ, tấn — đổi ra tạ rồi tính (2 bước). */
+export const lvKhoiLuong4: Generator = (r) => retry(() => {
+  const tan = int(r, 2, 6), ta = int(r, 1, 9), it = int(r, 3, 15), x1 = tan * 10 + ta, x2 = x1 - it, s = x1 + x2;
+  if (x2 < 5) return null;
+  return lv4(`Xe thứ nhất chở ${tan} tấn ${ta} tạ gạo, xe thứ hai chở ít hơn xe thứ nhất ${it} tạ gạo. Hỏi cả hai xe chở được bao nhiêu tạ gạo?`,
+    "tạ", s, baiGiai([
+      ["Đổi:", `${tan} tấn ${ta} tạ = ${x1} tạ`],
+      ["Xe thứ hai chở được số tạ gạo là:", `${x1} - ${it} = ${x2} (tạ)`],
+      ["Cả hai xe chở được số tạ gạo là:", `${x1} + ${x2} = ${s} (tạ)`],
+    ], `${s} tạ gạo`), ["yến, tạ, tấn"], "1 tấn = 10 tạ. Đổi ra tạ trước khi tính.");
+});
+
+/** Bài 18: lát nền bằng gạch vuông — đổi m ra dm, chia diện tích (3 bước). */
+export const lvLatGach: Generator = (r) => retry(() => {
+  const c = pick(r, [2, 4, 5]), dai = int(r, 4, 9), rong = int(r, 3, dai);
+  const D = dai * 10, R = rong * 10;
+  if (D % c || R % c) return null;
+  const S = D * R, g = c * c, n = S / g;
+  return lv4(`Một căn phòng hình chữ nhật có chiều dài ${dai} m, chiều rộng ${rong} m. Người ta lát nền căn phòng bằng những viên gạch hình vuông cạnh ${c} dm. Hỏi cần bao nhiêu viên gạch để lát kín nền căn phòng (diện tích phần mạch vữa không đáng kể)?`,
+    "viên gạch", n, baiGiai([
+      ["Đổi:", `${dai} m = ${D} dm; ${rong} m = ${R} dm`],
+      ["Diện tích nền căn phòng là:", `${D} × ${R} = ${fmtInt(S)} (dm²)`],
+      ["Diện tích một viên gạch là:", `${c} × ${c} = ${g} (dm²)`],
+      ["Số viên gạch cần dùng là:", `${fmtInt(S)} : ${g} = ${fmtInt(n)} (viên)`],
+    ], `${fmtInt(n)} viên gạch`), ["đề-xi-mét vuông", "mét vuông", "diện tích"], "Đổi cùng đơn vị dm, rồi lấy diện tích nền chia diện tích một viên gạch.");
+});
+
+/** Bài 19: giây — đổi phút ra giây rồi so sánh (2 bước). */
+export const lvGiay: Generator = (r) => retry(() => {
+  const ph = 1, gi = int(r, 5, 55), t1 = ph * 60 + gi, t2 = int(r, 50, t1 - 3), hon = t1 - t2;
+  if (t2 >= t1) return null;
+  return lv4(`Trong cuộc thi chạy, Nam chạy hết ${ph} phút ${gi} giây, Hùng chạy hết ${t2} giây. Hỏi Hùng chạy nhanh hơn Nam bao nhiêu giây?`,
+    "giây", hon, baiGiai([
+      ["Đổi:", `${ph} phút ${gi} giây = ${t1} giây`],
+      ["Hùng chạy nhanh hơn Nam số giây là:", `${t1} - ${t2} = ${hon} (giây)`],
+    ], `${hon} giây`), ["giây"], "1 phút = 60 giây. Đổi cùng đơn vị rồi trừ.");
+});
+
+type Ps = { n: number; d: number };
+const psRut = (p: Ps): Ps => { const g = gcd(p.n, p.d); return { n: p.n / g, d: p.d / g }; };
+const psTxt = (p: Ps) => `${p.n}/${p.d}`;
+/** 4 lựa chọn phân số: đáp án đúng (tối giản) + các nhiễu khác giá trị. */
+const psOpts = (r: Rng, right: Ps, wrong: Ps[]) => {
+  const val = (p: Ps) => p.n / p.d;
+  const seen = new Set([val(right)]);
+  const ws: string[] = [];
+  // Nhiễu dự phòng (như congTruPhanSo ở lop4.ts) khi các lỗi hay gặp trùng giá trị nhau, VD kết quả 1/2.
+  const backup = [{ n: right.n + 1, d: right.d }, { n: right.n, d: right.d + 1 }, { n: right.n * 2 + 1, d: right.d * 2 }, { n: right.n + 2, d: right.d + 1 }, { n: right.n + 1, d: right.d + 2 }];
+  for (const w of [...wrong, ...backup].map(psRut)) if (w.n > 0 && w.d > 0 && !seen.has(val(w))) { seen.add(val(w)); ws.push(psTxt(w)); }
+  return mcOptions(r, psTxt(right), ws);
+};
+
+/** Bài 60, 61, 63, 64: cộng, trừ, nhân, chia phân số trong bài toán. */
+export const lvPhanSo4 = (op: "+" | "-" | "×" | ":"): Generator => (r) => retry(() => {
+  const d1 = int(r, 3, 9), n1 = int(r, 1, d1 - 1), d2 = op === "+" || op === "-" ? (chance(r, 0.5) ? d1 : d1 * int(r, 2, 3)) : int(r, 2, 9), n2 = int(r, 1, d2 - 1);
+  if (gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1) return null;
+  const a = { n: n1, d: d1 }, b = { n: n2, d: d2 }, D = Math.max(d1, d2);
+  const A = n1 * (D / d1), B = n2 * (D / d2);
+  switch (op) {
+    case "+": {
+      if (A + B >= D) return null;
+      const res = psRut({ n: A + B, d: D });
+      return mc(`Một vòi nước giờ đầu chảy được ${psTxt(a)} bể, giờ thứ hai chảy được ${psTxt(b)} bể. Hỏi sau hai giờ vòi nước chảy được bao nhiêu phần của bể?`,
+        psOpts(r, res, [{ n: n1 + n2, d: d1 + d2 }, { n: n1 + n2, d: D }, { n: A + B + 1, d: D }, { n: Math.abs(A - B) || 1, d: D }, { n: A + B, d: D * 2 }]),
+        baiGiai([["Sau hai giờ vòi nước chảy được số phần của bể là:", `${psTxt(a)} + ${psTxt(b)} = ${psTxt(res)} (bể)`]], `${psTxt(res)} bể`),
+        ["toán có lời văn", "cộng phân số"], "Cộng hai phân số, nhớ quy đồng mẫu số nếu cần.");
+    }
+    case "-": {
+      if (A === B) return null;
+      const [big, small, BIG, SMALL] = A > B ? [a, b, A, B] : [b, a, B, A];
+      const res = psRut({ n: BIG - SMALL, d: D });
+      return mc(`Một bể đang chứa ${psTxt(big)} bể nước. Người ta dùng hết ${psTxt(small)} bể nước. Hỏi trong bể còn lại bao nhiêu phần bể nước?`,
+        psOpts(r, res, [{ n: Math.abs(big.n - small.n) || 1, d: Math.abs(big.d - small.d) || D }, { n: Math.abs(big.n - small.n) || 1, d: D }, { n: BIG + SMALL, d: D }, { n: BIG - SMALL + 1, d: D }, { n: BIG - SMALL, d: D * 2 }]),
+        baiGiai([["Trong bể còn lại số phần bể nước là:", `${psTxt(big)} - ${psTxt(small)} = ${psTxt(res)} (bể)`]], `${psTxt(res)} bể`),
+        ["toán có lời văn", "trừ phân số"], "Lấy phần đang có trừ phần đã dùng.");
+    }
+    case "×": {
+      const res = psRut({ n: n1 * n2, d: d1 * d2 });
+      return mc(`Một tấm kính hình chữ nhật có chiều dài ${psTxt(a)} m, chiều rộng ${psTxt(b)} m. Tính diện tích tấm kính đó.`,
+        psOpts(r, res, [{ n: n1 + n2, d: d1 + d2 }, { n: n1 * d2, d: d1 * n2 }, { n: (n1 * d2 + n2 * d1) * 2, d: d1 * d2 }, { n: n1 * n2, d: d1 + d2 }, { n: n1 * n2 + 1, d: d1 * d2 }]),
+        baiGiai([["Diện tích tấm kính là:", `${psTxt(a)} × ${psTxt(b)} = ${psTxt(res)} (m²)`]], `${psTxt(res)} m²`),
+        ["toán có lời văn", "nhân phân số"], "Diện tích hình chữ nhật = dài × rộng; nhân tử với tử, mẫu với mẫu.");
+    }
+    case ":": {
+      // Diện tích = dài × rộng; cho diện tích và chiều dài, tìm chiều rộng (= b).
+      const S = psRut({ n: n1 * n2, d: d1 * d2 });
+      return mc(`Một tấm bìa hình chữ nhật có diện tích ${psTxt(S)} m², chiều dài ${psTxt(a)} m. Tính chiều rộng tấm bìa đó.`,
+        psOpts(r, b, [{ n: S.n * a.n, d: S.d * a.d }, { n: S.n * a.d + 1, d: S.d * a.n }, { n: a.n, d: a.d * 2 }, { n: S.n + a.n, d: S.d + a.d }, { n: b.n + 1, d: b.d }]),
+        baiGiai([["Chiều rộng tấm bìa là:", `${psTxt(S)} : ${psTxt(a)} = ${psTxt(b)} (m)`]], `${psTxt(b)} m`),
+        ["toán có lời văn", "chia phân số"], "Chiều rộng = diện tích : chiều dài; chia cho một phân số là nhân với phân số đảo ngược.");
+    }
+  }
+});
+
 export const KNTT4 = {
   chanLe, bieuThucChu, baBuoc, doGoc, loaiGoc, docVietSo6: docVietSo(6), docVietSo9: docVietSo(9), daySoTN,
   tinhChatCong: tinhChat("+"), tinhChatNhan: tinhChat("×"), phanPhoi: tinhChat("phanPhoi"),
   vuongGoc: vuongSongSong("vuong"), songSong: vuongSongSong("song"), hbhThoi, rutVeDonVi, daySoLieu, soLanXuatHien,
   docPhanSo, thuongPhanSo, tinhChatPS, quyDong, phanSoCuaSo,
+  lvKhoiLuong4, lvLatGach, lvGiay,
+  lvCongPS: lvPhanSo4("+"), lvTruPS: lvPhanSo4("-"), lvNhanPS: lvPhanSo4("×"), lvChiaPS: lvPhanSo4(":"),
 };
