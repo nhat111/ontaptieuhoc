@@ -21,6 +21,7 @@ const STEPS: GuideStep[] = [
       <>Chọn <b>Bài tập</b> (luyện theo từng chương, từng bài) hoặc <b>Đề kiểm tra</b> (ôn thi cuối kỳ).</>,
       <>Bấm vào một bài để mở. Mỗi bài ghi sẵn số câu hỏi.</>,
       <>Lớp 1 đến lớp 5, phần <b>Bài tập</b> của tab Toán là <b>Toán … theo từng bài sách</b>: các bài xếp đúng thứ tự sách Kết nối tri thức, mỗi bài 10 câu do máy sinh, mỗi lần vào là một bộ câu mới. Bài nào chưa có câu luyện ghi <b>Đang soạn</b>; bài vẽ, đo ghi <b>Thực hành</b> (làm trên giấy).</>,
+      <>Lớp 2, tab Tiếng Việt có thêm thẻ <b>Tiếng Việt 2 theo từng bài sách</b>: mỗi bài 10 câu trắc nghiệm về chính tả (âm đầu, vần, dấu hỏi / ngã), từ chỉ sự vật – hoạt động – đặc điểm, kiểu câu, dấu câu, viết hoa, đúng nội dung bài đó trong sách.</>,
     ],
     cta: { href: "/#grades", label: "Chọn lớp ngay" },
   },
