@@ -71,7 +71,7 @@ const STEPS: GuideStep[] = [
       <><b>Dán đề đã có</b>: dán chữ từ Word, Zalo, trang web. Mỗi câu mở đầu bằng <Code>Câu 1.</Code>, đáp án <Code>A.</Code> <Code>B.</Code>… và dòng <Code>Đáp án: B</Code>. Nhiều đáp án đúng: <Code>Đáp án: A, C</Code>. Câu điền: chỉ ghi <Code>Đáp án: Hà Nội</Code>. Bấm <b>Xem mẫu</b> để xem đề mẫu.</>,
       <><b>Chụp ảnh đề giấy</b>: chụp hoặc chọn ảnh (chọn nhiều ảnh cho đề nhiều trang). Máy đọc chữ ngay trên điện thoại, chữ đọc được hiện vào ô dán để sửa. Nếu có nút <b>Chụp / chọn ảnh (đọc cả đáp án khoanh)</b> thì cách đó đọc được cả đáp án khoanh bằng bút.</>,
       <>Bấm <b>Đọc đề</b> để xem trước. Câu thiếu đáp án đúng được tô đỏ. Bấm <b>Đưa … câu vào bài</b>; nếu bài đang có câu thì chọn <b>Thêm vào sau các câu đang có</b> hoặc <b>Thay toàn bộ câu đang có</b>.</>,
-      <>Lấy đề từ trang web (loigiaihay.com, vietjack.com…): mở <b>Cách khác</b> ở cuối hộp, dán địa chỉ trang rồi bấm <b>Lấy đề</b>.</>,
+      <>Lấy đề từ một trang web: mở <b>Cách khác</b> ở cuối hộp, dán địa chỉ trang rồi bấm <b>Lấy đề</b>. Chỉ lấy đề bạn có quyền sử dụng (đề tự soạn, đề của trường mình) — đề và lời giải trên các trang web khác thuộc bản quyền của họ.</>,
     ],
     tip: "Đề không có dòng “Đáp án:” hoặc ảnh không có dấu khoanh thì các câu đó chưa có đáp án đúng — sau khi đưa vào, bấm chọn đáp án ở những câu có chữ “Chưa xong”.",
   },
