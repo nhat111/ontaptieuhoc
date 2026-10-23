@@ -7,12 +7,19 @@ import { cleanOcrText } from "@/lib/ocrText";
 import type { OcrProgress } from "@/lib/browserOcr";
 import { nanoid } from "@/lib/nanoid";
 import MathText from "@/components/MathText";
-import type { QDraft } from "./QuestionCard";
+import { NO_ANSWER, draftProblems } from "@/lib/importDraft";
+import { TYPE_OPTIONS, type QDraft } from "./QuestionCard";
+
+/** Mở hộp ở phần nào trước: dán chữ (mặc định) hay chụp ảnh. */
+export type PasteFocus = "paste" | "scan";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onImport: (questions: QDraft[], mode: "replace" | "append") => void;
+  focus?: PasteFocus;
+  /** Bài đang có câu đã soạn — khi đó mới cần hỏi "thay thế" hay "thêm vào". */
+  hasExisting?: boolean;
 }
 
 const SAMPLE_TEXT = `Câu 1. 2 + 3 = ?
@@ -96,7 +103,7 @@ function stripHtml(html: string): string {
   return stripHtmlRaw(html);
 }
 
-export default function PasteImportModal({ open, onClose, onImport }: Props) {
+export default function PasteImportModal({ open, onClose, onImport, focus = "paste", hasExisting = false }: Props) {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"text" | "html">("text");
   const [error, setError] = useState<string | null>(null);
@@ -158,14 +165,14 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
             ...base,
             type: "mcq" as const,
             options: q.options.map(normalizeMath),
-            // -1 nghĩa là không nhìn thấy dấu khoanh nào; giữ 0 làm mặc định cho
-            // form nhưng vẫn đếm để cảnh báo người dùng phải tự tick.
-            correctIdx: q.correctIndex >= 0 ? q.correctIndex : 0,
+            // -1 nghĩa là không nhìn thấy dấu khoanh nào: để trống, KHÔNG chọn
+            // tạm A — chọn tạm thì lưu được mà chấm sai, không ai biết.
+            correctIdx: q.correctIndex >= 0 ? q.correctIndex : NO_ANSWER,
             correctIdxs: [],
             answer: "",
           };
         }
-        return { ...base, type: "short" as const, options: [], correctIdx: 0, correctIdxs: [], answer: "" };
+        return { ...base, type: "short" as const, options: [], correctIdx: NO_ANSWER, correctIdxs: [], answer: "" };
       });
 
       const missing = scanned.filter((q) => q.options.length >= 2 && q.correctIndex < 0).length;
@@ -289,7 +296,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
       if (q.type === "mcq") {
         const opts = [...q.options];
         while (opts.length < 2) opts.push("");
-        let correctIdx = 0;
+        // Không có dòng "Đáp án:" thì để trống — người soạn tự chọn sau khi chèn.
+        let correctIdx = NO_ANSWER;
         if (q.correctAnswer) {
           const idx = opts.indexOf(q.correctAnswer);
           if (idx >= 0) correctIdx = idx;
@@ -314,7 +322,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
               .sort((a, b) => a - b);
           } catch {}
         }
-        return { ...base, type: "multi", options: opts, correctIdx: 0, correctIdxs, answer: "" };
+        return { ...base, type: "multi", options: opts, correctIdx: NO_ANSWER, correctIdxs, answer: "" };
       }
 
       // short / numeric
@@ -322,7 +330,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
         ...base,
         type: q.type,
         options: [],
-        correctIdx: 0,
+        correctIdx: NO_ANSWER,
         correctIdxs: [],
         answer: q.correctAnswer ?? "",
       };
@@ -336,6 +344,7 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     setText("");
     setPreview(null);
     setError(null);
+    setScanNote(null);
     onClose();
   }
 
@@ -343,6 +352,8 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     setText("");
     setPreview(null);
     setError(null);
+    setScanNote(null);
+    setScanError(null);
     setMode("text");
     setUrl("");
     setUrlError(null);
@@ -350,284 +361,246 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
     onClose();
   }
 
+  const spinner = (
+    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+  const cameraIcon = (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+      <circle cx="11.5" cy="13" r="3.5" />
+    </svg>
+  );
+
+  // ── Dán chữ ───────────────────────────────────────────────────────────────
+  const pasteSection = (
+    <section key="paste" className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base font-bold text-slate-800">Dán đề đã có (từ Word, Zalo, trang web…)</h3>
+        <button
+          onClick={() => setText(mode === "html" ? SAMPLE_HTML : SAMPLE_TEXT)}
+          className="text-sm font-semibold text-primary-700 hover:underline shrink-0"
+        >
+          Xem mẫu
+        </button>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onPaste={handlePaste}
+        placeholder={
+          mode === "html"
+            ? "<p>Câu 1. Câu hỏi đầu tiên?</p>\n<p>A. Đáp án A</p>\n<p>B. Đáp án B</p>\n..."
+            : "Câu 1. 2 + 3 = ?\nA. 4\nB. 5\nC. 6\nD. 7\nĐáp án: B\n\nCâu 2. ..."
+        }
+        className={`w-full min-h-[200px] border rounded-xl px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 resize-y ${
+          mode === "html" ? "border-blue-200 bg-blue-50/30 font-mono focus:ring-blue-300" : "border-slate-300 focus:ring-primary-300"
+        }`}
+      />
+      {error && <p className="text-sm text-coral-700">{error}</p>}
+      {mode === "html" ? (
+        <p className="text-sm text-blue-700">Đang ở chế độ mã HTML — máy tự lấy chữ ra khi bấm Đọc đề.</p>
+      ) : (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800 space-y-1">
+          <p className="font-semibold">Máy đọc được đề khi:</p>
+          <p>• Mỗi câu bắt đầu bằng <b>Câu 1.</b> hoặc <b>Câu 1:</b></p>
+          <p>• Mỗi đáp án một dòng: <b>A.</b> … <b>B.</b> …</p>
+          <p>• Đáp án đúng ghi ở dòng <b>Đáp án: B</b> (nhiều đáp án đúng: <b>Đáp án: A, C</b>). Không có dòng này thì chèn xong tự bấm chọn.</p>
+          <p>• Câu điền: không có A. B. — chỉ ghi <b>Đáp án: Hà Nội</b> hoặc <b>Đáp án: 42</b></p>
+        </div>
+      )}
+    </section>
+  );
+
+  // ── Chụp ảnh ──────────────────────────────────────────────────────────────
+  const scanSection = (
+    <section key="scan" className="space-y-3">
+      <h3 className="text-base font-bold text-slate-800">Chụp ảnh đề giấy</h3>
+
+      {/* Quét bằng AI đọc được cả đáp án khoanh bút — ưu tiên khi có */}
+      {ocrAvailable && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
+          <label
+            className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-base font-bold transition-colors ${
+              scanning ? "bg-orange-300 text-white cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
+            }`}
+          >
+            {scanning ? <>{spinner} Đang đọc ảnh…</> : <>{cameraIcon} Chụp / chọn ảnh (đọc cả đáp án khoanh)</>}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              disabled={scanning}
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
+                e.target.value = "";
+                if (f) handleScanImage(f);
+              }}
+            />
+          </label>
+          <p className="mt-2 text-sm text-slate-600">Một trang mỗi lần. Đọc được cả đáp án đã khoanh bằng bút.</p>
+          {scanError && <p className="mt-2 text-sm text-coral-700">{scanError}</p>}
+          {scanNote && <p className="mt-2 text-sm text-orange-800">{scanNote}</p>}
+        </div>
+      )}
+
+      {/* Đọc chữ miễn phí ngay trên máy — luôn có */}
+      <div className="rounded-xl border border-green-200 bg-green-50 p-3">
+        <label
+          className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-base font-bold transition-colors ${
+            freeScan ? "bg-green-300 text-white cursor-not-allowed" : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+          }`}
+        >
+          {freeScan ? (
+            <>
+              {spinner}
+              {freeScan.phase === "loading"
+                ? "Đang chuẩn bị…"
+                : `Đang đọc${freeScan.total > 1 ? ` ảnh ${freeScan.index}/${freeScan.total}` : ""}… ${Math.round(freeScan.progress * 100)}%`}
+            </>
+          ) : (
+            <>{cameraIcon} {ocrAvailable ? "Đọc chữ miễn phí" : "Chụp / chọn ảnh"}</>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={!!freeScan}
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
+              e.target.value = "";
+              if (files.length) handleFreeScan(files);
+            }}
+          />
+        </label>
+        <p className="mt-2 text-sm text-slate-600">
+          Chọn được nhiều ảnh cho đề nhiều trang. Chữ đọc được hiện vào ô dán để sửa lỗi. Không nhận ra đáp án khoanh bút — chèn xong tự chọn đáp án đúng.
+        </p>
+        {freeScanError && <p className="mt-2 text-sm text-coral-700">{freeScanError}</p>}
+      </div>
+      <p className="text-sm text-slate-500">Chụp thẳng, đủ sáng, rõ chữ thì đọc chính xác hơn.</p>
+    </section>
+  );
+
+  // ── Ít dùng: tải từ trang web, dán mã HTML ────────────────────────────────
+  const advancedSection = (
+    <details key="adv" className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-slate-600">Cách khác: lấy đề từ một trang web, dán mã HTML</summary>
+      <div className="mt-3 space-y-3">
+        <div>
+          <label className="text-sm font-semibold text-slate-700 block mb-1.5">
+            Địa chỉ trang web <span className="font-normal text-slate-400">(vd loigiaihay.com, vietjack.com)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !fetchingUrl) { e.preventDefault(); handleFetchUrl(); } }}
+              placeholder="https://loigiaihay.com/..."
+              className="flex-1 min-w-[200px] border border-slate-300 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+            />
+            <button
+              onClick={handleFetchUrl}
+              disabled={fetchingUrl || !url.trim()}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary-600 px-4 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
+            >
+              {fetchingUrl ? <>{spinner} Đang tải…</> : "Lấy đề"}
+            </button>
+          </div>
+          {urlError && <p className="mt-2 text-sm text-coral-700">{urlError}</p>}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={mode === "html"}
+            onChange={(e) => { setMode(e.target.checked ? "html" : "text"); setText(""); setPreview(null); setError(null); }}
+            className="h-4 w-4"
+          />
+          Ô dán nhận mã HTML thô (chỉ dùng khi dán mã nguồn trang web)
+        </label>
+      </div>
+    </details>
+  );
+
+  const missing = preview ? preview.filter((q) => draftProblems(q).length > 0).length : 0;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={handleClose}>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-stretch sm:items-center justify-center sm:p-4" onClick={handleClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white sm:rounded-2xl shadow-xl w-full max-w-3xl max-h-[100dvh] sm:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Đưa đề có sẵn vào"
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-gray-800">Dán đề thi từ văn bản</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {mode === "html"
-                ? "Dán mã HTML thô — tự động trích xuất văn bản khi phân tích"
-                : "Dán từ Word, Google Docs, trang web — tự động bỏ định dạng HTML"}
-            </p>
+            <h2 className="text-lg font-extrabold text-slate-900">Đưa đề có sẵn vào</h2>
+            <p className="text-sm text-slate-500">Máy tự tách câu hỏi và đáp án — xem lại trước khi chèn.</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Mode toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 text-xs font-semibold">
-              <button
-                onClick={() => { setMode("text"); setText(""); setPreview(null); setError(null); }}
-                className={`px-3 py-1 rounded-md transition-colors ${mode === "text" ? "bg-white shadow text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
-              >
-                Văn bản
-              </button>
-              <button
-                onClick={() => { setMode("html"); setText(""); setPreview(null); setError(null); }}
-                className={`px-3 py-1 rounded-md transition-colors ${mode === "html" ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-              >
-                HTML
-              </button>
-            </div>
-            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors">×</button>
-          </div>
+          <button
+            onClick={handleClose}
+            aria-label="Đóng"
+            className="text-slate-400 hover:text-slate-600 text-3xl leading-none w-11 h-11 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
+          >
+            ×
+          </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto p-5 space-y-4">
-          {/* Quét ảnh miễn phí — Tesseract chạy trên trình duyệt, luôn hiện */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
-              Quét ảnh đề — miễn phí <span className="font-normal text-gray-400">(đọc chữ ngay trên máy, chọn được nhiều trang)</span>
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <label
-                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  freeScan
-                    ? "bg-green-300 text-white cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                }`}
-              >
-                {freeScan ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    {freeScan.phase === "loading"
-                      ? "Đang tải bộ đọc chữ…"
-                      : `Đang đọc${freeScan.total > 1 ? ` ảnh ${freeScan.index}/${freeScan.total}` : ""}… ${Math.round(freeScan.progress * 100)}%`}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <circle cx="11.5" cy="13" r="3.5" />
-                    </svg>
-                    Chụp / chọn ảnh
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  disabled={!!freeScan}
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
-                    e.target.value = "";
-                    if (files.length) handleFreeScan(files);
-                  }}
-                />
-              </label>
-              <span className="text-[11px] text-gray-500">Chọn nhiều ảnh cho đề nhiều trang</span>
-            </div>
-            {freeScanError && <p className="mt-2 text-xs text-red-500">✗ {freeScanError}</p>}
-            <p className="mt-1.5 text-[11px] text-gray-400">
-              Chữ đọc được sẽ hiện ở ô bên dưới để sửa. Không nhận ra đáp án khoanh bút — nhớ tự chọn đáp án đúng.
-            </p>
-          </div>
-
-          {/* Quét ảnh bằng AI — ẩn khi máy chủ chưa có ANTHROPIC_API_KEY */}
-          {ocrAvailable && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
-              Quét ảnh bằng AI <span className="font-normal text-gray-400">(ảnh chụp hoặc scan — đọc được cả đáp án khoanh bút)</span>
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <label
-                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  scanning
-                    ? "bg-orange-300 text-white cursor-not-allowed"
-                    : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
-                }`}
-              >
-                {scanning ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    Đang đọc ảnh…
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h1.5l1-2h7l1 2H18a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <circle cx="11.5" cy="13" r="3.5" />
-                    </svg>
-                    Chọn ảnh đề
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  disabled={scanning}
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    // Reset để chọn lại đúng file vừa rồi vẫn kích hoạt onChange.
-                    e.target.value = "";
-                    if (f) handleScanImage(f);
-                  }}
-                />
-              </label>
-              <span className="text-[11px] text-gray-500">JPG, PNG, WEBP — tối đa 10MB</span>
-            </div>
-            {scanError && <p className="mt-2 text-xs text-red-500">✗ {scanError}</p>}
-            {scanNote && <p className="mt-2 text-xs text-orange-700">{scanNote}</p>}
-            <p className="mt-1.5 text-[11px] text-gray-400">
-              Chụp thẳng, đủ sáng, rõ chữ. Kết quả hiện ở phần xem trước bên dưới — kiểm tra lại trước khi chèn.
-            </p>
-          </div>
-          )}
-
-          {/* Fetch from URL */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-            <label className="text-xs font-semibold text-gray-600 block mb-1.5">
-              Tải nội dung từ URL <span className="font-normal text-gray-400">(vd: loigiaihay.com, vietjack.com)</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !fetchingUrl) { e.preventDefault(); handleFetchUrl(); } }}
-                placeholder="https://loigiaihay.com/..."
-                className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-              <button
-                onClick={handleFetchUrl}
-                disabled={fetchingUrl || !url.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                {fetchingUrl ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    Đang tải…
-                  </>
-                ) : "Tải về"}
-              </button>
-            </div>
-            {urlError && <p className="mt-2 text-xs text-red-500">✗ {urlError}</p>}
-            <p className="mt-1.5 text-[11px] text-gray-400">
-              Tải xong sẽ tự fill vào ô bên dưới ở chế độ “Văn bản”. Có thể sửa trước khi bấm “Phân tích đề”.
-            </p>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-700">Nội dung đề</label>
-              <button
-                onClick={() => setText(mode === "html" ? SAMPLE_HTML : SAMPLE_TEXT)}
-                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-              >
-                Chèn ví dụ ↓
-              </button>
-            </div>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onPaste={handlePaste}
-              placeholder={
-                mode === "html"
-                  ? "<p>Câu 1. Câu hỏi đầu tiên?</p>\n<p>A. Đáp án A</p>\n<p>B. Đáp án B</p>\n..."
-                  : "Câu 1. Câu hỏi đầu tiên?\nA. Đáp án A\nB. Đáp án B\nC. Đáp án C\nD. Đáp án D\nĐáp án: B\n\nCâu 2. ..."
-              }
-              className={`w-full min-h-[220px] border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 resize-y ${
-                mode === "html"
-                  ? "border-blue-200 bg-blue-50/30 focus:ring-blue-300"
-                  : "border-gray-200 focus:ring-blue-300"
-              }`}
-            />
-            {error && <p className="mt-2 text-xs text-red-500">✗ {error}</p>}
-          </div>
-
-          {mode === "html" ? (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
-              <p className="font-semibold">Chế độ HTML</p>
-              <p>• Dán mã HTML thô từ trang web, Google Classroom, phần mềm soạn thảo</p>
-              <p>• Khi bấm <strong>Phân tích đề</strong>, hệ thống tự trích xuất văn bản từ HTML</p>
-              <p>• Nội dung sau khi trích xuất vẫn cần đúng định dạng <code className="bg-blue-100 px-1 rounded">Câu 1.</code> / <code className="bg-blue-100 px-1 rounded">A.</code></p>
-            </div>
+        <div className="flex-1 overflow-auto p-5 space-y-5">
+          {!preview ? (
+            <>
+              {(focus === "scan" ? [scanSection, pasteSection] : [pasteSection, scanSection])}
+              {advancedSection}
+            </>
           ) : (
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700 space-y-1">
-              <p className="font-semibold">Quy tắc định dạng</p>
-              <p>• Mỗi câu bắt đầu bằng <code className="bg-amber-100 px-1 rounded">Câu 1.</code> hoặc <code className="bg-amber-100 px-1 rounded">Câu 1:</code></p>
-              <p>• <strong>Trắc nghiệm:</strong> <code className="bg-amber-100 px-1 rounded">A. text</code> mỗi dòng + <code className="bg-amber-100 px-1 rounded">Đáp án: B</code></p>
-              <p>• <strong>Nhiều đáp án:</strong> <code className="bg-amber-100 px-1 rounded">Đáp án: A, C</code> (≥2 chữ cái)</p>
-              <p>• <strong>Tự luận / Trả lời số:</strong> không có A./B./C./D. — chỉ có <code className="bg-amber-100 px-1 rounded">Đáp án: Hà Nội</code> hoặc <code className="bg-amber-100 px-1 rounded">Đáp án: 42</code></p>
-              <p>• LaTeX: <code className="bg-amber-100 px-1 rounded">$\\frac{"{1}{2}"}$</code>, <code className="bg-amber-100 px-1 rounded">$x^2$</code></p>
-            </div>
-          )}
-
-          {preview && (
-            <div className="border border-green-200 bg-green-50/40 rounded-xl p-4">
-              <p className="text-sm font-bold text-green-700 mb-3">
-                ✓ Đã nhận diện {preview.length} câu hỏi
-              </p>
-              <div className="space-y-3 max-h-72 overflow-auto text-xs">
+            <div className="space-y-3">
+              <p className="text-base font-bold text-success-700">Máy đọc được {preview.length} câu hỏi</p>
+              {missing > 0 && (
+                <p className="rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm text-coral-800">
+                  {missing} câu chưa đủ (thường là chưa có đáp án đúng). Chèn vào bài rồi bấm chọn đáp án đúng cho những câu có chữ <b>Chưa xong</b>.
+                </p>
+              )}
+              {scanNote && <p className="text-sm text-orange-800">{scanNote}</p>}
+              <div className="space-y-3">
                 {preview.map((q, qi) => {
-                  const typeLabel =
-                    q.type === "mcq" ? "Trắc nghiệm"
-                    : q.type === "multi" ? "Nhiều đáp án"
-                    : q.type === "short" ? "Tự luận"
-                    : "Trả lời số";
+                  const typeLabel = TYPE_OPTIONS.find((t) => t.value === q.type)?.label ?? "";
+                  const problems = draftProblems(q);
                   return (
-                    <div key={q.id} className="bg-white rounded-lg p-2.5 border border-gray-100">
-                      <p className="font-semibold text-gray-800 mb-1 flex flex-wrap items-baseline gap-1.5">
-                        <span className="text-gray-400 font-normal">Câu {qi + 1}.</span>
-                        <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                          {typeLabel}
-                        </span>
+                    <div key={q.id} className={`rounded-xl p-3 border text-sm ${problems.length ? "border-coral-200 bg-coral-50/40" : "border-slate-200 bg-white"}`}>
+                      <p className="font-semibold text-slate-800 mb-1 flex flex-wrap items-baseline gap-1.5">
+                        <span className="text-slate-400 font-normal">Câu {qi + 1}.</span>
+                        <span className="text-xs font-semibold bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{typeLabel}</span>
                         <MathText text={q.content} />
                       </p>
                       {(q.type === "mcq" || q.type === "multi") && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 pl-3">
                           {q.options.map((opt, oi) => {
-                            const isRight =
-                              q.type === "mcq"
-                                ? oi === q.correctIdx
-                                : q.correctIdxs.includes(oi);
+                            const isRight = q.type === "mcq" ? oi === q.correctIdx : q.correctIdxs.includes(oi);
                             return (
-                              <div key={oi} className={isRight ? "text-green-700 font-semibold" : "text-gray-600"}>
+                              <div key={oi} className={isRight ? "text-success-700 font-semibold" : "text-slate-600"}>
                                 <span className="font-bold mr-1">{"ABCDEF"[oi]}.</span>
-                                {opt ? <MathText text={opt} /> : <span className="text-gray-300 italic">(trống)</span>}
+                                {opt ? <MathText text={opt} /> : <span className="text-slate-300 italic">(trống)</span>}
                                 {isRight && <span className="ml-1">✓</span>}
                               </div>
                             );
                           })}
                         </div>
                       )}
-                      {(q.type === "short" || q.type === "numeric") && (
-                        <div className="pl-3 text-gray-600">
-                          <span className="text-gray-400">Đáp án: </span>
-                          {q.answer ? (
-                            <span className="text-green-700 font-semibold">
-                              <MathText text={q.answer} />
-                            </span>
-                          ) : (
-                            <span className="text-gray-300 italic">(chưa nhận diện)</span>
-                          )}
+                      {(q.type === "short" || q.type === "numeric") && q.answer && (
+                        <div className="pl-3 text-slate-600">
+                          Đáp án: <span className="text-success-700 font-semibold"><MathText text={q.answer} /></span>
                         </div>
                       )}
+                      {problems.length > 0 && <p className="mt-1 pl-3 text-coral-700">{problems.join(" · ")}</p>}
                     </div>
                   );
                 })}
@@ -637,43 +610,41 @@ export default function PasteImportModal({ open, onClose, onImport }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 bg-gray-50">
-          <button
-            onClick={handleClose}
-            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
-          >
-            Hủy
+        <div className="px-5 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
+          <button onClick={preview ? () => setPreview(null) : handleClose} className="min-h-11 text-base text-slate-600 hover:text-slate-800 px-3">
+            {preview ? "← Quay lại sửa" : "Huỷ"}
           </button>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {!preview ? (
               <button
                 onClick={() => handleParse()}
                 disabled={!text.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
+                className="min-h-11 rounded-xl bg-primary-600 px-5 text-base font-bold text-white hover:bg-primary-700 disabled:opacity-40"
               >
-                Phân tích đề
+                Đọc đề
               </button>
-            ) : (
+            ) : hasExisting ? (
               <>
                 <button
-                  onClick={() => { setPreview(null); }}
-                  className="text-sm text-gray-600 hover:text-gray-800 border border-gray-200 bg-white px-3 py-2 rounded-xl"
+                  onClick={() => handleImport("replace")}
+                  className="min-h-11 rounded-xl border-2 border-slate-200 bg-white px-4 text-base font-bold text-slate-700 hover:border-coral-300 hover:text-coral-700"
                 >
-                  Sửa lại
+                  Thay toàn bộ câu đang có
                 </button>
                 <button
                   onClick={() => handleImport("append")}
-                  className="bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                  className="min-h-11 rounded-xl bg-primary-600 px-5 text-base font-bold text-white hover:bg-primary-700"
                 >
-                  Thêm vào danh sách
-                </button>
-                <button
-                  onClick={() => handleImport("replace")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-                >
-                  Thay thế toàn bộ
+                  Thêm vào sau các câu đang có
                 </button>
               </>
+            ) : (
+              <button
+                onClick={() => handleImport("replace")}
+                className="min-h-11 rounded-xl bg-primary-600 px-5 text-base font-bold text-white hover:bg-primary-700"
+              >
+                Đưa {preview.length} câu vào bài
+              </button>
             )}
           </div>
         </div>

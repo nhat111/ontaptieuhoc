@@ -81,12 +81,15 @@ export async function GET(
     } catch {}
 
     const ca = q.correct_answer ?? "";
-    let correctIdx = 0;
+    let correctIdx = -1;
     let correctIdxs: number[] = [];
     let answer = "";
 
     if (type === "mcq") {
-      correctIdx = Math.max(0, opts.indexOf(ca));
+      // Đáp án lưu không khớp lựa chọn nào (dữ liệu cũ hỏng) → -1 để trang sửa
+      // báo "Chưa chọn đáp án đúng", thay vì lặng lẽ chọn A rồi lưu đè.
+      // Trên trang làm bài câu này vốn đã không chấm đúng được cho ai.
+      correctIdx = opts.indexOf(ca);
     } else if (type === "multi") {
       try {
         const arr = JSON.parse(ca) as string[];

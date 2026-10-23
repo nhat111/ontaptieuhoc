@@ -5,11 +5,16 @@ import { nanoid } from "@/lib/nanoid";
 import { GRADES, getSubjects } from "@/lib/subjects";
 import Header from "@/components/Header";
 import QuestionCard, { type QDraft } from "./QuestionCard";
-import PasteImportModal from "./PasteImportModal";
+import PasteImportModal, { type PasteFocus } from "./PasteImportModal";
+import StudentPreview from "./StudentPreview";
 import { DeleteLessonButton } from "./DeleteButtons";
-import { ACTION_DANGER, ACTION_MD } from "./actionStyles";
+import { ACTION_DANGER, ACTION_MD, ACTION_PRIMARY, ACTION_SECONDARY } from "./actionStyles";
 import MathText from "@/components/MathText";
 import { insertIntoFocused } from "@/lib/focusedEditor";
+import { NO_ANSWER, draftProblems, encodeCorrectAnswer, isBlankDraft, lessonProblems, type LessonProblem } from "@/lib/importDraft";
+import {
+  AlertCircle, BarChart3, Camera, CheckCircle2, ChevronDown, ClipboardPaste, Eye, HelpCircle, Inbox, Loader2, PencilLine, Plus, Save,
+} from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +58,8 @@ function blankQuestion(): QDraft {
     type: "mcq",
     content: "",
     options: ["", "", "", ""],
-    correctIdx: 0,
+    // Không chọn sẵn đáp án: chọn sẵn A thì quên bấm vẫn lưu được, và đề chấm sai.
+    correctIdx: NO_ANSWER,
     correctIdxs: [],
     answer: "",
     images: [],
@@ -87,40 +93,6 @@ function migrateDraftQuestion(q: any): QDraft {
   };
 }
 
-function validateQuestions(qs: QDraft[]): string | null {
-  if (!qs.length) return "Chưa có câu hỏi nào.";
-  for (let i = 0; i < qs.length; i++) {
-    const q = qs[i];
-    if (!q.content.trim()) return `Câu ${i + 1}: Thiếu nội dung câu hỏi.`;
-    switch (q.type) {
-      case "mcq":
-      case "multi": {
-        const filled = q.options.filter((o) => o.trim());
-        if (filled.length < 2) return `Câu ${i + 1}: Cần ít nhất 2 đáp án không rỗng.`;
-        if (q.options.some((o) => !o.trim())) return `Câu ${i + 1}: Có đáp án bỏ trống — xoá hoặc điền đủ.`;
-        if (q.type === "mcq" && (q.correctIdx < 0 || q.correctIdx >= q.options.length)) {
-          return `Câu ${i + 1}: Chưa chọn đáp án đúng.`;
-        }
-        if (q.type === "multi" && q.correctIdxs.length === 0) {
-          return `Câu ${i + 1}: Chưa chọn đáp án đúng nào.`;
-        }
-        break;
-      }
-      case "short":
-        if (!q.answer.trim()) return `Câu ${i + 1}: Thiếu đáp án mẫu.`;
-        break;
-      case "numeric": {
-        const n = parseFloat(q.answer.replace(",", "."));
-        if (q.answer.trim() === "" || Number.isNaN(n)) {
-          return `Câu ${i + 1}: Đáp án số không hợp lệ.`;
-        }
-        break;
-      }
-    }
-  }
-  return null;
-}
-
 // Encode QDraft → API payload per type.
 function encodeQuestion(q: QDraft) {
   const images = (q.images ?? []).filter((img) => img && img.url);
@@ -132,19 +104,8 @@ function encodeQuestion(q: QDraft) {
     imageUrl: images[0]?.url,
     solution: q.solution?.trim() || undefined,
   };
-  switch (q.type) {
-    case "mcq":
-      return { ...base, options: q.options, correctAnswer: q.options[q.correctIdx] ?? "" };
-    case "multi":
-      return {
-        ...base,
-        options: q.options,
-        correctAnswer: JSON.stringify(q.correctIdxs.map((i) => q.options[i]).filter(Boolean)),
-      };
-    case "short":
-    case "numeric":
-      return { ...base, options: [], correctAnswer: q.answer.trim() };
-  }
+  const choice = q.type === "mcq" || q.type === "multi";
+  return { ...base, options: choice ? q.options : [], correctAnswer: encodeCorrectAnswer(q) };
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -188,6 +149,15 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // Paste modal
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteFocus, setPasteFocus] = useState<PasteFocus>("paste");
+  const openPaste = (focus: PasteFocus) => { setPasteFocus(focus); setPasteOpen(true); };
+
+  // "Xem như học sinh"
+  const [previewOpen, setPreviewOpen] = useState(false);
+  // Đã bấm Lưu mà còn thiếu → từng thẻ câu hiện danh sách lỗi của nó.
+  const [showProblems, setShowProblems] = useState(false);
+  // Thẻ "Bạn muốn bắt đầu thế nào?" — bấm "Soạn từng câu" thì ẩn.
+  const [startDismissed, setStartDismissed] = useState(false);
 
   // Inline chapter creation
   const [showNewChapter, setShowNewChapter] = useState(false);
@@ -341,9 +311,12 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // ── Import from paste modal ──────────────────────────────────────────────
   const handlePasteImport = (imported: QDraft[], mode: "replace" | "append") => {
+    // Gập các câu đã đủ cho gọn; câu còn thiếu (thường là chưa có đáp án đúng)
+    // để mở, người soạn thấy ngay chỗ cần bấm.
+    const done = imported.filter((q) => draftProblems(q).length === 0).map((q) => q.id);
     if (mode === "replace") {
       setQuestions(imported);
-      setCollapsedIds(new Set(imported.map((q) => q.id))); // collapse all imported by default
+      setCollapsedIds(new Set(done));
     } else {
       setQuestions((qs) => {
         // Remove blank trailing question if present, then append
@@ -353,7 +326,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       });
       setCollapsedIds((s) => {
         const n = new Set(s);
-        imported.forEach((q) => n.add(q.id));
+        done.forEach((id) => n.add(id));
         return n;
       });
     }
@@ -384,18 +357,65 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     }
   }, [grade, subject, newChapterTitle]);
 
+  // ── Còn thiếu gì trước khi lưu ───────────────────────────────────────────
+  // Chương là tuỳ chọn — không chọn thì máy chủ gom vào chương mặc định của
+  // môn (xem ensureDefaultChapterId). Bắt buộc chỉ còn môn + tên + câu hỏi đủ.
+  const problems = useMemo(
+    () => lessonProblems({ subject, title: lessonTitle, questions }),
+    [subject, lessonTitle, questions],
+  );
+
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  /** Cuộn tới chỗ đang thiếu: mở thẻ câu nếu đang thu gọn. */
+  const jumpTo = useCallback((p: LessonProblem) => {
+    if (!p.id) {
+      document.getElementById("thong-tin-bai")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (p.text.includes("tên")) titleRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    const id = p.id;
+    setCollapsedIds((cur) => { if (!cur.has(id)) return cur; const n = new Set(cur); n.delete(id); return n; });
+    // Neo theo số câu (id ngẫu nhiên của câu mới khác nhau giữa máy chủ và trình duyệt).
+    // Đợi thẻ mở ra rồi mới cuộn, không thì cuộn tới vị trí của thẻ đang gập.
+    setTimeout(() => document.getElementById(`cau-${(p.index ?? 0) + 1}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, []);
+
+  // ── Sửa bài có sẵn: nhắc khi rời trang mà chưa lưu ───────────────────────
+  // Bài mới có nháp tự lưu trên máy; bài đang sửa thì không, đóng tab là mất.
+  // Chương không nằm trong chuỗi so sánh: danh sách chương về sau lần render
+  // đầu, chapterId đi từ null → chương của bài, không phải người dùng sửa.
+  const snapshot = JSON.stringify({ lessonTitle, indexLabel, durationMinutes, questions });
+  const [saved, setSaved] = useState(() => ({
+    snapshot: JSON.stringify({
+      lessonTitle: initialData?.title ?? "",
+      indexLabel: initialData?.indexLabel ?? "01",
+      durationMinutes: initialData?.durationMinutes ?? 15,
+      questions: initialData?.questions ?? [],
+    }),
+    chapterId: initialData?.chapterId ?? null,
+  }));
+  const dirty = editMode && (saved.snapshot !== snapshot || (chapterId !== null && chapterId !== saved.chapterId));
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
   // ── Save to Supabase ─────────────────────────────────────────────────────
 
   const handleSave = useCallback(async (gotoNext = false) => {
     setError(null);
     setSaveResult(null);
 
-    // Chương là tuỳ chọn — không chọn thì máy chủ gom vào chương mặc định
-    // của môn (xem ensureDefaultChapterId). Bắt buộc chỉ còn môn + tên + nội dung.
-    if (!subject) { setError("Chưa chọn môn học."); return; }
-    if (!lessonTitle.trim()) { setError("Chưa nhập tên bài học."); return; }
-    const qErr = validateQuestions(questions);
-    if (qErr) { setError(qErr); return; }
+    if (problems.length) {
+      // Danh sách "Còn … chỗ cần sửa" đã hiện sẵn; chỉ cần mở lỗi trong từng
+      // thẻ câu và đưa người soạn tới chỗ đầu tiên.
+      setShowProblems(true);
+      jumpTo(problems[0]);
+      return;
+    }
 
     setSaving(true);
     const payload = {
@@ -419,6 +439,8 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Lỗi không xác định."); return; }
+      if (editMode) setSaved({ snapshot, chapterId });
+      setShowProblems(false);
 
       if (gotoNext && editMode && data.nextLessonId) {
         // Tải lại hẳn trang: router.push sang [id] khác có thể giữ nguyên state
@@ -448,7 +470,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
     } finally {
       setSaving(false);
     }
-  }, [chapterId, grade, subject, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData]);
+  }, [chapterId, grade, subject, lessonTitle, indexLabel, durationMinutes, questions, editMode, examMode, draftKey, initialData, problems, jumpTo, snapshot]);
 
   // ── Keyboard shortcuts: Ctrl+S save, Ctrl+Enter add question ────────────
   useEffect(() => {
@@ -469,139 +491,136 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const gradeColor: Record<number, string> = {
-    1: "text-red-600", 2: "text-orange-600", 3: "text-green-600",
-    4: "text-blue-600", 5: "text-purple-600",
-  };
-
   const allCollapsed = questions.length > 0 && questions.every((q) => collapsedIds.has(q.id));
+  const noun = examMode ? "đề" : "bài";
+  const saveLabel = editMode ? `Lưu thay đổi` : `Lưu ${noun}`;
+  // Trang vừa mở, chưa gõ gì: hỏi cách bắt đầu thay vì thả người dùng vào form trống.
+  const fresh = !editMode && !startDismissed && questions.length === 1 && isBlankDraft(questions[0]);
+  const hasContent = questions.some((q) => !isBlankDraft(q));
+  const chapterTitle = chapters.find((c) => c.id === chapterId)?.title;
+
+  const label = "text-sm font-semibold text-slate-700 block mb-1";
+  const field =
+    "w-full border border-slate-300 rounded-xl px-3 py-2.5 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-50";
+
+  const saveButton = (big: boolean) => (
+    <button
+      onClick={() => handleSave(false)}
+      disabled={saving}
+      title="Ctrl+S"
+      className={`${ACTION_PRIMARY} inline-flex items-center justify-center gap-2 rounded-xl border-2 font-extrabold transition-colors disabled:opacity-60 ${
+        big ? "w-full h-12 text-base" : "h-11 px-4 text-base flex-1"
+      }`}
+    >
+      {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Save className="h-5 w-5" aria-hidden />}
+      {saving ? "Đang lưu…" : saveLabel}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 pb-28 lg:pb-0">
       <Header />
 
       {/* Page header */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            {editMode && (
-              <a
-                href={`/quiz?lessonId=${initialData!.lessonId}`}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors flex-shrink-0"
-                title="Xem bài học"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </a>
-            )}
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-800">
-                  {editMode
-                    ? (examMode ? "Chỉnh sửa đề kiểm tra" : "Chỉnh sửa bài học")
-                    : (examMode ? "Tạo đề kiểm tra mới" : "Tạo bài học mới")}
-                </h1>
-                {editMode && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                    Đang sửa
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-400 mt-0.5">
-                {editMode
-                  ? `${examMode ? "Đề" : "Bài"} #${initialData!.lessonId} · Cập nhật câu hỏi · Lưu vào Supabase`
-                  : (examMode ? "Tạo đề kiểm tra · Soạn câu hỏi với KaTeX · Lưu vào Supabase" : "Tạo bài học · Soạn câu hỏi với KaTeX · Lưu vào Supabase")}
-              </p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-extrabold text-slate-900">
+                {editMode ? (examMode ? "Sửa đề kiểm tra" : "Sửa bài học") : (examMode ? "Soạn đề kiểm tra mới" : "Soạn bài học mới")}
+              </h1>
+              {dirty && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Có thay đổi chưa lưu</span>
+              )}
             </div>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {editMode
+                ? "Sửa xong bấm Lưu thay đổi — học sinh thấy bản mới ngay."
+                : "Soạn xong bấm Lưu — bài hiện ngay trên trang lớp cho các bé làm."}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/huong-dan/soan-de"
-              target="_blank"
-              className="text-sm font-semibold text-gray-500 hover:text-blue-600 px-2 py-2.5"
-            >
-              ❓ Hướng dẫn soạn đề
+            <Link href="/huong-dan/soan-de" target="_blank" className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
+              <HelpCircle className="h-4 w-4" aria-hidden /> Hướng dẫn
             </Link>
-            <Link href="/import/gop-y" className="text-sm font-semibold text-gray-500 hover:text-blue-600 px-2 py-2.5">
-              📬 Góp ý đã nhận
-            </Link>
-            <Link href="/import/thong-ke" className="text-sm font-semibold text-gray-500 hover:text-blue-600 px-2 py-2.5">
-              📊 Thống kê
-            </Link>
-            <button
-              onClick={() => setPasteOpen(true)}
-              className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Dán đề từ văn bản
-            </button>
+            {/* Việc của người quản lý trang — gom vào một menu cho khỏi lẫn với công cụ soạn đề. */}
+            <details className="relative">
+              <summary className={`${ACTION_MD} ${ACTION_SECONDARY} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                Quản lý <ChevronDown className="h-4 w-4" aria-hidden />
+              </summary>
+              <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-pop">
+                <Link href="/import/gop-y" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                  <Inbox className="h-4 w-4" aria-hidden /> Góp ý đã nhận
+                </Link>
+                <Link href="/import/thong-ke" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                  <BarChart3 className="h-4 w-4" aria-hidden /> Thống kê lượt dùng
+                </Link>
+              </div>
+            </details>
+            {!fresh && (
+              <button onClick={() => openPaste("paste")} className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
+                <ClipboardPaste className="h-4 w-4" aria-hidden /> Dán / chụp đề có sẵn
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Edit mode step bar */}
-      {editMode && (
-        <div className="bg-amber-50 border-b border-amber-100">
-          <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2">
-            {[
-              { n: 1, label: "Thông tin bài" },
-              { n: 2, label: "Câu hỏi" },
-              { n: 3, label: "Lưu" },
-            ].map((step, i) => (
-              <div key={step.n} className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                    {step.n}
-                  </div>
-                  <span className="text-xs font-semibold text-amber-700 hidden sm:block">{step.label}</span>
-                </div>
-                {i < 2 && <div className="w-6 h-px bg-amber-300 mx-0.5" />}
-              </div>
-            ))}
-            <span className="ml-auto text-xs text-amber-600">
-              Sửa xong → bấm <strong>{examMode ? "Cập nhật đề kiểm tra" : "Cập nhật bài học"}</strong>
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
         {/* ── Left: lesson form + question editor ── */}
-        <div className="space-y-5">
+        <div className="space-y-5 min-w-0">
+
+          {/* Cách bắt đầu — chỉ khi trang vừa mở */}
+          {fresh && (
+            <section className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-white p-5">
+              <h2 className="text-lg font-extrabold text-slate-900">Bạn muốn bắt đầu thế nào?</h2>
+              <p className="mt-0.5 text-sm text-slate-600">Đã có đề sẵn thì đưa vào một lần, máy tự tách câu hỏi và đáp án.</p>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {([
+                  { icon: ClipboardPaste, title: "Dán đề có sẵn", desc: "Chép từ Word, Zalo, trang web rồi dán vào", onClick: () => openPaste("paste") },
+                  { icon: Camera, title: "Chụp ảnh đề giấy", desc: "Chụp đề in, máy đọc chữ giúp", onClick: () => openPaste("scan") },
+                  { icon: PencilLine, title: "Soạn từng câu", desc: "Gõ từng câu hỏi và đáp án", onClick: () => setStartDismissed(true) },
+                ] as const).map(({ icon: Icon, title, desc, onClick }) => (
+                  <button
+                    key={title}
+                    type="button"
+                    onClick={onClick}
+                    className="flex items-start gap-3 rounded-2xl border-2 border-slate-200 bg-white p-4 text-left shadow-soft transition hover:border-primary-300 hover:shadow-pop"
+                  >
+                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                      <Icon className="h-6 w-6" aria-hidden />
+                    </span>
+                    <span>
+                      <span className="block text-base font-bold text-slate-900">{title}</span>
+                      <span className="block text-sm text-slate-500">{desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Lesson form */}
-          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-              {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>}
-              Thông tin bài học
-            </h2>
+          <section id="thong-tin-bai" className="scroll-mt-24 bg-white rounded-2xl border border-slate-200 shadow-soft p-5">
+            <h2 className="text-base font-bold text-slate-800 mb-4">Thông tin {noun}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
-              {/* Grade */}
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Lớp</label>
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                >
+                <label htmlFor="f-lop" className={label}>Lớp</label>
+                <select id="f-lop" value={grade} onChange={(e) => setGrade(Number(e.target.value))} className={field}>
                   {GRADES.map((g) => (
                     <option key={g} value={g}>Lớp {g}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Subject */}
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Môn học</label>
+              <div className="sm:col-span-2">
+                <label htmlFor="f-mon" className={label}>Môn học</label>
                 <select
+                  id="f-mon"
                   value={subject ?? ""}
                   onChange={(e) => setSubjectChoice(e.target.value)}
                   disabled={subjects.length === 0}
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={field}
                 >
                   {subjects.length === 0 && <option value="">— Chưa có môn —</option>}
                   {subjects.map((s) => (
@@ -610,125 +629,124 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </select>
               </div>
 
-              {/* Chapter */}
-              <div className="col-span-2">
-                <label className="text-xs text-gray-500 block mb-1">
-                  Chương <span className="text-gray-400">(tuỳ chọn)</span>{" "}
-                  {loadingChapters && <span className="text-blue-400">⟳</span>}
-                </label>
-                <div className="flex gap-1.5">
-                  <select
-                    value={chapterId ?? ""}
-                    onChange={(e) => setChapterId(e.target.value ? Number(e.target.value) : null)}
-                    className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {/* Bỏ trống được — máy chủ sẽ gom vào chương mặc định của môn. */}
-                    <option value="">— Không phân chương —</option>
-                    {chapters.map((c) => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                  {subject && !loadingChapters && (
-                    <button
-                      type="button"
-                      onClick={() => { setShowNewChapter((v) => !v); setChapterCreateError(null); setNewChapterTitle(""); }}
-                      title="Tạo chương mới"
-                      className={`px-2.5 py-2 rounded-lg border text-sm font-bold transition-colors flex-shrink-0 ${
-                        showNewChapter
-                          ? "bg-blue-600 border-blue-600 text-white"
-                          : "border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"
-                      }`}
-                    >
-                      +
-                    </button>
-                  )}
-                </div>
-
-                {/* Inline create chapter form */}
-                {showNewChapter && subject && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                    <p className="text-xs font-semibold text-blue-700">Tạo chương mới</p>
-                    <div className="flex gap-2">
-                      <input
-                        autoFocus
-                        type="text"
-                        value={newChapterTitle}
-                        onChange={(e) => setNewChapterTitle(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleCreateChapter(); if (e.key === "Escape") setShowNewChapter(false); }}
-                        placeholder="VD: Chương 1: Số tự nhiên"
-                        className="flex-1 border border-blue-200 bg-white rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      />
-                      <button
-                        onClick={handleCreateChapter}
-                        disabled={!newChapterTitle.trim() || creatingChapter}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors flex-shrink-0"
-                      >
-                        {creatingChapter ? "..." : "Tạo"}
-                      </button>
-                    </div>
-                    {chapterCreateError && (
-                      <p className="text-xs text-red-500">✗ {chapterCreateError}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Index label */}
               <div>
-                <label className="text-xs text-gray-500 block mb-1">STT bài</label>
+                <label htmlFor="f-phut" className={label}>Thời gian (phút)</label>
                 <input
-                  type="text"
-                  value={indexLabel}
-                  onChange={(e) => setIndexLabel(e.target.value)}
-                  placeholder="01"
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
-              </div>
-
-              {/* Lesson title */}
-              <div className="col-span-2 sm:col-span-3">
-                <label className="text-xs text-gray-500 block mb-1">Tên bài học</label>
-                <input
-                  type="text"
-                  value={lessonTitle}
-                  onChange={(e) => setLessonTitle(e.target.value)}
-                  placeholder="VD: Phép cộng trong phạm vi 100"
-                  className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
-              </div>
-
-              {/* Duration */}
-              <div className="col-span-2 sm:col-span-4">
-                <label className="text-xs text-gray-500 block mb-1">Thời gian làm bài (phút)</label>
-                <input
+                  id="f-phut"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   max={300}
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(Math.max(1, Math.min(300, Number(e.target.value) || 1)))}
-                  className="w-32 border border-gray-200 rounded-lg px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className={field}
                 />
-                <span className="ml-2 text-[11px] text-gray-400">Mặc định 15 phút</span>
+              </div>
+
+              <div className="col-span-2 sm:col-span-4">
+                <label htmlFor="f-ten" className={label}>
+                  Tên {noun} <span className="text-coral-600">*</span>
+                </label>
+                <input
+                  id="f-ten"
+                  ref={titleRef}
+                  type="text"
+                  value={lessonTitle}
+                  onChange={(e) => setLessonTitle(e.target.value)}
+                  placeholder={examMode ? "VD: Đề kiểm tra giữa học kì I" : "VD: Phép cộng trong phạm vi 100"}
+                  className={field}
+                />
               </div>
             </div>
+
+            {/* Ít dùng: chương và số thứ tự. Đang sửa bài thì mở sẵn để thấy bài nằm ở chương nào. */}
+            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={editMode || undefined}>
+              <summary className="cursor-pointer py-1 text-sm font-semibold text-slate-600">
+                Tuỳ chọn thêm: chương, số thứ tự{" "}
+                <span className="font-normal text-slate-500">
+                  ({chapterTitle ? `chương “${chapterTitle}”` : "chưa xếp chương"} · số {indexLabel || "—"})
+                </span>
+              </summary>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3 pb-1">
+                <div>
+                  <label htmlFor="f-chuong" className={label}>
+                    Chương {loadingChapters && <Loader2 className="inline h-3.5 w-3.5 animate-spin text-primary-500" aria-hidden />}
+                  </label>
+                  <select
+                    id="f-chuong"
+                    value={chapterId ?? ""}
+                    onChange={(e) => setChapterId(e.target.value ? Number(e.target.value) : null)}
+                    className={field}
+                  >
+                    {/* Bỏ trống được — máy chủ sẽ gom vào chương mặc định của môn. */}
+                    <option value="">— Không xếp chương —</option>
+                    {chapters.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                  {subject && !loadingChapters && !showNewChapter && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNewChapter(true); setChapterCreateError(null); setNewChapterTitle(""); }}
+                      className="mt-1.5 text-sm font-semibold text-primary-700 hover:underline"
+                    >
+                      + Tạo chương mới
+                    </button>
+                  )}
+                  {showNewChapter && subject && (
+                    <div className="mt-2 rounded-xl border border-primary-200 bg-white p-3 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={newChapterTitle}
+                          onChange={(e) => setNewChapterTitle(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleCreateChapter(); if (e.key === "Escape") setShowNewChapter(false); }}
+                          placeholder="Tên chương mới, VD: Chương 1: Số tự nhiên"
+                          className={`${field} flex-1 min-w-[180px]`}
+                        />
+                        <button
+                          onClick={handleCreateChapter}
+                          disabled={!newChapterTitle.trim() || creatingChapter}
+                          className={`${ACTION_MD} ${ACTION_PRIMARY}`}
+                        >
+                          {creatingChapter ? "Đang tạo…" : "Tạo"}
+                        </button>
+                        <button onClick={() => setShowNewChapter(false)} className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
+                          Huỷ
+                        </button>
+                      </div>
+                      {chapterCreateError && <p className="text-sm text-coral-700">{chapterCreateError}</p>}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="f-stt" className={label}>Số thứ tự</label>
+                  <input
+                    id="f-stt"
+                    type="text"
+                    value={indexLabel}
+                    onChange={(e) => setIndexLabel(e.target.value)}
+                    placeholder="01"
+                    className={field}
+                  />
+                </div>
+              </div>
+            </details>
           </section>
 
           {/* Question list */}
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>}
-                Câu hỏi{" "}
-                <span className={`${gradeColor[grade] ?? "text-blue-600"}`}>
-                  ({questions.length} câu)
-                </span>
+              <h2 className="text-base font-bold text-slate-800">
+                Câu hỏi <span className="text-primary-700">({questions.length} câu)</span>
               </h2>
               {questions.length > 1 && (
                 <button
                   onClick={allCollapsed ? expandAll : collapseAll}
-                  className="text-xs text-gray-500 hover:text-blue-600 font-medium px-2 py-1 rounded-lg hover:bg-gray-100"
+                  className="text-sm text-slate-600 hover:text-primary-700 font-semibold px-2 py-1.5 rounded-lg hover:bg-slate-100"
                 >
-                  {allCollapsed ? "↓ Mở rộng tất cả" : "↑ Thu gọn tất cả"}
+                  {allCollapsed ? "Mở rộng tất cả" : "Thu gọn tất cả"}
                 </button>
               )}
             </div>
@@ -746,143 +764,124 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 onMoveDown={() => moveQuestion(i, 1)}
                 onDuplicate={() => duplicateQuestion(i)}
                 onDelete={() => deleteQuestion(q.id)}
+                showProblems={showProblems}
               />
             ))}
 
             <button
               onClick={addQuestion}
-              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-4 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition-all flex items-center justify-center gap-2"
+              className="w-full border-2 border-dashed border-slate-300 rounded-2xl py-4 text-base font-semibold text-slate-600 hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50/40 transition-all flex items-center justify-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thêm câu hỏi <span className="text-xs text-gray-400 ml-1">(Ctrl+Enter)</span>
+              <Plus className="h-5 w-5" aria-hidden /> Thêm câu hỏi
             </button>
           </div>
         </div>
 
-        {/* ── Right: save panel ── */}
-        <div className="space-y-4 lg:sticky lg:top-6">
-          {/* Lesson summary */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              {editMode && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>}
-              Tổng quan
-            </h3>
-            <div className="space-y-1.5 text-xs text-gray-600">
-              <Row label="Lớp" value={`Lớp ${grade}`} />
-              <Row label="Môn" value={subject ?? "—"} />
-              <Row
-                label="Chương"
-                value={chapters.find((c) => c.id === chapterId)?.title?.slice(0, 28) ?? "—"}
-              />
-              <Row label="Bài" value={lessonTitle || "—"} />
-              <Row label="Số câu" value={String(questions.length)} />
-              <Row label="Thời gian" value={`${durationMinutes} phút`} />
-            </div>
+        {/* ── Right: kiểm tra + lưu (máy tính). Điện thoại dùng thanh dưới đáy. ── */}
+        <div className="space-y-4 lg:sticky lg:top-20">
+          <div id="kiem-tra" className="scroll-mt-24 bg-white rounded-2xl border border-slate-200 shadow-soft p-5">
+            <h3 className="text-base font-bold text-slate-800 mb-1">Kiểm tra trước khi lưu</h3>
+            <p className="text-sm text-slate-500 mb-3">
+              Lớp {grade} · {subject ?? "—"} · {questions.length} câu · {durationMinutes} phút
+            </p>
 
-            {error && (
-              <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                ✗ {error}
+            {problems.length === 0 ? (
+              <p className="flex items-center gap-2 rounded-xl bg-success-50 px-3 py-2 text-sm font-semibold text-success-700">
+                <CheckCircle2 className="h-5 w-5 flex-shrink-0" aria-hidden /> Đủ cả rồi, lưu được.
+              </p>
+            ) : (
+              <div className="rounded-xl border border-coral-200 bg-coral-50 p-3">
+                <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-coral-800">
+                  <AlertCircle className="h-4 w-4" aria-hidden /> Còn {problems.length} chỗ cần sửa
+                </p>
+                <ul className="space-y-0.5">
+                  {problems.slice(0, 8).map((p, i) => (
+                    <li key={i}>
+                      <button
+                        type="button"
+                        onClick={() => jumpTo(p)}
+                        className="w-full rounded-lg px-1.5 py-1 text-left text-sm text-coral-900 hover:bg-coral-100"
+                      >
+                        {p.index !== null && <b>Câu {p.index + 1}: </b>}
+                        {p.text}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {problems.length > 8 && <p className="mt-1 px-1.5 text-sm text-coral-800">… và {problems.length - 8} chỗ khác</p>}
               </div>
             )}
 
+            {error && (
+              <div className="mt-3 text-sm text-coral-800 bg-coral-50 border border-coral-200 rounded-xl px-3 py-2">{error}</div>
+            )}
+
             {saveResult?.ok && (
-              <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 space-y-1">
+              <div className="mt-3 text-sm text-success-800 bg-success-50 border border-success-200 rounded-xl px-3 py-2 space-y-1">
                 <p className="font-semibold">✓ {saveResult.msg}</p>
-                <a
-                  href={`/quiz?lessonId=${saveResult.lessonId}`}
-                  className="underline font-semibold block"
-                >
-                  {editMode
-                    ? (examMode ? "Kiểm tra lại đề →" : "Kiểm tra lại bài →")
-                    : (examMode ? "Vào làm thử →" : "Vào làm bài →")}
+                <a href={`/quiz?lessonId=${saveResult.lessonId}`} className="underline font-semibold block">
+                  Mở {noun} như học sinh →
                 </a>
                 {chapterId && (
-                  <Link
-                    href={`/import/chapter/${chapterId}`}
-                    className="underline font-semibold block"
-                  >
+                  <Link href={`/import/chapter/${chapterId}`} className="underline font-semibold block">
                     Xem tất cả bài trong chương →
                   </Link>
                 )}
               </div>
             )}
 
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving || !subject || !lessonTitle.trim()}
-              title="Ctrl+S"
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
-                  </svg>
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {editMode
-                    ? (examMode ? "Cập nhật đề kiểm tra" : "Cập nhật bài học")
-                    : (examMode ? "Lưu đề kiểm tra" : "Lưu bài học")}
-                </>
-              )}
-            </button>
-
-            {editMode && (
+            <div className="mt-4 space-y-2">
               <button
-                onClick={() => handleSave(true)}
-                disabled={saving || !subject || !lessonTitle.trim()}
-                title="Lưu rồi chuyển sang bài kế tiếp trong cùng chương"
-                className="mt-2 w-full bg-white hover:bg-blue-50 border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed text-blue-700 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!hasContent}
+                className={`${ACTION_SECONDARY} w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl border-2 text-base font-bold disabled:opacity-40`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-                Lưu &amp; sang bài tiếp
+                <Eye className="h-5 w-5" aria-hidden /> Xem như học sinh
               </button>
-            )}
-
-            {editMode && initialData?.canDelete && (
-              <DeleteLessonButton
-                lessonId={initialData!.lessonId}
-                title={initialData!.title}
-                questionCount={questions.length}
-                isExam={examMode}
-                redirectTo={initialData!.chapterId ? `/import/chapter/${initialData!.chapterId}` : "/import"}
-                className={`mt-2 w-full ${ACTION_MD} ${ACTION_DANGER}`}
-              />
-            )}
+              {saveButton(true)}
+              {editMode && (
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving}
+                  title="Lưu rồi chuyển sang bài kế tiếp trong cùng chương"
+                  className={`${ACTION_MD} ${ACTION_SECONDARY} w-full`}
+                >
+                  Lưu &amp; sang bài tiếp theo
+                </button>
+              )}
+              {editMode && initialData?.canDelete && (
+                <DeleteLessonButton
+                  lessonId={initialData!.lessonId}
+                  title={initialData!.title}
+                  questionCount={questions.length}
+                  isExam={examMode}
+                  redirectTo={initialData!.chapterId ? `/import/chapter/${initialData!.chapterId}` : "/import"}
+                  className={`w-full ${ACTION_MD} ${ACTION_DANGER}`}
+                />
+              )}
+            </div>
 
             {editMode && initialData?.chapterId && (
-              <Link
-                href={`/import/chapter/${initialData.chapterId}`}
-                className="mt-2 block text-center text-[11px] text-blue-600 hover:underline"
-              >
-                ← Xem tất cả bài trong chương
+              <Link href={`/import/chapter/${initialData.chapterId}`} className="mt-3 block text-center text-sm text-primary-700 hover:underline">
+                ← Tất cả bài trong chương
               </Link>
             )}
-
-            <p className="mt-1.5 text-[10px] text-gray-400 text-center">Tự lưu nháp vào trình duyệt</p>
+            {!editMode && (
+              <p className="mt-2 text-xs text-slate-500 text-center">Bản nháp tự lưu trên máy này — tắt trang vẫn còn.</p>
+            )}
           </div>
 
-          {/* KaTeX cheatsheet — clickable */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-blue-600 mb-1">LaTeX nhanh</h3>
-            <p className="text-[11px] text-gray-400 mb-3">Click để chèn vào ô câu hỏi đang focus</p>
+          {/* Công thức LaTeX — cho người đã quen, mặc định gập lại */}
+          <details className="bg-white rounded-2xl border border-slate-200 shadow-soft p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-600">Công thức nâng cao (LaTeX)</summary>
+            <p className="mt-2 mb-2 text-xs text-slate-500">Bấm vào ô đang soạn trước, rồi bấm mẫu để chèn.</p>
             <div className="space-y-1 text-xs">
               {([
                 ["Phân số", "$\\frac{1}{2}$"],
                 ["Căn", "$\\sqrt{x}$"],
                 ["Mũ", "$x^{2}$"],
                 ["Chỉ số dưới", "$x_{i}$"],
-                ["Block math", "$$E=mc^2$$"],
+                ["Công thức riêng dòng", "$$E=mc^2$$"],
               ] as const).map(([name, src]) => (
                 <button
                   key={name}
@@ -896,9 +895,9 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                     }
                   }}
                   className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-blue-50 group transition-colors text-left"
-                  title="Click để chèn"
+                  title="Bấm để chèn"
                 >
-                  <span className="text-gray-500 w-20 shrink-0 group-hover:text-blue-600">{name}</span>
+                  <span className="text-gray-500 w-24 shrink-0 group-hover:text-blue-600">{name}</span>
                   <code className="bg-gray-100 group-hover:bg-blue-100 px-1.5 py-0.5 rounded text-[11px] flex-1 truncate transition-colors">{src}</code>
                   <span className="text-gray-700 shrink-0">
                     <MathText text={src} />
@@ -906,31 +905,49 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </button>
               ))}
             </div>
-          </div>
+          </details>
 
           {/* Tips */}
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-xs text-amber-700 space-y-1">
+          <div className="hidden lg:block bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 space-y-1">
             <p className="font-semibold">Mẹo</p>
-            <p>• <kbd className="bg-amber-100 px-1 rounded">Ctrl+Enter</kbd> thêm câu hỏi mới</p>
-            <p>• <kbd className="bg-amber-100 px-1 rounded">Ctrl+S</kbd> lưu vào Supabase</p>
-            <p>• Click vào tiêu đề câu để thu gọn / mở rộng</p>
-            <p>• Ảnh: bucket <code className="bg-amber-100 px-1 rounded">question-images</code> (public)</p>
+            <p>• Dán cả câu kèm A. B. C. D. vào ô câu hỏi, máy tự tách đáp án.</p>
+            <p>• Bấm vào tên câu để thu gọn cho dễ nhìn.</p>
+            <p>• Phím tắt: <kbd className="bg-amber-100 px-1 rounded">Ctrl+S</kbd> lưu, <kbd className="bg-amber-100 px-1 rounded">Ctrl+Enter</kbd> thêm câu.</p>
           </div>
         </div>
       </div>
 
-      <PasteImportModal open={pasteOpen} onClose={() => setPasteOpen(false)} onImport={handlePasteImport} />
-    </div>
-  );
-}
+      {/* Thanh lưu ghim dưới đáy — điện thoại, máy tính bảng */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="mx-auto flex max-w-3xl items-center gap-2">
+          <button
+            type="button"
+            onClick={() => (problems.length ? jumpTo(problems[0]) : document.getElementById("kiem-tra")?.scrollIntoView({ behavior: "smooth" }))}
+            className={`flex h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold ${problems.length ? "text-coral-700" : "text-success-700"}`}
+          >
+            {problems.length ? <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden /> : <CheckCircle2 className="h-5 w-5 flex-shrink-0" aria-hidden />}
+            <span className="truncate">{problems.length ? `Còn ${problems.length} chỗ` : "Đủ rồi"}</span>
+          </button>
+          <button
+            onClick={() => setPreviewOpen(true)}
+            disabled={!hasContent}
+            aria-label="Xem như học sinh"
+            className={`${ACTION_SECONDARY} inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border-2 disabled:opacity-40`}
+          >
+            <Eye className="h-5 w-5" aria-hidden />
+          </button>
+          {saveButton(false)}
+        </div>
+      </div>
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-gray-400">{label}</span>
-      <span className="font-medium text-gray-700 text-right truncate max-w-[140px]" title={value}>
-        {value}
-      </span>
+      <PasteImportModal
+        open={pasteOpen}
+        onClose={() => setPasteOpen(false)}
+        onImport={handlePasteImport}
+        focus={pasteFocus}
+        hasExisting={hasContent}
+      />
+      <StudentPreview open={previewOpen} onClose={() => setPreviewOpen(false)} title={lessonTitle} questions={questions} />
     </div>
   );
 }

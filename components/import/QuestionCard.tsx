@@ -1,8 +1,10 @@
 "use client";
 import { useRef, useState } from "react";
-import TiptapEditor from "./TiptapEditor";
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
+import TiptapEditor, { hasMath } from "./TiptapEditor";
 import MathText from "@/components/MathText";
 import { splitOptions } from "@/lib/optionSplitter";
+import { NO_ANSWER, draftProblems, isBlankDraft } from "@/lib/importDraft";
 
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
@@ -27,11 +29,13 @@ export type QDraft = {
 
 const LABELS = ["A", "B", "C", "D", "E", "F"];
 
-const TYPE_OPTIONS: { value: QType; label: string; hint: string }[] = [
-  { value: "mcq", label: "Trắc nghiệm", hint: "1 đáp án đúng · 2–6 lựa chọn" },
-  { value: "multi", label: "Nhiều đáp án", hint: "Chọn nhiều đáp án đúng" },
-  { value: "short", label: "Tự luận ngắn", hint: "Người làm gõ text (nhiều đáp án cách | )" },
-  { value: "numeric", label: "Trả lời số", hint: "Người làm nhập số" },
+// Tên loại câu dùng chung với nhãn trên trang làm bài (components/quiz/QuestionCard)
+// và trang /huong-dan/soan-de — đổi ở đây thì đổi cả hai nơi đó.
+export const TYPE_OPTIONS: { value: QType; label: string; hint: string; example: string }[] = [
+  { value: "mcq", label: "Trắc nghiệm", hint: "Chọn 1 đáp án đúng", example: "2 + 3 = ?   A. 4   B. 5" },
+  { value: "multi", label: "Chọn nhiều đáp án", hint: "Có thể có nhiều đáp án đúng", example: "Số nào là số chẵn?  A. 2  B. 3  C. 4" },
+  { value: "short", label: "Điền chữ", hint: "Bé gõ câu trả lời bằng chữ", example: "Thủ đô nước ta là …" },
+  { value: "numeric", label: "Điền số", hint: "Bé gõ một con số", example: "25 + 17 = …" },
 ];
 
 interface Props {
@@ -45,6 +49,8 @@ interface Props {
   onMoveDown: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  /** Đã bấm Lưu mà còn thiếu: hiện danh sách lỗi ngay trong thẻ. */
+  showProblems?: boolean;
 }
 
 export default function QuestionCard({
@@ -58,6 +64,7 @@ export default function QuestionCard({
   onMoveDown,
   onDuplicate,
   onDelete,
+  showProblems,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -132,7 +139,7 @@ export default function QuestionCard({
     if (question.options.length <= 2) return;
     const opts = question.options.filter((_, idx) => idx !== i);
     let correctIdx = question.correctIdx;
-    if (correctIdx === i) correctIdx = 0;
+    if (correctIdx === i) correctIdx = NO_ANSWER;
     else if (correctIdx > i) correctIdx -= 1;
     const correctIdxs = question.correctIdxs
       .filter((idx) => idx !== i)
@@ -151,7 +158,7 @@ export default function QuestionCard({
     patch({
       type: "mcq",
       options: ["Đúng", "Sai"],
-      correctIdx: 0,
+      correctIdx: NO_ANSWER,
       correctIdxs: [],
     });
   }
@@ -165,7 +172,7 @@ export default function QuestionCard({
       patch({
         type: newType,
         options: opts,
-        correctIdx: newType === "mcq" ? Math.min(question.correctIdx, opts.length - 1) : 0,
+        correctIdx: newType === "mcq" && question.correctIdx < opts.length ? question.correctIdx : NO_ANSWER,
         correctIdxs: newType === "multi" ? question.correctIdxs : [],
       });
     }
@@ -208,145 +215,96 @@ export default function QuestionCard({
     patch({ images: arr });
   }
 
-  const isFilled = (() => {
-    if (!question.content.trim()) return false;
-    switch (question.type) {
-      case "mcq":
-        return (
-          question.options.length >= 2 &&
-          question.options.every((o) => o.trim()) &&
-          question.correctIdx >= 0 &&
-          question.correctIdx < question.options.length
-        );
-      case "multi":
-        return (
-          question.options.length >= 2 &&
-          question.options.every((o) => o.trim()) &&
-          question.correctIdxs.length >= 1
-        );
-      case "short":
-        return !!question.answer.trim();
-      case "numeric":
-        return question.answer.trim() !== "" && !Number.isNaN(parseFloat(question.answer.replace(",", ".")));
-    }
-  })();
+  const problems = draftProblems(question);
+
+  function confirmDelete() {
+    // Câu đã gõ nội dung thì hỏi lại: nút thùng rác nằm sát nút nhân đôi, bấm nhầm
+    // là mất cả câu (bài mới chỉ có nháp trên máy, không có thùng rác).
+    if (!isBlankDraft(question) && !window.confirm(`Xoá câu ${index + 1}?`)) return;
+    onDelete();
+  }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div id={`cau-${index + 1}`} className="scroll-mt-24 bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between bg-gray-50 border-b border-gray-100 px-4 py-2.5 gap-2">
+      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-3 py-2 gap-2">
         <button
           onClick={onToggleCollapse}
-          className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-gray-800 min-w-0 flex-1 text-left"
+          className="flex items-center gap-2 text-base font-bold text-slate-700 hover:text-slate-900 min-w-0 flex-1 text-left py-1"
           title={collapsed ? "Mở rộng" : "Thu gọn"}
         >
-          <svg
-            className={`w-3.5 h-3.5 shrink-0 transition-transform ${collapsed ? "-rotate-90" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${collapsed ? "-rotate-90" : ""}`} aria-hidden />
           <span className="shrink-0">Câu {index + 1}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded shrink-0">
+          <span className="text-xs font-semibold bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full shrink-0">
             {TYPE_OPTIONS.find((t) => t.value === question.type)?.label ?? "?"}
           </span>
-          {isFilled && <span className="text-green-500 text-xs shrink-0" title="Đã điền đủ">●</span>}
+          {problems.length === 0 ? (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success-700 shrink-0">
+              <CheckCircle2 className="h-4 w-4" aria-hidden /> Xong
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-coral-700 shrink-0" title={problems.join(" · ")}>
+              <AlertCircle className="h-4 w-4" aria-hidden /> Chưa xong
+            </span>
+          )}
           {collapsed && question.content.trim() && (
-            <span className="text-xs font-normal text-gray-500 truncate min-w-0">
+            <span className="text-sm font-normal text-slate-500 truncate min-w-0 hidden sm:inline">
               — <MathText text={question.content.slice(0, 80)} />
             </span>
           )}
         </button>
-        <div className="flex items-center gap-1 shrink-0">
-          <IconBtn
-            title="Lên"
-            disabled={index === 0}
-            onClick={onMoveUp}
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-            }
-          />
-          <IconBtn
-            title="Xuống"
-            disabled={index === total - 1}
-            onClick={onMoveDown}
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            }
-          />
-          <IconBtn
-            title="Nhân đôi"
-            onClick={onDuplicate}
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            }
-          />
-          <IconBtn
-            title="Xóa"
-            onClick={onDelete}
-            danger
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            }
-          />
+        <div className="flex items-center gap-0.5 shrink-0">
+          <IconBtn title="Chuyển câu lên trên" disabled={index === 0} onClick={onMoveUp} icon={<ChevronUp className="h-4 w-4" />} />
+          <IconBtn title="Chuyển câu xuống dưới" disabled={index === total - 1} onClick={onMoveDown} icon={<ChevronDown className="h-4 w-4" />} />
+          <IconBtn title="Nhân đôi câu này" onClick={onDuplicate} icon={<Copy className="h-4 w-4" />} />
+          <IconBtn title="Xoá câu này" onClick={confirmDelete} danger icon={<Trash2 className="h-4 w-4" />} />
         </div>
       </div>
 
       {!collapsed && (
         <div className="p-4 space-y-4">
-          {/* Type selector */}
+          {/* Type selector — mỗi loại kèm một ví dụ, vì tên loại thôi thì khó phân biệt */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Dạng câu hỏi</label>
-            <div className="flex flex-wrap gap-1.5">
-              {TYPE_OPTIONS.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setType(t.value)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-                    question.type === t.value
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
-                  }`}
-                  title={t.hint}
-                >
-                  {t.label}
-                </button>
-              ))}
-              {(question.type === "mcq" || question.type === "multi") && (
-                <button
-                  type="button"
-                  onClick={setTfPreset}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-white border-gray-200 text-gray-500 hover:border-amber-400 hover:text-amber-600 transition-colors"
-                  title="Tạo nhanh 2 đáp án Đúng/Sai"
-                >
-                  + Đúng/Sai
-                </button>
-              )}
+            <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Loại câu hỏi</label>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {TYPE_OPTIONS.map((t) => {
+                const on = question.type === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setType(t.value)}
+                    aria-pressed={on}
+                    className={`rounded-xl border-2 px-3 py-2 text-left transition-colors ${
+                      on ? "border-primary-500 bg-primary-50" : "border-slate-200 bg-white hover:border-primary-200"
+                    }`}
+                  >
+                    <span className={`block text-sm font-bold ${on ? "text-primary-700" : "text-slate-700"}`}>{t.label}</span>
+                    <span className="block text-xs text-slate-500">{t.hint}</span>
+                    <span className="mt-0.5 block truncate text-xs italic text-slate-400">VD: {t.example}</span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[11px] text-gray-400 mt-1.5">
-              {TYPE_OPTIONS.find((t) => t.value === question.type)?.hint}
-            </p>
+            {(question.type === "mcq" || question.type === "multi") && (
+              <button
+                type="button"
+                onClick={setTfPreset}
+                className="mt-2 text-sm font-semibold text-primary-700 hover:underline"
+              >
+                Biến thành câu Đúng / Sai
+              </button>
+            )}
           </div>
 
           {/* Question content */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Nội dung câu hỏi</label>
+            <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Nội dung câu hỏi</label>
             <TiptapEditor
               value={question.content}
               onChange={(v) => patch({ content: v })}
               onPasteText={handlePasteIntoContent}
-              placeholder="Nhập câu hỏi... (hỗ trợ LaTeX: $x^2$, \frac{1}{2})"
+              placeholder="Gõ hoặc dán câu hỏi… (dán cả câu kèm A. B. C. D. thì máy tự tách đáp án)"
             />
             {splitNote && (
               <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg bg-green-50 px-3 py-1.5 text-xs text-green-800">
@@ -365,12 +323,9 @@ export default function QuestionCard({
           {/* Images */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-gray-500">
-                Hình ảnh minh hoạ{question.images && question.images.length > 0 ? ` (${question.images.length})` : ""}
+              <label className="text-sm font-semibold text-slate-700">
+                Hình minh hoạ <span className="font-normal text-slate-400">(không bắt buộc)</span>
               </label>
-              <p className="text-[10px] text-gray-400">
-                Có thể thêm nhiều ảnh · Dùng mũi tên để đổi thứ tự
-              </p>
             </div>
 
             {question.images && question.images.length > 0 && (
@@ -387,9 +342,7 @@ export default function QuestionCard({
                       className="h-20 w-20 rounded-lg border border-gray-200 object-contain bg-white flex-shrink-0"
                     />
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 truncate" title={img.url}>{img.url}</p>
-                    </div>
+                    <div className="flex-1 min-w-0 text-sm text-slate-500">Hình {ii + 1}</div>
 
                     <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                       <button
@@ -431,7 +384,7 @@ export default function QuestionCard({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-xl px-3 py-2 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
+              className="flex items-center gap-2 text-sm font-semibold text-slate-600 border-2 border-dashed border-slate-300 rounded-xl px-3 py-2 hover:border-primary-400 hover:text-primary-700 transition-colors disabled:opacity-60 disabled:cursor-wait"
             >
               {uploading ? (
                 <>
@@ -457,17 +410,12 @@ export default function QuestionCard({
           {(question.type === "mcq" || question.type === "multi") && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-gray-500">
-                  Đáp án ({question.options.length}/6)
+                <label className="text-sm font-semibold text-slate-700">
+                  Các đáp án{" "}
+                  <span className="font-normal text-slate-500">
+                    — bấm vào {question.type === "mcq" ? "chữ cái của đáp án đúng" : "chữ cái của mọi đáp án đúng"}
+                  </span>
                 </label>
-                {question.options.length < 6 && (
-                  <button
-                    onClick={addOption}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                  >
-                    + Thêm đáp án
-                  </button>
-                )}
               </div>
               <div className="space-y-2">
                 {question.options.map((opt, oi) => {
@@ -481,14 +429,15 @@ export default function QuestionCard({
                         onClick={() =>
                           question.type === "mcq" ? patch({ correctIdx: oi }) : toggleMulti(oi)
                         }
-                        className={`mt-2 w-7 h-7 ${
+                        className={`mt-0.5 w-10 h-10 ${
                           question.type === "multi" ? "rounded-md" : "rounded-full"
-                        } border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+                        } border-2 flex items-center justify-center text-sm font-bold shrink-0 transition-all ${
                           selected
                             ? "border-green-500 bg-green-500 text-white shadow-sm"
                             : "border-gray-300 text-gray-500 hover:border-green-400"
                         }`}
                         title={`Chọn ${LABELS[oi]} là đáp án đúng`}
+                        aria-pressed={selected}
                       >
                         {LABELS[oi]}
                       </button>
@@ -499,11 +448,13 @@ export default function QuestionCard({
                           value={opt}
                           onChange={(e) => setOption(oi, e.target.value)}
                           placeholder={`Đáp án ${LABELS[oi]}...`}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className={`w-full border rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                            selected ? "border-success-300 bg-success-50/40" : "border-gray-200"
+                          }`}
                         />
-                        {opt.trim() && (
-                          <div className="mt-1 px-2 py-1 bg-blue-50 rounded text-xs text-gray-700">
-                            <span className="text-[10px] font-semibold text-blue-400 mr-1">Preview</span>
+                        {hasMath(opt) && (
+                          <div className="mt-1 px-2 py-1 bg-blue-50 rounded text-sm text-gray-700">
+                            <span className="text-xs font-semibold text-blue-500 mr-1">Học sinh sẽ thấy</span>
                             <MathText text={opt} />
                           </div>
                         )}
@@ -512,99 +463,108 @@ export default function QuestionCard({
                       {question.options.length > 2 && (
                         <button
                           onClick={() => removeOption(oi)}
-                          className="mt-2 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 shrink-0 transition-colors"
-                          title="Xóa đáp án"
+                          className="mt-0.5 w-10 h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-coral-600 hover:bg-coral-50 shrink-0 transition-colors"
+                          title={`Xoá đáp án ${LABELS[oi]}`}
                         >
-                          ×
+                          <Trash2 className="h-4 w-4" aria-hidden />
                         </button>
                       )}
                     </div>
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-1.5">
-                {question.type === "mcq" ? (
-                  <>
-                    Nhấn ô tròn để chọn đáp án đúng (hiện tại:{" "}
-                    <span className="font-semibold text-green-600">{LABELS[question.correctIdx]}</span>)
-                  </>
-                ) : (
-                  <>
-                    Tick ô vuông để chọn các đáp án đúng (đã chọn:{" "}
-                    <span className="font-semibold text-green-600">
-                      {question.correctIdxs.length === 0
-                        ? "chưa có"
-                        : question.correctIdxs.map((i) => LABELS[i]).join(", ")}
-                    </span>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm">
+                  {question.type === "mcq" ? (
+                    question.correctIdx >= 0 && question.correctIdx < question.options.length ? (
+                      <span className="font-semibold text-success-700">Đáp án đúng: {LABELS[question.correctIdx]}</span>
+                    ) : (
+                      <span className="font-semibold text-coral-700">Chưa chọn đáp án đúng</span>
                     )
-                  </>
+                  ) : question.correctIdxs.length === 0 ? (
+                    <span className="font-semibold text-coral-700">Chưa chọn đáp án đúng nào</span>
+                  ) : (
+                    <span className="font-semibold text-success-700">
+                      Đáp án đúng: {question.correctIdxs.map((i) => LABELS[i]).join(", ")}
+                    </span>
+                  )}
+                </p>
+                {question.options.length < 6 && (
+                  <button onClick={addOption} className="text-sm font-semibold text-primary-700 hover:underline">
+                    + Thêm đáp án
+                  </button>
                 )}
-              </p>
+              </div>
             </div>
           )}
 
           {question.type === "short" && (
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
-                Đáp án mẫu
+              <label className="text-sm font-semibold text-slate-700 mb-1.5 block">
+                Đáp án đúng
               </label>
               <input
                 type="text"
                 value={question.answer}
                 onChange={(e) => patch({ answer: e.target.value })}
-                placeholder="VD: Hà Nội | Ha Noi | hà nội"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                placeholder="VD: Hà Nội"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Phân tách nhiều đáp án chấp nhận bằng dấu <code className="bg-gray-100 px-1 rounded">|</code>. So sánh không phân biệt hoa-thường và khoảng trắng đầu/cuối.
+              <p className="text-sm text-slate-500 mt-1">
+                Không phân biệt chữ hoa, chữ thường. Có nhiều cách viết đúng thì ngăn bằng dấu{" "}
+                <code className="bg-slate-100 px-1 rounded">|</code>, vd <code className="bg-slate-100 px-1 rounded">Hà Nội | Ha Noi</code>.
               </p>
-              {question.answer.trim() && (
-                <div className="mt-2 px-2 py-1 bg-blue-50 rounded text-xs text-gray-700">
-                  <span className="text-[10px] font-semibold text-blue-400 mr-1">Preview</span>
-                  <MathText text={question.answer} />
-                </div>
-              )}
             </div>
           )}
 
           {question.type === "numeric" && (
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
-                Đáp án (số)
+              <label className="text-sm font-semibold text-slate-700 mb-1.5 block">
+                Đáp án đúng (một số)
               </label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={question.answer}
                 onChange={(e) => patch({ answer: e.target.value })}
-                placeholder="VD: 42, 3.14, -7.5"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 font-mono"
+                placeholder="VD: 42 hoặc 3,5"
+                className="w-full max-w-xs border border-gray-200 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 font-mono"
               />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Người làm bài sẽ nhập số (chấp nhận cả dấu phẩy và dấu chấm).
+              <p className="text-sm text-slate-500 mt-1">
+                Bé gõ 3,5 hay 3.5 đều được chấm đúng. Số nghìn viết liền: <code className="bg-slate-100 px-1 rounded">1250</code>.
               </p>
             </div>
           )}
 
           {/* Optional worked solution — shown to the learner on the result page */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
-              Lời giải <span className="font-normal text-gray-400">(tùy chọn — hiện ở trang kết quả)</span>
+            <label className="text-sm font-semibold text-slate-700 mb-1.5 block">
+              Lời giải <span className="font-normal text-slate-400">(không bắt buộc — bé xem sau khi nộp bài)</span>
             </label>
             <textarea
               value={question.solution ?? ""}
               onChange={(e) => patch({ solution: e.target.value })}
-              placeholder="Giải thích cách làm / đáp án đúng…"
+              placeholder="Giải thích cách làm…"
               rows={2}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y"
             />
-            {question.solution?.trim() && (
-              <div className="mt-2 px-2 py-1 bg-amber-50 rounded text-xs text-gray-700 whitespace-pre-wrap">
-                <span className="text-[10px] font-semibold text-amber-500 mr-1">Preview</span>
+            {question.solution && hasMath(question.solution) && (
+              <div className="mt-2 px-2 py-1 bg-amber-50 rounded text-sm text-gray-700 whitespace-pre-wrap">
+                <span className="text-xs font-semibold text-amber-600 mr-1">Học sinh sẽ thấy</span>
                 <MathText text={question.solution} />
               </div>
             )}
           </div>
+
+          {showProblems && problems.length > 0 && (
+            <ul className="rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm text-coral-800 space-y-0.5">
+              {problems.map((p) => (
+                <li key={p} className="flex items-start gap-1.5">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden /> {p}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
@@ -629,7 +589,8 @@ function IconBtn({
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+      aria-label={title}
+      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         danger
           ? "text-red-400 hover:bg-red-50 hover:text-red-600"
           : "text-gray-400 hover:bg-gray-200 hover:text-gray-700"

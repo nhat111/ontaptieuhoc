@@ -20,11 +20,12 @@ interface QuestionCardProps {
   onCheck?: () => void;
 }
 
+// Cùng tên với khu soạn đề (components/import/QuestionCard → TYPE_OPTIONS).
 const TYPE_BADGE: Record<Question["type"], string> = {
   mcq: "Trắc nghiệm",
-  multi: "Nhiều đáp án",
-  short: "Tự luận ngắn",
-  numeric: "Trả lời số",
+  multi: "Chọn nhiều đáp án",
+  short: "Điền chữ",
+  numeric: "Điền số",
 };
 
 export default function QuestionCard({ question, index, selectedAnswer, onSelect, speak = true, checked, onCheck }: QuestionCardProps) {
