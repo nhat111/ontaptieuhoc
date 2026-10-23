@@ -27,6 +27,8 @@ export interface EnUnit {
   /** Nhóm từ cùng loại (để chọn từ khác loại): tên nhóm → các từ. Hai nhóm không chung từ nào. */
   groups: Record<string, string[]>;
   gram: EnGram[];
+  /** Câu mẫu thêm cho bài sắp xếp từ, khi câu trả lời của hội thoại quá ngắn (lớp 3). */
+  sentences?: string[];
 }
 
 export interface EnPassage {
@@ -106,7 +108,7 @@ export function wrongOrders(s: string): string[] {
 
 /** Câu sắp xếp được: 4–9 từ, không có dấu phẩy, có hai cách đổi chỗ ra câu sai. */
 export const reorderable = (s: string) =>
-  !s.includes(",") && !/[.?!] /.test(s) && tokens(s).length >= 4 && tokens(s).length <= 9 && wrongOrders(s).length === 2;
+  !/[,“”"]/.test(s) && !/[.?!] /.test(s) && tokens(s).length >= 4 && tokens(s).length <= 9 && wrongOrders(s).length === 2;
 
 const SPEAKING_RUBRIC: [string, number][] = [
   ["Hiểu câu hỏi, trả lời đúng nội dung", 1],
@@ -153,7 +155,13 @@ export function buildTiengAnh(c: EnContent, kind: ExamKind, kindLabel: string, s
     .map((g) => q(row(g.q, shuffle(r, g.options), g.answer, g.explain), 0.5));
 
   // Writing 2: câu đúng thứ tự — lấy câu trả lời của hội thoại chưa dùng ở phần nghe.
-  const reo = qas.filter((x) => !listenQa.includes(x) && reorderable(x.a)).slice(0, 2).map((x) => {
+  // Thiếu câu (lớp 3: câu trả lời ngắn) mới lấy thêm câu mẫu — đề lớp 5 đã chia sẻ giữ nguyên.
+  let pool = qas.filter((x) => !listenQa.includes(x) && reorderable(x.a));
+  if (pool.length < 2) {
+    const more = shuffle(r, units.flatMap((u) => u.sentences ?? []).filter(reorderable));
+    pool = [...pool, ...more.map((a) => ({ q: "", a, key: "", wrong: ["", ""] as [string, string] }))];
+  }
+  const reo = pool.slice(0, 2).map((x) => {
     // Tên riêng nhiều tiếng (Nha Trang, City Museum) giữ thành một thẻ.
     const parts = shuffle(itemRng("parts", x.a), tokens(x.a).reduce<string[]>((acc, w, i, ws) => {
       if (i > 1 && /^[A-Z]/.test(w) && /^[A-Z]/.test(ws[i - 1])) acc[acc.length - 1] += ` ${w}`;
@@ -167,7 +175,13 @@ export function buildTiengAnh(c: EnContent, kind: ExamKind, kindLabel: string, s
   // Speaking: 4 câu hỏi khác các câu đã dùng.
   const used = new Set([...listenQa, ...qas.filter((x) => reo.some((p) => p.row.correct_answer === x.a))].map((x) => x.q));
   const speak: string[] = [];
-  for (const x of qas) if (speak.length < 4 && !used.has(x.q) && !speak.includes(x.q) && /\byour?\b/i.test(x.q) && !/\bthere\b/.test(x.q)) speak.push(x.q);
+  const personal = (x: EnQa) => /\byour?\b/i.test(x.q) && !/\bthere\b/.test(x.q);
+  // "What's your hobby, Mai?" và "What's your hobby?" là một câu hỏi.
+  const bare = (q: string) => q.replace(/, [A-Z][a-z]+\?$/, "?");
+  const fresh = (q: string) => !speak.some((y) => bare(y) === bare(q));
+  for (const x of qas) if (speak.length < 4 && !used.has(x.q) && fresh(x.q) && personal(x)) speak.push(bare(x.q));
+  // Ít câu hỏi về bản thân (lớp 4 giữa kì): hỏi lại câu đã dùng ở phần nghe — bé trả lời về mình.
+  for (const x of qas) if (speak.length < 4 && fresh(x.q) && personal(x)) speak.push(bare(x.q));
 
   const sections: PaperSection[] = [
     { title: "PART 1. LISTENING", note: "Listen and choose A, B or C. (Người lớn đọc lời ở trang hướng dẫn chấm, mỗi câu hai lần.)", label: "Question", items: listening },

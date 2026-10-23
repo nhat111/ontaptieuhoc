@@ -12,9 +12,8 @@
 //
 // Chạy: npx tsx scripts/tieng-anh-check.ts
 
-import { EXAM_KINDS, examKindLabel } from "../lib/quickExam";
 import { buildTiengAnh, enPassages, unitsFor, wrongOrders, type EnContent } from "../lib/exam5/tiengAnh";
-import { EN5 } from "../lib/exam5/enContent5";
+import { EN, EXAM_KINDS, examKindLabel } from "../lib/quickExam";
 import { paperRows, questionsOf } from "../lib/exam5/paper";
 import { buildPaperHtml } from "../lib/exam5/print";
 
@@ -114,10 +113,10 @@ function checkContent(c: EnContent) {
   }
 }
 
-checkContent(EN5);
+for (const c of Object.values(EN)) checkContent(c);
 
 if (errors.length) {
   console.error(`✗ tieng-anh: ${errors.length} lỗi\n  ` + errors.join("\n  "));
   process.exit(1);
 }
-console.log(`✓ tieng-anh: lớp 5 ${EN5.units.length} Unit, ${EN5.passages.length} bài đọc; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn`);
+console.log(`✓ tieng-anh: ${Object.values(EN).map((c) => `lớp ${c.grade} ${c.units.length} Unit, ${c.passages.length} bài đọc`).join("; ")}; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn`);

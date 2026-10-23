@@ -2,7 +2,7 @@
 // "Tạo đề nhanh": phụ huynh chọn lớp → loại đề (giữa/cuối học kì) → môn, máy sinh ra
 // một đề kiểm tra để làm trên máy (/quiz?de=…) hoặc in ra giấy (/tao-de).
 //
-// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 5, đều
+// Chỉ môn có nội dung sinh sẵn mới có đề: Toán lớp 1–5, Tiếng Việt lớp 1–5 và Tiếng Anh lớp 3–5, đều
 // theo cấu trúc đề giấy thật (lib/exam5: toan1to4.ts, toan5.ts, tiengViet.ts, tv12.ts, tiengAnh.ts). Mỗi đề là
 // một "tờ đề" (lib/exam5/paper.ts): in ra được (lib/exam5/print.ts) và làm được trên máy.
 // Không gọi AI, không đọc DB: cùng `seed` → cùng đề, nên link /quiz?de=toan-3-cuoi-hk1&seed=abc
@@ -23,10 +23,12 @@ import { TV12_MINUTES, buildTv12, tv12Passages, type Tv12Content } from "./exam5
 import { TV1_EXAM } from "./exam5/tvContent1";
 import { TV2_EXAM } from "./exam5/tvContent2";
 import { EN_UNITS, buildTiengAnh, enPassages, unitsFor, type EnContent } from "./exam5/tiengAnh";
+import { EN3 } from "./exam5/enContent3";
+import { EN4 } from "./exam5/enContent4";
 import { EN5 } from "./exam5/enContent5";
 
 /** Tiếng Anh theo sách Global Success; lớp nào có nội dung thì có đề. */
-const EN: Record<number, EnContent> = { 5: EN5 };
+export const EN: Record<number, EnContent> = { 3: EN3, 4: EN4, 5: EN5 };
 
 const TV12: Record<number, Tv12Content> = { 1: TV1_EXAM, 2: TV2_EXAM };
 

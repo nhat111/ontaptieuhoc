@@ -28,6 +28,8 @@ const SUBJECTS: [number, string][] = [
   [3, "Tiếng Việt"],
   [4, "Tiếng Việt"],
   [5, "Tiếng Việt"],
+  [3, "Tiếng Anh"],
+  [4, "Tiếng Anh"],
   [5, "Tiếng Anh"],
 ];
 
