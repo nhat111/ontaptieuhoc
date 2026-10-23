@@ -9,7 +9,7 @@
 // Các generator cũ ở lop2.ts giữ nguyên để đề đã import và link đề đã chia sẻ không đổi.
 // scripts/sgk-toan-check.ts (recheck2) tính lại đáp án từ chữ trong đề và từ hình vẽ.
 
-import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, sign } from "../core";
+import { type Generator, type Rng, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, retry, range, sign, baiGiai } from "../core";
 import { NAMES, GIVERS, THINGS, EMOJI, cap } from "../shared";
 import { type PictoIcon, pictographSvg, pointsOnLineSvg } from "../../exam5/figures";
 
@@ -52,12 +52,12 @@ export const honKem: Generator = (r) => {
     case "nhieu": return fill(`Số ${a} nhiều hơn số ${b} là ___`, d, `Lấy số lớn trừ số bé: ${exp}`, ["hơn kém"], "Lấy số lớn trừ số bé.");
     case "it": return fill(`Số ${b} ít hơn số ${a} là ___`, d, `Lấy số lớn trừ số bé: ${exp}`, ["hơn kém"], "Lấy số lớn trừ số bé.");
     case "to": return fill(`Tổ Một có ${a} bông hoa, tổ Hai có ${b} bông hoa. Tổ Một có nhiều hơn tổ Hai ___ bông hoa.`, d,
-      `Số bông hoa tổ Một nhiều hơn tổ Hai: ${exp}`, ["hơn kém", "toán có lời văn"], "Lấy số lớn trừ số bé.");
+      baiGiai([["Tổ Một có nhiều hơn tổ Hai số bông hoa là:", `${a} - ${b} = ${d} (bông hoa)`]], `${d} bông hoa`), ["hơn kém", "toán có lời văn"], "Lấy số lớn trừ số bé.");
     case "cao": {
       const [n1, n2] = shuffle(r, NAMES).slice(0, 2);
       const A = 100 + (a % 40), B = A - (d % 20) - 1;
       return fill(`${n1} cao ${A} cm, ${n2} cao ${B} cm. ${n2} thấp hơn ${n1} ___ cm.`, A - B,
-        `${n2} thấp hơn ${n1}: ${A} - ${B} = ${A - B} (cm).`, ["hơn kém", "toán có lời văn"], "Lấy số đo lớn trừ số đo bé.");
+        baiGiai([[`${n2} thấp hơn ${n1} số xăng-ti-mét là:`, `${A} - ${B} = ${A - B} (cm)`]], `${A - B} cm`), ["hơn kém", "toán có lời văn"], "Lấy số đo lớn trừ số đo bé.");
     }
   }
 };
@@ -73,14 +73,14 @@ export const loiVan20 = (k: "them" | "nhieu"): Generator => (r) => {
   const up = chance(r, 0.5);
   if (k === "them") {
     if (up) return fill(`${n1} có ${a} ${thing}, ${pick(r, GIVERS).toLowerCase()} cho ${n1} thêm ${b} ${thing}. ${n1} có tất cả ___ ${thing}.`, c,
-      `Thêm vào thì làm phép cộng: ${a} + ${b} = ${c} (${thing}).`, ["thêm", "toán có lời văn"], "Có thêm thì làm phép cộng.");
+      baiGiai([[`${n1} có tất cả số ${thing} là:`, `${a} + ${b} = ${c} (${thing})`]], `${c} ${thing}`), ["thêm", "toán có lời văn"], "Có thêm thì làm phép cộng.");
     return fill(`Trên cành có ${c} con chim, sau đó ${b} con bay đi. Trên cành còn lại ___ con chim.`, a,
-      `Bớt đi thì làm phép trừ: ${c} - ${b} = ${a} (con chim).`, ["bớt", "toán có lời văn"], "Bớt đi thì làm phép trừ.");
+      baiGiai([["Trên cành còn lại số con chim là:", `${c} - ${b} = ${a} (con chim)`]], `${a} con chim`), ["bớt", "toán có lời văn"], "Bớt đi thì làm phép trừ.");
   }
   if (up) return fill(`${n1} có ${a} ${thing}, ${n2} có nhiều hơn ${n1} ${b} ${thing}. ${n2} có ___ ${thing}.`, c,
-    `"Nhiều hơn" thì làm phép cộng: ${a} + ${b} = ${c} (${thing}).`, ["nhiều hơn", "toán có lời văn"], "Nhiều hơn thì làm phép cộng.");
+    baiGiai([[`Số ${thing} của ${n2} là:`, `${a} + ${b} = ${c} (${thing})`]], `${c} ${thing}`), ["nhiều hơn", "toán có lời văn"], "Nhiều hơn thì làm phép cộng.");
   return fill(`${n1} có ${c} ${thing}, ${n2} có ít hơn ${n1} ${b} ${thing}. ${n2} có ___ ${thing}.`, a,
-    `"Ít hơn" thì làm phép trừ: ${c} - ${b} = ${a} (${thing}).`, ["ít hơn", "toán có lời văn"], "Ít hơn thì làm phép trừ.");
+    baiGiai([[`Số ${thing} của ${n2} là:`, `${c} - ${b} = ${a} (${thing})`]], `${a} ${thing}`), ["ít hơn", "toán có lời văn"], "Ít hơn thì làm phép trừ.");
 };
 
 /* ═════════════ Bài 15: Ki-lô-gam ═════════════ */
@@ -115,9 +115,9 @@ export const kiLoGam: Generator = (r) => {
       const [a, b] = qua10(r), c = a + b;
       return chance(r, 0.5)
         ? fill(`Bao gạo nặng ${c} kg, bao đỗ nhẹ hơn bao gạo ${b} kg. Bao đỗ nặng ___ kg.`, a,
-          `"Nhẹ hơn" thì làm phép trừ: ${c} - ${b} = ${a} (kg).`, ["ki-lô-gam", "toán có lời văn"], "Nhẹ hơn thì làm phép trừ.")
+          baiGiai([["Bao đỗ cân nặng là:", `${c} - ${b} = ${a} (kg)`]], `${a} kg`), ["ki-lô-gam", "toán có lời văn"], "Nhẹ hơn thì làm phép trừ.")
         : fill(`Con ngỗng nặng ${a} kg, con lợn con nặng hơn con ngỗng ${b} kg. Con lợn con nặng ___ kg.`, c,
-          `"Nặng hơn" thì làm phép cộng: ${a} + ${b} = ${c} (kg).`, ["ki-lô-gam", "toán có lời văn"], "Nặng hơn thì làm phép cộng.");
+          baiGiai([["Con lợn con cân nặng là:", `${a} + ${b} = ${c} (kg)`]], `${c} kg`), ["ki-lô-gam", "toán có lời văn"], "Nặng hơn thì làm phép cộng.");
     }
   }
 };
@@ -128,7 +128,7 @@ export const lit: Generator = (r) => {
   const [a, b] = qua10(r), c = a + b;
   switch (pick(r, ["rot", "ca", "tinh", "hon", "gop"] as const)) {
     case "rot": return fill(`Can có ${c} l nước, rót ra ${b} l nước. Trong can còn lại ___ l nước.`, a,
-      `Rót bớt ra thì làm phép trừ: ${c} - ${b} = ${a} (l).`, ["lít", "toán có lời văn"], "Rót ra là bớt đi.");
+      baiGiai([["Trong can còn lại số lít nước là:", `${c} - ${b} = ${a} (l)`]], `${a} l nước`), ["lít", "toán có lời văn"], "Rót ra là bớt đi.");
     case "ca": {
       const n = int(r, 2, 9);
       return fill(`Rót hết nước trong bình sang các ca 1 l thì được ${n} ca đầy. Bình đựng ___ l nước.`, n,
@@ -140,7 +140,7 @@ export const lit: Generator = (r) => {
     case "hon": return fill(`Thùng to đựng ${c} l nước, thùng nhỏ đựng ${a} l nước. Thùng to đựng nhiều hơn thùng nhỏ ___ l nước.`, b,
       `Lấy số lớn trừ số bé: ${c} - ${a} = ${b} (l).`, ["lít", "hơn kém"], "Lấy số lít nhiều hơn trừ số lít ít hơn.");
     case "gop": return fill(`Can thứ nhất có ${a} l dầu, can thứ hai có ${b} l dầu. Cả hai can có ___ l dầu.`, c,
-      `"Cả hai" thì làm phép cộng: ${a} + ${b} = ${c} (l).`, ["lít", "toán có lời văn"], "Gộp lại thì làm phép cộng.");
+      baiGiai([["Cả hai can có số lít dầu là:", `${a} + ${b} = ${c} (l)`]], `${c} l dầu`), ["lít", "toán có lời văn"], "Gộp lại thì làm phép cộng.");
   }
 };
 
@@ -167,9 +167,9 @@ export const congTruCoNho = (k: Kieu): Generator => (r) => {
     const name = pick(r, NAMES);
     return cong
       ? fill(`Lớp 2A trồng được ${a} cây, lớp 2B trồng được ${b} cây. Cả hai lớp trồng được ___ cây.`, v,
-        `"Cả hai lớp" thì làm phép cộng: ${a} + ${b} = ${v} (cây).`, ["toán có lời văn", "phép cộng", "có nhớ"], "Gộp lại thì làm phép cộng.")
+        baiGiai([["Cả hai lớp trồng được số cây là:", `${a} + ${b} = ${v} (cây)`]], `${v} cây`), ["toán có lời văn", "phép cộng", "có nhớ"], "Gộp lại thì làm phép cộng.")
       : fill(`${name} có ${a} nhãn vở, ${name} cho bạn ${b} nhãn vở. ${name} còn lại ___ nhãn vở.`, v,
-        `Cho đi thì làm phép trừ: ${a} - ${b} = ${v} (nhãn vở).`, ["toán có lời văn", "phép trừ", "có nhớ"], "Cho đi thì làm phép trừ.");
+        baiGiai([[`${name} còn lại số nhãn vở là:`, `${a} - ${b} = ${v} (nhãn vở)`]], `${v} nhãn vở`), ["toán có lời văn", "phép trừ", "có nhớ"], "Cho đi thì làm phép trừ.");
   }
   const exp = cong
     ? `Đặt tính: ${a % 10} + ${b % 10} = ${(a % 10) + (b % 10)}, viết ${((a % 10) + (b % 10)) % 10} nhớ 1; cộng hàng chục rồi thêm 1. Kết quả: ${v}.`
@@ -287,7 +287,7 @@ export const phepNhan: Generator = (r) => {
     case "nhom": {
       const t = pick(r, ["quả cam", "cái bánh", "bông hoa", "viên bi"]), box = pick(r, ["đĩa", "lọ", "túi"]);
       return fill(`Có ${n} cái ${box}, mỗi ${box} có ${k} ${t}. Có tất cả ___ ${t}.`, k * n,
-        `${k} ${t} được lấy ${n} lần: ${k} × ${n} = ${terms} = ${k * n} (${t}).`, ["phép nhân", "toán có lời văn"], "Các nhóm bằng nhau thì dùng phép nhân.");
+        baiGiai([[`Có tất cả số ${t} là:`, `${k} × ${n} = ${k * n} (${t})`]], `${k * n} ${t}`), ["phép nhân", "toán có lời văn"], "Các nhóm bằng nhau thì dùng phép nhân.");
     }
     case "doc": return { type: "multiple_choice", difficulty: "easy", tags: ["phép nhân"],
       question: `Phép tính ${k} × ${n} đọc là:`,
@@ -335,8 +335,8 @@ export const phepChia = (ks: number[], maxX: number): Generator => (r) => {
   const k = pick(r, ks), x = int(r, 2, maxX), p = k * x;
   const t = pick(r, ["cái kẹo", "quả cam", "viên bi", "quyển vở"]), box = pick(r, ["đĩa", "hộp", "túi", "rổ"]);
   switch (pick(r, ["deu", "nhom", "tuNhan", "tinh"] as const)) {
-    case "deu": return fill(`Chia đều ${p} ${t} vào ${k} ${box}. Mỗi ${box} có ___ ${t}.`, x, `Chia đều thì làm phép chia: ${p} : ${k} = ${x} (${t}).`, ["phép chia", "toán có lời văn"], "Chia đều thì dùng phép chia.");
-    case "nhom": return fill(`Có ${p} ${t}, xếp vào các ${box}, mỗi ${box} ${k} ${t}. Xếp được ___ ${box}.`, x, `${p} : ${k} = ${x} (${box}).`, ["phép chia", "toán có lời văn"], `Mỗi ${box} ${k} ${t}: ${p} chia cho ${k}.`);
+    case "deu": return fill(`Chia đều ${p} ${t} vào ${k} ${box}. Mỗi ${box} có ___ ${t}.`, x, baiGiai([[`Mỗi ${box} có số ${t} là:`, `${p} : ${k} = ${x} (${t})`]], `${x} ${t}`), ["phép chia", "toán có lời văn"], "Chia đều thì dùng phép chia.");
+    case "nhom": return fill(`Có ${p} ${t}, xếp vào các ${box}, mỗi ${box} ${k} ${t}. Xếp được ___ ${box}.`, x, baiGiai([[`Xếp được số ${box} là:`, `${p} : ${k} = ${x} (${box})`]], `${x} ${box}`), ["phép chia", "toán có lời văn"], `Mỗi ${box} ${k} ${t}: ${p} chia cho ${k}.`);
     case "tuNhan": return fill(`Từ phép nhân ${k} × ${x} = ${p}, ta có phép chia: ${p} : ${k} = ___`, x, `Lấy tích chia cho một thừa số thì được thừa số kia: ${p} : ${k} = ${x}.`, ["phép chia"], "Phép chia ngược với phép nhân.");
     case "tinh": return fill(`${p} : ${k} = ___`, x, `Vì ${k} × ${x} = ${p} nên ${p} : ${k} = ${x}.`, ["phép chia"], `${k} nhân mấy bằng ${p}?`);
   }
@@ -554,8 +554,8 @@ export const phepTinh1000 = (op: "+" | "-", nho: boolean): Generator => (r) => {
   const tag = [op === "+" ? "phép cộng" : "phép trừ", nho ? "có nhớ" : "không nhớ", "phạm vi 1000"];
   if (chance(r, 0.25))
     return op === "+"
-      ? fill(`Trường em có ${a} học sinh nam và ${b} học sinh nữ. Trường em có tất cả ___ học sinh.`, v, `"Tất cả" thì làm phép cộng: ${a} + ${b} = ${v} (học sinh).`, ["toán có lời văn", ...tag], "Gộp lại thì làm phép cộng.")
-      : fill(`Cửa hàng có ${a} kg gạo, đã bán ${b} kg gạo. Cửa hàng còn lại ___ kg gạo.`, v, `"Còn lại" thì làm phép trừ: ${a} - ${b} = ${v} (kg).`, ["toán có lời văn", ...tag], "Bán đi thì làm phép trừ.");
+      ? fill(`Trường em có ${a} học sinh nam và ${b} học sinh nữ. Trường em có tất cả ___ học sinh.`, v, baiGiai([["Trường em có tất cả số học sinh là:", `${a} + ${b} = ${v} (học sinh)`]], `${v} học sinh`), ["toán có lời văn", ...tag], "Gộp lại thì làm phép cộng.")
+      : fill(`Cửa hàng có ${a} kg gạo, đã bán ${b} kg gạo. Cửa hàng còn lại ___ kg gạo.`, v, baiGiai([["Cửa hàng còn lại số ki-lô-gam gạo là:", `${a} - ${b} = ${v} (kg)`]], `${v} kg gạo`), ["toán có lời văn", ...tag], "Bán đi thì làm phép trừ.");
   return fill(`${a} ${op} ${b} = ___`, v,
     `Đặt tính thẳng cột, ${op === "+" ? "cộng" : "trừ"} từ hàng đơn vị sang hàng chục rồi hàng trăm${nho ? ", nhớ 1 sang hàng bên trái khi cần" : ""}: ${a} ${op} ${b} = ${v}.`,
     tag, nho ? "Nhớ 1 sang hàng bên trái." : "Viết các chữ số cùng hàng thẳng cột.");

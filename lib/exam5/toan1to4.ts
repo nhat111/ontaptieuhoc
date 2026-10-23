@@ -18,7 +18,7 @@
 import {
   type Draft, type Generator, type Rng,
   int, pick, chance, retry, shuffle, range, mcOptions, fixedOptions, blanks, fmtInt, sign,
-  mulberry32, seedFrom,
+  mulberry32, seedFrom, baiGiai,
 } from "../mathGen/core";
 import { LOP1, LOP2, LOP3, LOP4, toQuestionRow, type GenQuestionRow } from "../mathGen";
 import { NAMES } from "../mathGen/shared";
@@ -313,13 +313,14 @@ const loiVan1000: Generator = (r) => {
   const more = chance(r, 0.6);
   if (!more && d >= a - 20) return loiVan1000(r);
   const c = more ? a + d : a - d;
-  const [q, u] = pick(r, [
-    [`Khối lớp Hai có ${a} học sinh, khối lớp Ba có ${more ? "nhiều" : "ít"} hơn khối lớp Hai ${d} học sinh. Hỏi khối lớp Ba có bao nhiêu học sinh?`, "học sinh"],
-    [`Buổi sáng cửa hàng bán được ${a} kg gạo, buổi chiều bán được ${more ? "nhiều" : "ít"} hơn buổi sáng ${d} kg gạo. Hỏi buổi chiều cửa hàng bán được bao nhiêu ki-lô-gam gạo?`, "kg"],
-    [`Thùng thứ nhất có ${a} l nước, thùng thứ hai có ${more ? "nhiều" : "ít"} hơn thùng thứ nhất ${d} l nước. Hỏi thùng thứ hai có bao nhiêu lít nước?`, "l"],
+  // [đề, đơn vị, câu lời giải, đáp số]
+  const [q, u, loi, dap] = pick(r, [
+    [`Khối lớp Hai có ${a} học sinh, khối lớp Ba có ${more ? "nhiều" : "ít"} hơn khối lớp Hai ${d} học sinh. Hỏi khối lớp Ba có bao nhiêu học sinh?`, "học sinh", "Khối lớp Ba có số học sinh là:", "học sinh"],
+    [`Buổi sáng cửa hàng bán được ${a} kg gạo, buổi chiều bán được ${more ? "nhiều" : "ít"} hơn buổi sáng ${d} kg gạo. Hỏi buổi chiều cửa hàng bán được bao nhiêu ki-lô-gam gạo?`, "kg", "Buổi chiều cửa hàng bán được số ki-lô-gam gạo là:", "kg gạo"],
+    [`Thùng thứ nhất có ${a} l nước, thùng thứ hai có ${more ? "nhiều" : "ít"} hơn thùng thứ nhất ${d} l nước. Hỏi thùng thứ hai có bao nhiêu lít nước?`, "l", "Thùng thứ hai có số lít nước là:", "l nước"],
   ] as const);
   return fill(`${q} Trả lời: ___ ${u}.`, String(c),
-    `"${more ? "Nhiều" : "Ít"} hơn" thì làm phép ${more ? "cộng" : "trừ"}: ${a} ${more ? "+" : "-"} ${d} = ${c} (${u}).`, ["toán có lời văn", more ? "nhiều hơn" : "ít hơn"]);
+    baiGiai([[loi, `${a} ${more ? "+" : "-"} ${d} = ${c} (${u})`]], `${c} ${dap}`), ["toán có lời văn", more ? "nhiều hơn" : "ít hơn"]);
 };
 
 /** Lớp 3: tìm một số biết kết quả sau hai phép tính (làm ngược lại). */
@@ -345,19 +346,28 @@ const hcnLoiVan: Generator = (r) => {
     case "chuViKem": {
       const L = int(r, 12, 60), d = int(r, 3, L - 4), w = L - d;
       return fill(`Một ${what} hình chữ nhật có chiều dài ${L} ${u}, chiều rộng kém chiều dài ${d} ${u}. Tính chu vi ${what} đó. Trả lời: ___ ${u}.`, String((L + w) * 2),
-        `Chiều rộng: ${L} - ${d} = ${w} (${u}). Chu vi: (${L} + ${w}) × 2 = ${(L + w) * 2} (${u}).`, ["chu vi", "toán có lời văn"]);
+        baiGiai([
+          [`Chiều rộng ${what} là:`, `${L} - ${d} = ${w} (${u})`],
+          [`Chu vi ${what} là:`, `(${L} + ${w}) × 2 = ${(L + w) * 2} (${u})`],
+        ], `${(L + w) * 2} ${u}`), ["chu vi", "toán có lời văn"]);
     }
     case "dienTichGap": {
       const w = int(r, 3, 12), k = int(r, 2, 4), L = w * k;
       return fill(`Một ${what} hình chữ nhật có chiều rộng ${w} ${u}, chiều dài gấp ${k} lần chiều rộng. Tính diện tích ${what} đó. Trả lời: ___ ${u}².`, String(L * w),
-        `Chiều dài: ${w} × ${k} = ${L} (${u}). Diện tích: ${L} × ${w} = ${L * w} (${u}²).`, ["diện tích", "toán có lời văn"]);
+        baiGiai([
+          [`Chiều dài ${what} là:`, `${w} × ${k} = ${L} (${u})`],
+          [`Diện tích ${what} là:`, `${L} × ${w} = ${L * w} (${u}²)`],
+        ], `${L * w} ${u}²`), ["diện tích", "toán có lời văn"]);
     }
     case "chuViVuong": {
       const L = int(r, 10, 40), w = int(r, 2, L - 2);
       if ((L + w) % 2) return hcnLoiVan(r);
       const a = (L + w) / 2;
       return fill(`Một ${what} hình chữ nhật có chiều dài ${L} ${u}, chiều rộng ${w} ${u}. Một hình vuông có chu vi bằng chu vi ${what} đó. Tính độ dài cạnh hình vuông. Trả lời: ___ ${u}.`, String(a),
-        `Chu vi ${what}: (${L} + ${w}) × 2 = ${(L + w) * 2} (${u}). Cạnh hình vuông: ${(L + w) * 2} : 4 = ${a} (${u}).`, ["chu vi", "toán có lời văn"]);
+        baiGiai([
+          [`Chu vi ${what} là:`, `(${L} + ${w}) × 2 = ${(L + w) * 2} (${u})`],
+          ["Độ dài cạnh hình vuông là:", `${(L + w) * 2} : 4 = ${a} (${u})`],
+        ], `${a} ${u}`), ["chu vi", "toán có lời văn"]);
     }
   }
 };
@@ -384,18 +394,25 @@ export const phanSoLoiVan: Generator = (r) => retry(() => {
   if (kind === "hcn") {
     const L = d * int(r, 2, 8), w = (L * n) / d;
     return fill(`Một mảnh vườn hình chữ nhật có chiều dài ${L} m, chiều rộng bằng ${n}/${d} chiều dài. Tính diện tích mảnh vườn đó. Trả lời: ___ m².`, fmtInt(L * w),
-      `Chiều rộng: ${L} × ${n} : ${d} = ${w} (m). Diện tích: ${L} × ${w} = ${fmtInt(L * w)} (m²).`, ["phân số", "toán có lời văn"]);
+      baiGiai([
+        ["Chiều rộng mảnh vườn là:", `${L} × ${n} : ${d} = ${w} (m)`],
+        ["Diện tích mảnh vườn là:", `${L} × ${w} = ${fmtInt(L * w)} (m²)`],
+      ], `${fmtInt(L * w)} m²`), ["phân số", "toán có lời văn"]);
   }
   const T = d * (kind === "hocSinh" ? int(r, 4, 6) : int(r, 6, 40));
   if (kind === "hocSinh" && (T < 24 || T > 42)) return null;
   const part = (T * n) / d, rest = T - part;
-  const [q, u] = {
-    gao: [`Một cửa hàng có ${T} kg gạo, đã bán ${n}/${d} số gạo đó. Hỏi cửa hàng còn lại bao nhiêu ki-lô-gam gạo?`, "kg"],
-    vai: [`Một tấm vải dài ${T} m, người ta đã cắt đi ${n}/${d} tấm vải. Hỏi tấm vải còn lại dài bao nhiêu mét?`, "m"],
-    hocSinh: [`Lớp 4A có ${T} học sinh, trong đó số học sinh nữ bằng ${n}/${d} số học sinh cả lớp. Hỏi lớp 4A có bao nhiêu học sinh nam?`, "học sinh"],
+  // [đề, đơn vị, câu lời giải bước 1, bước 2, đáp số]
+  const [q, u, loi1, loi2, dap] = {
+    gao: [`Một cửa hàng có ${T} kg gạo, đã bán ${n}/${d} số gạo đó. Hỏi cửa hàng còn lại bao nhiêu ki-lô-gam gạo?`, "kg",
+      "Cửa hàng đã bán số ki-lô-gam gạo là:", "Cửa hàng còn lại số ki-lô-gam gạo là:", "kg gạo"],
+    vai: [`Một tấm vải dài ${T} m, người ta đã cắt đi ${n}/${d} tấm vải. Hỏi tấm vải còn lại dài bao nhiêu mét?`, "m",
+      "Người ta đã cắt đi số mét vải là:", "Tấm vải còn lại dài là:", "m"],
+    hocSinh: [`Lớp 4A có ${T} học sinh, trong đó số học sinh nữ bằng ${n}/${d} số học sinh cả lớp. Hỏi lớp 4A có bao nhiêu học sinh nam?`, "học sinh",
+      "Lớp 4A có số học sinh nữ là:", "Lớp 4A có số học sinh nam là:", "học sinh nam"],
   }[kind];
   return fill(`${q} Trả lời: ___ ${u}.`, String(rest),
-    `${kind === "hocSinh" ? "Số học sinh nữ" : kind === "gao" ? "Số gạo đã bán" : "Đã cắt đi"}: ${T} × ${n} : ${d} = ${part} (${u}). ${kind === "hocSinh" ? "Số học sinh nam" : "Còn lại"}: ${T} - ${part} = ${rest} (${u}).`,
+    baiGiai([[loi1, `${T} × ${n} : ${d} = ${part} (${u})`], [loi2, `${T} - ${part} = ${rest} (${u})`]], `${rest} ${dap}`),
     ["phân số", "toán có lời văn"]);
 });
 

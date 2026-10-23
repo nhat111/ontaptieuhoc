@@ -1,6 +1,6 @@
 # Current State
 
-_Last synced with codebase: Oct 2026 (sau PR #105)_
+_Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 
 > **Bắt đầu phiên mới?** Đọc mục **Việc tiếp theo** ở cuối file trước. Chi tiết kỹ thuật của từng tính năng nằm trong `CLAUDE.md`.
 
@@ -62,17 +62,14 @@ _Last synced with codebase: Oct 2026 (sau PR #105)_
   - #102: ví dụ giải mẫu trên màn hình bắt đầu mỗi bài.
   - #103: nút "Kiểm tra" từng câu (chế độ `practice`, chỉ bài theo sách).
   - #104: bài toán có lời văn lớp 5 trình bày đủ "Bài giải" (`baiGiai()` trong `lib/mathGen/core.ts`, 12 dạng `lv*` mới trong `KNTT5`).
+  - Lời giải lớp 2–4 theo mẫu "Bài giải": mọi dạng lời văn trong `lop{2,3,4}.ts`, `kntt/lop{2,3,4}.ts`, `exam5/toan1to4.ts` (đã kiểm: câu hỏi, đáp án và trạng thái `r()` giống hệt master trên mọi generator, đề in lớp 1–5 và bài sách lớp 1–5; file SQL chỉ đổi lời giải).
 
 ## Việc tiếp theo (ưu tiên từ trên xuống)
 
-1. **Lời giải lớp 2–4 theo mẫu "Bài giải"** (chủ site đã đồng ý). Có khoảng 30 dạng lời văn trong `lib/mathGen/lop{2,3,4}.ts`, `lib/mathGen/kntt/lop{2,3,4}.ts`, `lib/exam5/toan1to4.ts`. Tìm bằng tag `"toán có lời văn"` và đề có "Hỏi".
-   - **Chỉ đổi chuỗi lời giải**, không thêm lần gọi `r()`.
-   - Kiểm chứng như đã làm ở #104: tạo `git worktree` của `master`, chạy mỗi dạng 200 seed, so `câu hỏi | đáp án | r()` sau cùng giữa hai bản, phải giống hệt.
-   - Sửa `lop*.ts` thì chạy `npx tsx scripts/gen-math-sql.ts` và commit kèm `supabase/toan-tu-sinh.sql`.
-2. **Thêm bài toán có lời văn mới cho lớp 2–4.** Hiện chỉ phủ L2 4/14, L3 6/16, L4 4/13 chủ đề. Mỗi dạng viết trong `kntt/lop<N>.ts` kèm case trong `recheck<N>` (`scripts/sgk-toan-check.ts`), rồi gắn 2 câu vào `mix` các bài trong `lib/sgk/books/toan<N>.ts`.
-3. **Lớp 1**: chưa có dạng lời văn nào. Dạng hợp lứa tuổi: "Viết phép tính thích hợp" (không trình bày Bài giải).
-4. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
-5. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
+1. **Thêm bài toán có lời văn mới cho lớp 2–4.** Hiện chỉ phủ L2 4/14, L3 6/16, L4 4/13 chủ đề. Mỗi dạng viết trong `kntt/lop<N>.ts` kèm case trong `recheck<N>` (`scripts/sgk-toan-check.ts`), rồi gắn 2 câu vào `mix` các bài trong `lib/sgk/books/toan<N>.ts`.
+2. **Lớp 1**: chưa có dạng lời văn nào. Dạng hợp lứa tuổi: "Viết phép tính thích hợp" (không trình bày Bài giải).
+3. **Tiếng Việt theo chủ điểm lớp 3** (rồi lớp 1–2), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay hoặc vietjack, nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
+4. **Tạo đề nhanh Tiếng Việt lớp 3**: theo lộ trình trong `feature-specs/quick-exam.md`.
 
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
 - **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.

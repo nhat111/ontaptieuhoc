@@ -154,8 +154,8 @@ FROM lessons l, (VALUES
   ('3 + 8 = ___', 'numeric', '[]', '11', '{"solution":"Tách để làm tròn 10: 3 + 7 = 10, còn 1; 10 + 1 = 11."}', 6),
   ('Số hạng thứ nhất là 26, số hạng thứ hai là 37. Tổng là ___.', 'numeric', '[]', '63', '{"solution":"Tổng = số hạng + số hạng = 26 + 37 = 63."}', 7),
   ('69 + ___ = 95', 'numeric', '[]', '26', '{"solution":"Muốn tìm số hạng chưa biết, lấy tổng trừ số hạng đã biết: 95 - 69 = 26."}', 8),
-  ('Nam có 57 cái kẹo. Tú có ít hơn Nam 7 cái kẹo. Hỏi Tú có bao nhiêu cái kẹo? Trả lời: ___ cái kẹo.', 'numeric', '[]', '50', '{"solution":"\"Ít hơn\" thì làm phép trừ: 57 - 7 = 50 (cái kẹo)."}', 9),
-  ('Hoa có 39 quyển vở. Tú có ít hơn Hoa 20 quyển vở. Hỏi Tú có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '19', '{"solution":"\"Ít hơn\" thì làm phép trừ: 39 - 20 = 19 (quyển vở)."}', 10)
+  ('Nam có 57 cái kẹo. Tú có ít hơn Nam 7 cái kẹo. Hỏi Tú có bao nhiêu cái kẹo? Trả lời: ___ cái kẹo.', 'numeric', '[]', '50', '{"solution":"Bài giải\nSố cái kẹo của Tú là:\n57 - 7 = 50 (cái kẹo)\nĐáp số: 50 cái kẹo."}', 9),
+  ('Hoa có 39 quyển vở. Tú có ít hơn Hoa 20 quyển vở. Hỏi Tú có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '19', '{"solution":"Bài giải\nSố quyển vở của Tú là:\n39 - 20 = 19 (quyển vở)\nĐáp số: 19 quyển vở."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-2-cong-tru-pv20'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -174,8 +174,8 @@ FROM lessons l, (VALUES
   ('47 + 47 = ___', 'numeric', '[]', '94', '{"solution":"Cộng đơn vị: 7 + 7 = 14, viết 4 nhớ 1 sang hàng chục. Kết quả: 94."}', 4),
   ('94 - 58 = ___', 'numeric', '[]', '36', '{"solution":"Trừ đơn vị: 4 không trừ được 8, lấy 14 - 8 = 6, nhớ 1 sang hàng chục của số trừ. Kết quả: 36."}', 5),
   ('80 - 45 = ___', 'numeric', '[]', '35', '{"solution":"Trừ đơn vị: 0 không trừ được 5, lấy 10 - 5 = 5, nhớ 1 sang hàng chục của số trừ. Kết quả: 35."}', 6),
-  ('An có 31 quyển vở. Tú có ít hơn An 8 quyển vở. Hỏi Tú có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '23', '{"solution":"\"Ít hơn\" thì làm phép trừ: 31 - 8 = 23 (quyển vở)."}', 7),
-  ('Hoa có 56 quả cam. Linh có ít hơn Hoa 25 quả cam. Hỏi Linh có bao nhiêu quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '31', '{"solution":"\"Ít hơn\" thì làm phép trừ: 56 - 25 = 31 (quả cam)."}', 8),
+  ('An có 31 quyển vở. Tú có ít hơn An 8 quyển vở. Hỏi Tú có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '23', '{"solution":"Bài giải\nSố quyển vở của Tú là:\n31 - 8 = 23 (quyển vở)\nĐáp số: 23 quyển vở."}', 7),
+  ('Hoa có 56 quả cam. Linh có ít hơn Hoa 25 quả cam. Hỏi Linh có bao nhiêu quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '31', '{"solution":"Bài giải\nSố quả cam của Linh là:\n56 - 25 = 31 (quả cam)\nĐáp số: 31 quả cam."}', 8),
   ('Một đường gấp khúc gồm 2 đoạn thẳng dài 13 cm, 16 cm. Độ dài đường gấp khúc là ___ cm.', 'numeric', '[]', '29', '{"solution":"Độ dài đường gấp khúc = tổng độ dài các đoạn: 13 + 16 = 29 (cm)."}', 9),
   ('Một đường gấp khúc gồm 3 đoạn thẳng dài 8 cm, 9 cm, 18 cm. Độ dài đường gấp khúc là ___ cm.', 'numeric', '[]', '35', '{"solution":"Độ dài đường gấp khúc = tổng độ dài các đoạn: 8 + 9 + 18 = 35 (cm)."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
@@ -196,8 +196,8 @@ FROM lessons l, (VALUES
   ('35 : 5 = ___', 'numeric', '[]', '7', '{"solution":"Vì 5 × 7 = 35 nên 35 : 5 = 7."}', 4),
   ('5 × 8 = ___', 'numeric', '[]', '40', '{"solution":"5 × 8 là 5 được lấy 8 lần. Theo bảng nhân 5: 5 × 8 = 40."}', 5),
   ('5 × 3 = ___', 'numeric', '[]', '15', '{"solution":"5 × 3 là 5 được lấy 3 lần. Theo bảng nhân 5: 5 × 3 = 15."}', 6),
-  ('Mỗi bạn có 2 bông hoa. Hỏi 10 bạn có tất cả bao nhiêu bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '20', '{"solution":"10 bạn, mỗi bạn 2 bông hoa: 2 × 10 = 20 (bông hoa)."}', 7),
-  ('Có 6 quả cam chia đều cho 2 bạn. Hỏi mỗi bạn được mấy quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '3', '{"solution":"Chia đều → phép chia: 6 : 2 = 3 (quả cam)."}', 8),
+  ('Mỗi bạn có 2 bông hoa. Hỏi 10 bạn có tất cả bao nhiêu bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '20', '{"solution":"Bài giải\nSố bông hoa của 10 bạn là:\n2 × 10 = 20 (bông hoa)\nĐáp số: 20 bông hoa."}', 7),
+  ('Có 6 quả cam chia đều cho 2 bạn. Hỏi mỗi bạn được mấy quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '3', '{"solution":"Bài giải\nMỗi bạn được số quả cam là:\n6 : 2 = 3 (quả cam)\nĐáp số: 3 quả cam."}', 8),
   ('2 × 6 = 12. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Đúng', '{"solution":"Đúng, 2 × 6 = 12."}', 9),
   ('5 × 7 = 30. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 5 × 7 = 35."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
@@ -235,9 +235,9 @@ INSERT INTO questions (lesson_id, content, type, options, correct_answer, explan
 SELECT l.id, v.content, v.type, v.options::jsonb, v.correct_answer, v.explanation, v.ord
 FROM lessons l, (VALUES
   ('5 km = ___ m', 'short', '[]', '5.000|5000|5 000', '{"solution":"1 km = 1.000 m nên 5 km = 5.000 m."}', 1),
-  ('Can thứ nhất đựng 58 l nước, can thứ hai đựng 35 l nước. Cả hai can đựng ___ l nước.', 'numeric', '[]', '93', '{"solution":"\"Cả hai\" → phép cộng: 58 + 35 = 93 (lít)."}', 2),
+  ('Can thứ nhất đựng 58 l nước, can thứ hai đựng 35 l nước. Cả hai can đựng ___ l nước.', 'numeric', '[]', '93', '{"solution":"Bài giải\nCả hai can đựng được số lít nước là:\n58 + 35 = 93 (l)\nĐáp số: 93 l nước."}', 2),
   ('8 m = ___ cm', 'numeric', '[]', '800', '{"solution":"1 m = 100 cm nên 8 m = 800 cm."}', 3),
-  ('Bao gạo nặng 25 kg, bao ngô nặng 6 kg. Cả hai bao nặng ___ kg.', 'numeric', '[]', '31', '{"solution":"\"Cả hai\" → phép cộng: 25 + 6 = 31 (ki-lô-gam)."}', 4),
+  ('Bao gạo nặng 25 kg, bao ngô nặng 6 kg. Cả hai bao nặng ___ kg.', 'numeric', '[]', '31', '{"solution":"Bài giải\nCả hai bao nặng là:\n25 + 6 = 31 (kg)\nĐáp số: 31 kg."}', 4),
   ('Mẹ có 2 tờ 200 đồng. Mẹ có tất cả ___ đồng.', 'numeric', '[]', '400', '{"solution":"2 × 200 = 400. Tổng: 400 đồng."}', 5),
   ('Mẹ có 1 tờ 1.000 đồng và 1 tờ 200 đồng. Mẹ có tất cả ___ đồng.', 'short', '[]', '1.200|1200|1 200', '{"solution":"1 × 1.000 = 1.000; 1 × 200 = 200. Tổng: 1.200 đồng."}', 6),
   ('Mẹ có 2 tờ 200 đồng và 1 tờ 100 đồng. Mẹ có tất cả ___ đồng.', 'numeric', '[]', '500', '{"solution":"2 × 200 = 400; 1 × 100 = 100. Tổng: 500 đồng."}', 7),
@@ -294,9 +294,9 @@ FROM lessons l, (VALUES
   ('6 × 5 - 14 = ___', 'numeric', '[]', '16', '{"solution":"Nhân trước, trừ sau: 6 × 5 = 30; 30 - 14 = 16."}', 5),
   ('Chọn dấu thích hợp: 6 × 8 ___ 8 × 7', 'mcq', '[">","<","="]', '<', '{"solution":"6 × 8 = 48, 8 × 7 = 56. Vì 48 < 56 nên 6 × 8 < 8 × 7."}', 6),
   ('7 × 9 = 70. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 7 × 9 = 63."}', 7),
-  ('Mỗi đĩa có 7 bông hoa. Hỏi 6 đĩa như thế có tất cả bao nhiêu bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '42', '{"solution":"6 đĩa, mỗi đĩa 7 bông hoa: 7 × 6 = 42 (bông hoa)."}', 8),
-  ('Có 42 quả táo, xếp vào các đĩa, mỗi đĩa 7 quả táo. Hỏi xếp được mấy đĩa? Trả lời: ___ đĩa.', 'numeric', '[]', '6', '{"solution":"Mỗi đĩa 7 quả táo → phép chia: 42 : 7 = 6 (đĩa)."}', 9),
-  ('Linh có 7 hộp, mỗi hộp 6 con tem. Linh cho bạn 36 con tem. Hỏi Linh còn lại bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '6', '{"solution":"Linh có: 6 × 7 = 42 (con tem). Còn lại: 42 - 36 = 6 (con tem)."}', 10)
+  ('Mỗi đĩa có 7 bông hoa. Hỏi 6 đĩa như thế có tất cả bao nhiêu bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '42', '{"solution":"Bài giải\nSố bông hoa có trong 6 đĩa là:\n7 × 6 = 42 (bông hoa)\nĐáp số: 42 bông hoa."}', 8),
+  ('Có 42 quả táo, xếp vào các đĩa, mỗi đĩa 7 quả táo. Hỏi xếp được mấy đĩa? Trả lời: ___ đĩa.', 'numeric', '[]', '6', '{"solution":"Bài giải\nXếp được số đĩa là:\n42 : 7 = 6 (đĩa)\nĐáp số: 6 đĩa."}', 9),
+  ('Linh có 7 hộp, mỗi hộp 6 con tem. Linh cho bạn 36 con tem. Hỏi Linh còn lại bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '6', '{"solution":"Bài giải\nSố con tem có trong 7 hộp là:\n6 × 7 = 42 (con tem)\nLinh còn lại số con tem là:\n42 - 36 = 6 (con tem)\nĐáp số: 6 con tem."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-3-nhan-chia-6-7'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -316,9 +316,9 @@ FROM lessons l, (VALUES
   ('Số nào nhân với 4 thì được 20?', 'mcq', '["5","4","3","6"]', '5', '{"solution":"Lấy 20 : 4 = 5. Thử lại: 5 × 4 = 20."}', 5),
   ('Số nào nhân với 3 thì được 15?', 'mcq', '["6","3","5","4"]', '5', '{"solution":"Lấy 15 : 3 = 5. Thử lại: 5 × 3 = 15."}', 6),
   ('4 × 5 = 25. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 4 × 5 = 20."}', 7),
-  ('Mỗi túi có 4 con tem. Hỏi 2 túi như thế có tất cả bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '8', '{"solution":"2 túi, mỗi túi 4 con tem: 4 × 2 = 8 (con tem)."}', 8),
-  ('Có 8 viên bi chia đều cho 4 bạn. Hỏi mỗi bạn được mấy viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '2', '{"solution":"Chia đều cho 4 bạn → phép chia: 8 : 4 = 2 (viên bi)."}', 9),
-  ('Mỗi hộp có 4 quả cam. Hỏi 9 hộp như thế có tất cả bao nhiêu quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '36', '{"solution":"9 hộp, mỗi hộp 4 quả cam: 4 × 9 = 36 (quả cam)."}', 10)
+  ('Mỗi túi có 4 con tem. Hỏi 2 túi như thế có tất cả bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '8', '{"solution":"Bài giải\nSố con tem có trong 2 túi là:\n4 × 2 = 8 (con tem)\nĐáp số: 8 con tem."}', 8),
+  ('Có 8 viên bi chia đều cho 4 bạn. Hỏi mỗi bạn được mấy viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '2', '{"solution":"Bài giải\nMỗi bạn được số viên bi là:\n8 : 4 = 2 (viên bi)\nĐáp số: 2 viên bi."}', 9),
+  ('Mỗi hộp có 4 quả cam. Hỏi 9 hộp như thế có tất cả bao nhiêu quả cam? Trả lời: ___ quả cam.', 'numeric', '[]', '36', '{"solution":"Bài giải\nSố quả cam có trong 9 hộp là:\n4 × 9 = 36 (quả cam)\nĐáp số: 36 quả cam."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-3-bang-nhan-chia-3-4'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -338,9 +338,9 @@ FROM lessons l, (VALUES
   ('Số nào nhân với 9 thì được 18?', 'mcq', '["2","1","4","3"]', '2', '{"solution":"Lấy 18 : 9 = 2. Thử lại: 2 × 9 = 18."}', 5),
   ('Số nào nhân với 9 thì được 63?', 'mcq', '["8","9","7","5"]', '7', '{"solution":"Lấy 63 : 9 = 7. Thử lại: 7 × 9 = 63."}', 6),
   ('8 × 3 = 21. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 8 × 3 = 24."}', 7),
-  ('Có 27 bông hoa chia đều cho 9 bạn. Hỏi mỗi bạn được mấy bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '3', '{"solution":"Chia đều cho 9 bạn → phép chia: 27 : 9 = 3 (bông hoa)."}', 8),
-  ('Mỗi túi có 9 chiếc bút chì. Hỏi 10 túi như thế có tất cả bao nhiêu chiếc bút chì? Trả lời: ___ chiếc bút chì.', 'numeric', '[]', '90', '{"solution":"10 túi, mỗi túi 9 chiếc bút chì: 9 × 10 = 90 (chiếc bút chì)."}', 9),
-  ('Mỗi rổ có 9 viên bi. Hỏi 10 rổ như thế có tất cả bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '90', '{"solution":"10 rổ, mỗi rổ 9 viên bi: 9 × 10 = 90 (viên bi)."}', 10)
+  ('Có 27 bông hoa chia đều cho 9 bạn. Hỏi mỗi bạn được mấy bông hoa? Trả lời: ___ bông hoa.', 'numeric', '[]', '3', '{"solution":"Bài giải\nMỗi bạn được số bông hoa là:\n27 : 9 = 3 (bông hoa)\nĐáp số: 3 bông hoa."}', 8),
+  ('Mỗi túi có 9 chiếc bút chì. Hỏi 10 túi như thế có tất cả bao nhiêu chiếc bút chì? Trả lời: ___ chiếc bút chì.', 'numeric', '[]', '90', '{"solution":"Bài giải\nSố chiếc bút chì có trong 10 túi là:\n9 × 10 = 90 (chiếc bút chì)\nĐáp số: 90 chiếc bút chì."}', 9),
+  ('Mỗi rổ có 9 viên bi. Hỏi 10 rổ như thế có tất cả bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '90', '{"solution":"Bài giải\nSố viên bi có trong 10 rổ là:\n9 × 10 = 90 (viên bi)\nĐáp số: 90 viên bi."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-3-bang-nhan-chia-8-9'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -357,9 +357,9 @@ FROM lessons l, (VALUES
   ('Gấp 5 lên 4 lần được số nào?', 'mcq', '["16","19","25","20"]', '20', '{"solution":"Gấp lên 4 lần là nhân với 4: 5 × 4 = 20. (Thêm 4 đơn vị mới là cộng: 5 + 4 = 9.)"}', 2),
   ('Gấp 8 lên 9 lần được ___', 'numeric', '[]', '72', '{"solution":"Muốn gấp một số lên nhiều lần, ta nhân số đó với số lần: 8 × 9 = 72."}', 3),
   ('Gấp 10 lên 3 lần được số nào?', 'mcq', '["27","29","30","13"]', '30', '{"solution":"Gấp lên 3 lần là nhân với 3: 10 × 3 = 30. (Thêm 3 đơn vị mới là cộng: 10 + 3 = 13.)"}', 4),
-  ('Hoa có 4 con tem. Số con tem của Minh gấp 6 lần số con tem của Hoa. Hỏi Minh có bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '24', '{"solution":"Minh có: 4 × 6 = 24 (con tem)."}', 5),
-  ('Linh có 6 quyển vở. Số quyển vở của An gấp 6 lần số quyển vở của Linh. Hỏi An có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '36', '{"solution":"An có: 6 × 6 = 36 (quyển vở)."}', 6),
-  ('Hoa có 14 viên bi. Số viên bi của Nam gấp 5 lần số viên bi của Hoa. Hỏi Nam có bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '70', '{"solution":"Nam có: 14 × 5 = 70 (viên bi)."}', 7),
+  ('Hoa có 4 con tem. Số con tem của Minh gấp 6 lần số con tem của Hoa. Hỏi Minh có bao nhiêu con tem? Trả lời: ___ con tem.', 'numeric', '[]', '24', '{"solution":"Bài giải\nSố con tem của Minh là:\n4 × 6 = 24 (con tem)\nĐáp số: 24 con tem."}', 5),
+  ('Linh có 6 quyển vở. Số quyển vở của An gấp 6 lần số quyển vở của Linh. Hỏi An có bao nhiêu quyển vở? Trả lời: ___ quyển vở.', 'numeric', '[]', '36', '{"solution":"Bài giải\nSố quyển vở của An là:\n6 × 6 = 36 (quyển vở)\nĐáp số: 36 quyển vở."}', 6),
+  ('Hoa có 14 viên bi. Số viên bi của Nam gấp 5 lần số viên bi của Hoa. Hỏi Nam có bao nhiêu viên bi? Trả lời: ___ viên bi.', 'numeric', '[]', '70', '{"solution":"Bài giải\nSố viên bi của Nam là:\n14 × 5 = 70 (viên bi)\nĐáp số: 70 viên bi."}', 7),
   ('___ × 3 = 6', 'numeric', '[]', '2', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 6 : 3 = 2."}', 8),
   ('___ × 8 = 32', 'numeric', '[]', '4', '{"solution":"Muốn tìm thừa số chưa biết, lấy tích chia cho thừa số kia: 32 : 8 = 4."}', 9),
   ('16 : ___ = 8', 'numeric', '[]', '2', '{"solution":"Muốn tìm số chia, lấy số bị chia chia cho thương: 16 : 8 = 2."}', 10)
@@ -427,8 +427,8 @@ FROM lessons l, (VALUES
   ('47.729 × 2 = ___', 'short', '[]', '95.458|95458|95 458', '{"solution":"Nhân lần lượt từ phải sang trái, nhớ sang hàng bên trái: 47.729 × 2 = 95.458."}', 6),
   ('48.007 : 3 = 16.002 (dư ___)', 'numeric', '[]', '1', '{"solution":"16.002 × 3 = 48.006; 48.007 - 48.006 = 1."}', 7),
   ('76.896 : 7 = 10.985 (dư ___)', 'numeric', '[]', '1', '{"solution":"10.985 × 7 = 76.895; 76.896 - 76.895 = 1."}', 8),
-  ('Mai có 50.000 đồng, mua một chiếc mũ giá 35.500 đồng. Hỏi Mai còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '14.500|14500|14 500', '{"solution":"Số tiền còn lại: 50.000 - 35.500 = 14.500 (đồng)."}', 9),
-  ('Lan có 50.000 đồng, mua một chiếc mũ giá 42.500 đồng. Hỏi Lan còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '7.500|7500|7 500', '{"solution":"Số tiền còn lại: 50.000 - 42.500 = 7.500 (đồng)."}', 10)
+  ('Mai có 50.000 đồng, mua một chiếc mũ giá 35.500 đồng. Hỏi Mai còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '14.500|14500|14 500', '{"solution":"Bài giải\nMai còn lại số tiền là:\n50.000 - 35.500 = 14.500 (đồng)\nĐáp số: 14.500 đồng."}', 9),
+  ('Lan có 50.000 đồng, mua một chiếc mũ giá 42.500 đồng. Hỏi Lan còn lại bao nhiêu tiền? Trả lời: ___ đồng.', 'short', '[]', '7.500|7500|7 500', '{"solution":"Bài giải\nLan còn lại số tiền là:\n50.000 - 42.500 = 7.500 (đồng)\nĐáp số: 7.500 đồng."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-3-phep-tinh-100000'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -502,8 +502,8 @@ FROM lessons l, (VALUES
   ('50.150 + ___ = 135.659', 'short', '[]', '85.509|85509|85 509', '{"solution":"Muốn tìm số hạng chưa biết, lấy tổng trừ số hạng đã biết: 135.659 - 50.150 = 85.509."}', 6),
   ('Tính bằng cách thuận tiện: 2.370 + 5.563 + 130 = ___', 'short', '[]', '8.063|8063|8 063', '{"solution":"Đổi chỗ và nhóm hai số có tổng tròn: (2.370 + 130) + 5.563 = 2.500 + 5.563 = 8.063."}', 7),
   ('14.571 + 45.946 = 59.517. Đúng hay sai?', 'mcq', '["Đúng","Sai"]', 'Sai', '{"solution":"Sai, 14.571 + 45.946 = 60.517. Kết quả đã cho lệch 1.000, thường do quên nhớ hoặc nhớ thừa khi cộng."}', 8),
-  ('Một cửa hàng tháng thứ nhất bán được 7.120 kg gạo, tháng thứ hai bán được nhiều hơn tháng thứ nhất 490 kg gạo. Hỏi cả hai tháng bán được bao nhiêu kg gạo? Trả lời: ___ kg gạo.', 'short', '[]', '14.730|14730|14 730', '{"solution":"Tháng thứ hai: 7.120 + 490 = 7.610 (kg gạo). Cả hai tháng: 7.120 + 7.610 = 14.730 (kg gạo)."}', 9),
-  ('Một xưởng may tháng thứ nhất làm được 6.970 sản phẩm, tháng thứ hai làm được nhiều hơn tháng thứ nhất 860 sản phẩm. Hỏi cả hai tháng làm được bao nhiêu sản phẩm? Trả lời: ___ sản phẩm.', 'short', '[]', '14.800|14800|14 800', '{"solution":"Tháng thứ hai: 6.970 + 860 = 7.830 (sản phẩm). Cả hai tháng: 6.970 + 7.830 = 14.800 (sản phẩm)."}', 10)
+  ('Một cửa hàng tháng thứ nhất bán được 7.120 kg gạo, tháng thứ hai bán được nhiều hơn tháng thứ nhất 490 kg gạo. Hỏi cả hai tháng bán được bao nhiêu kg gạo? Trả lời: ___ kg gạo.', 'short', '[]', '14.730|14730|14 730', '{"solution":"Bài giải\nTháng thứ hai bán được số kg gạo là:\n7.120 + 490 = 7.610 (kg gạo)\nCả hai tháng bán được số kg gạo là:\n7.120 + 7.610 = 14.730 (kg gạo)\nĐáp số: 14.730 kg gạo."}', 9),
+  ('Một xưởng may tháng thứ nhất làm được 6.970 sản phẩm, tháng thứ hai làm được nhiều hơn tháng thứ nhất 860 sản phẩm. Hỏi cả hai tháng làm được bao nhiêu sản phẩm? Trả lời: ___ sản phẩm.', 'short', '[]', '14.800|14800|14 800', '{"solution":"Bài giải\nTháng thứ hai làm được số sản phẩm là:\n6.970 + 860 = 7.830 (sản phẩm)\nCả hai tháng làm được số sản phẩm là:\n6.970 + 7.830 = 14.800 (sản phẩm)\nĐáp số: 14.800 sản phẩm."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-4-cong-tru'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -524,8 +524,8 @@ FROM lessons l, (VALUES
   ('53.358 : 8 = 6.669 (dư ___)', 'numeric', '[]', '6', '{"solution":"6.669 × 8 = 53.352; 53.358 - 53.352 = 6. Số dư 6 bé hơn số chia 8."}', 6),
   ('649 × 1.000 = ___', 'short', '[]', '649.000|649000|649 000', '{"solution":"Nhân với 1.000 chỉ cần viết thêm 3 chữ số 0 vào bên phải: 649 × 1.000 = 649.000."}', 7),
   ('800 × 10 = ___', 'short', '[]', '8.000|8000|8 000', '{"solution":"Nhân với 10 chỉ cần viết thêm 1 chữ số 0 vào bên phải: 800 × 10 = 8.000."}', 8),
-  ('Người ta xếp 4.176 quyển vở vào các chồng, mỗi chồng 48 quyển vở. Hỏi xếp được bao nhiêu chồng? Trả lời: ___ chồng.', 'numeric', '[]', '87', '{"solution":"Mỗi chồng 48 quyển vở → phép chia: 4.176 : 48 = 87 (chồng)."}', 9),
-  ('Mỗi két có 46 chai nước. Hỏi 233 két như thế có tất cả bao nhiêu chai nước? Trả lời: ___ chai nước.', 'short', '[]', '10.718|10718|10 718', '{"solution":"233 két, mỗi két 46 chai nước: 46 × 233 = 10.718 (chai nước)."}', 10)
+  ('Người ta xếp 4.176 quyển vở vào các chồng, mỗi chồng 48 quyển vở. Hỏi xếp được bao nhiêu chồng? Trả lời: ___ chồng.', 'numeric', '[]', '87', '{"solution":"Bài giải\nXếp được số chồng là:\n4.176 : 48 = 87 (chồng)\nĐáp số: 87 chồng."}', 9),
+  ('Mỗi két có 46 chai nước. Hỏi 233 két như thế có tất cả bao nhiêu chai nước? Trả lời: ___ chai nước.', 'short', '[]', '10.718|10718|10 718', '{"solution":"Bài giải\nSố chai nước có trong 233 két là:\n46 × 233 = 10.718 (chai nước)\nĐáp số: 10.718 chai nước."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-4-nhan-chia'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);
@@ -543,11 +543,11 @@ FROM lessons l, (VALUES
   ('Số trung bình cộng của 182; 74 và 104 là ___', 'numeric', '[]', '120', '{"solution":"Tổng các số: 182 + 74 + 104 = 360. Có 3 số nên trung bình cộng là 360 : 3 = 120."}', 3),
   ('Số trung bình cộng của 94 và 310 là ___', 'numeric', '[]', '202', '{"solution":"Tổng các số: 94 + 310 = 404. Có 2 số nên trung bình cộng là 404 : 2 = 202."}', 4),
   ('Số trung bình cộng của 36; 246; 211 và 499 là ___', 'numeric', '[]', '248', '{"solution":"Tổng các số: 36 + 246 + 211 + 499 = 992. Có 4 số nên trung bình cộng là 992 : 4 = 248."}', 5),
-  ('Tổng số tuổi của mẹ và con là 51 tuổi. Mẹ hơn con 27 tuổi. Hỏi con bao nhiêu tuổi? Trả lời: ___ tuổi.', 'numeric', '[]', '12', '{"solution":"Tuổi con (số bé) = (51 - 27) : 2 = 12 (tuổi)."}', 6),
+  ('Tổng số tuổi của mẹ và con là 51 tuổi. Mẹ hơn con 27 tuổi. Hỏi con bao nhiêu tuổi? Trả lời: ___ tuổi.', 'numeric', '[]', '12', '{"solution":"Bài giải\nTuổi con là:\n(51 - 27) : 2 = 12 (tuổi)\nĐáp số: 12 tuổi."}', 6),
   ('Tổng của hai số là 752, hiệu của hai số là 10. Số bé là ___', 'numeric', '[]', '371', '{"solution":"Số bé = (tổng - hiệu) : 2 = (752 - 10) : 2 = 371."}', 7),
   ('Tổng của hai số là 1.574, hiệu của hai số là 96. Số lớn là ___', 'numeric', '[]', '835', '{"solution":"Số lớn = (tổng + hiệu) : 2 = (1.574 + 96) : 2 = 835."}', 8),
-  ('Hai lớp 4A và 4B trồng được 267 cây. Lớp 4A trồng được nhiều hơn lớp 4B 159 cây. Hỏi lớp 4B trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '54', '{"solution":"Lớp 4B trồng được ít hơn (số bé). Số bé = (tổng - hiệu) : 2 = (267 - 159) : 2 = 54."}', 9),
-  ('Hai lớp 4A và 4C trồng được 921 cây. Lớp 4A trồng được nhiều hơn lớp 4C 281 cây. Hỏi lớp 4A trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '601', '{"solution":"Lớp 4A trồng được nhiều hơn (số lớn). Số lớn = (tổng + hiệu) : 2 = (921 + 281) : 2 = 601."}', 10)
+  ('Hai lớp 4A và 4B trồng được 267 cây. Lớp 4A trồng được nhiều hơn lớp 4B 159 cây. Hỏi lớp 4B trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '54', '{"solution":"Bài giải\nSố cây lớp 4B trồng được là:\n(267 - 159) : 2 = 54 (cây)\nĐáp số: 54 cây."}', 9),
+  ('Hai lớp 4A và 4C trồng được 921 cây. Lớp 4A trồng được nhiều hơn lớp 4C 281 cây. Hỏi lớp 4A trồng được bao nhiêu cây? Trả lời: ___ cây.', 'numeric', '[]', '601', '{"solution":"Bài giải\nSố cây lớp 4A trồng được là:\n(921 + 281) : 2 = 601 (cây)\nĐáp số: 601 cây."}', 10)
 ) AS v(content, type, options, correct_answer, explanation, ord)
 WHERE l.source_id = 'gen_toan-4-tbc-tong-hieu'
   AND NOT EXISTS (SELECT 1 FROM questions x WHERE x.lesson_id = l.id);

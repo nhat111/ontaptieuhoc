@@ -5,7 +5,7 @@
 
 import {
   type Generator, int, pick, chance, shuffle, mcOptions, fixedOptions, blanks, sign, retry,
-  fmtInt,
+  fmtInt, baiGiai,
 } from "./core";
 import { NAMES, THINGS } from "./shared";
 
@@ -92,7 +92,7 @@ export const loiVan67: Generator = (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép nhân", "tuần lễ"],
       question: `Mỗi tuần lễ có 7 ngày. Hỏi ${x} tuần lễ có bao nhiêu ngày? Trả lời: ___ ngày.`,
       ...blanks(String(7 * x)),
-      explanation: `${x} tuần, mỗi tuần 7 ngày: 7 × ${x} = ${7 * x} (ngày).`, hint: "Mỗi tuần đều có 7 ngày → phép nhân." };
+      explanation: baiGiai([[`${x} tuần lễ có số ngày là:`, `7 × ${x} = ${7 * x} (ngày)`]], `${7 * x} ngày`), hint: "Mỗi tuần đều có 7 ngày → phép nhân." };
   const t = pick(r, THINGS);
   const thing = `${t.unit} ${t.name}`;
   const box = pick(r, ["hộp", "túi", "đĩa", "rổ"]);
@@ -100,18 +100,18 @@ export const loiVan67: Generator = (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép nhân"],
       question: `Mỗi ${box} có ${k} ${thing}. Hỏi ${x} ${box} như thế có tất cả bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(k * x)),
-      explanation: `${x} ${box}, mỗi ${box} ${k} ${thing}: ${k} × ${x} = ${k * x} (${thing}).`, hint: "Mỗi phần bằng nhau → dùng phép nhân." };
+      explanation: baiGiai([[`Số ${thing} có trong ${x} ${box} là:`, `${k} × ${x} = ${k * x} (${thing})`]], `${k * x} ${thing}`), hint: "Mỗi phần bằng nhau → dùng phép nhân." };
   const chiaCho = chance(r, 0.5);
   // chia thành k phần (hỏi mỗi phần) hoặc chia mỗi phần k (hỏi số phần)
   return chiaCho
     ? { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép chia"],
       question: `Có ${k * x} ${thing} chia đều cho ${k} bạn. Hỏi mỗi bạn được mấy ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(x)),
-      explanation: `Chia đều cho ${k} bạn → phép chia: ${k * x} : ${k} = ${x} (${thing}).`, hint: "Chia đều → dùng phép chia." }
+      explanation: baiGiai([[`Mỗi bạn được số ${thing} là:`, `${k * x} : ${k} = ${x} (${thing})`]], `${x} ${thing}`), hint: "Chia đều → dùng phép chia." }
     : { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "phép chia"],
       question: `Có ${k * x} ${thing}, xếp vào các ${box}, mỗi ${box} ${k} ${thing}. Hỏi xếp được mấy ${box}? Trả lời: ___ ${box}.`,
       ...blanks(String(x)),
-      explanation: `Mỗi ${box} ${k} ${thing} → phép chia: ${k * x} : ${k} = ${x} (${box}).`, hint: `Tìm xem có mấy lần ${k} trong ${k * x}.` };
+      explanation: baiGiai([[`Xếp được số ${box} là:`, `${k * x} : ${k} = ${x} (${box})`]], `${x} ${box}`), hint: `Tìm xem có mấy lần ${k} trong ${k * x}.` };
 };
 
 /* ───── Toán có lời văn (hai bước) ───── */
@@ -125,7 +125,10 @@ export const loiVanHaiBuoc67: Generator = (r) => {
     return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "hai bước"],
       question: `Lớp ${lop} xếp thành ${x} hàng, mỗi hàng ${k} bạn. Sau đó có thêm ${extra} bạn đến xếp hàng. Hỏi lúc này có tất cả bao nhiêu bạn? Trả lời: ___ bạn.`,
       ...blanks(String(k * x + extra)),
-      explanation: `Lúc đầu: ${k} × ${x} = ${k * x} (bạn). Lúc này: ${k * x} + ${extra} = ${k * x + extra} (bạn).`,
+      explanation: baiGiai([
+        [`Lúc đầu lớp ${lop} có số bạn xếp hàng là:`, `${k} × ${x} = ${k * x} (bạn)`],
+        ["Lúc này có tất cả số bạn là:", `${k * x} + ${extra} = ${k * x + extra} (bạn)`],
+      ], `${k * x + extra} bạn`),
       hint: "Tính số bạn lúc đầu bằng phép nhân, rồi cộng thêm." };
   }
   const t = pick(r, THINGS);
@@ -134,7 +137,10 @@ export const loiVanHaiBuoc67: Generator = (r) => {
   return { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "hai bước"],
     question: `${name} có ${x} hộp, mỗi hộp ${k} ${thing}. ${name} cho bạn ${given} ${thing}. Hỏi ${name} còn lại bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
     ...blanks(String(k * x - given)),
-    explanation: `${name} có: ${k} × ${x} = ${k * x} (${thing}). Còn lại: ${k * x} - ${given} = ${k * x - given} (${thing}).`,
+    explanation: baiGiai([
+      [`Số ${thing} có trong ${x} hộp là:`, `${k} × ${x} = ${k * x} (${thing})`],
+      [`${name} còn lại số ${thing} là:`, `${k * x} - ${given} = ${k * x - given} (${thing})`],
+    ], `${k * x - given} ${thing}`),
     hint: "Tính tất cả trước, rồi trừ đi số đã cho." };
 };
 
@@ -197,16 +203,16 @@ const loiVanBang = (tables: readonly number[]): Generator => (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép nhân"],
       question: `Mỗi ${box} có ${k} ${thing}. Hỏi ${x} ${box} như thế có tất cả bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(k * x)),
-      explanation: `${x} ${box}, mỗi ${box} ${k} ${thing}: ${k} × ${x} = ${k * x} (${thing}).`, hint: "Mỗi phần bằng nhau → dùng phép nhân." };
+      explanation: baiGiai([[`Số ${thing} có trong ${x} ${box} là:`, `${k} × ${x} = ${k * x} (${thing})`]], `${k * x} ${thing}`), hint: "Mỗi phần bằng nhau → dùng phép nhân." };
   return chance(r, 0.5)
     ? { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "phép chia"],
       question: `Có ${k * x} ${thing} chia đều cho ${k} bạn. Hỏi mỗi bạn được mấy ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(x)),
-      explanation: `Chia đều cho ${k} bạn → phép chia: ${k * x} : ${k} = ${x} (${thing}).`, hint: "Chia đều → dùng phép chia." }
+      explanation: baiGiai([[`Mỗi bạn được số ${thing} là:`, `${k * x} : ${k} = ${x} (${thing})`]], `${x} ${thing}`), hint: "Chia đều → dùng phép chia." }
     : { type: "fill_blank", difficulty: "hard", tags: ["toán có lời văn", "phép chia"],
       question: `Có ${k * x} ${thing}, xếp vào các ${box}, mỗi ${box} ${k} ${thing}. Hỏi xếp được mấy ${box}? Trả lời: ___ ${box}.`,
       ...blanks(String(x)),
-      explanation: `Mỗi ${box} ${k} ${thing} → phép chia: ${k * x} : ${k} = ${x} (${box}).`, hint: `Tìm xem có mấy lần ${k} trong ${k * x}.` };
+      explanation: baiGiai([[`Xếp được số ${box} là:`, `${k * x} : ${k} = ${x} (${box})`]], `${x} ${box}`), hint: `Tìm xem có mấy lần ${k} trong ${k * x}.` };
 };
 
 const dungSaiBang = (tables: readonly number[]): Generator => (r) => {
@@ -274,13 +280,13 @@ export const loiVanGapGiam: Generator = (r) => {
     return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "gấp một số lên nhiều lần"],
       question: `${n1} có ${a} ${thing}. Số ${thing} của ${n2} gấp ${k} lần số ${thing} của ${n1}. Hỏi ${n2} có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
       ...blanks(String(a * k)),
-      explanation: `${n2} có: ${a} × ${k} = ${a * k} (${thing}).`, hint: "Gấp lên mấy lần thì nhân." };
+      explanation: baiGiai([[`Số ${thing} của ${n2} là:`, `${a} × ${k} = ${a * k} (${thing})`]], `${a * k} ${thing}`), hint: "Gấp lên mấy lần thì nhân." };
   }
   const q = int(r, 3, 15);
   return { type: "fill_blank", difficulty: "medium", tags: ["toán có lời văn", "giảm một số đi nhiều lần"],
     question: `${n1} có ${q * k} ${thing}. Số ${thing} của ${n2} bằng số ${thing} của ${n1} giảm đi ${k} lần. Hỏi ${n2} có bao nhiêu ${thing}? Trả lời: ___ ${thing}.`,
     ...blanks(String(q)),
-    explanation: `${n2} có: ${q * k} : ${k} = ${q} (${thing}).`, hint: "Giảm đi mấy lần thì chia." };
+    explanation: baiGiai([[`Số ${thing} của ${n2} là:`, `${q * k} : ${k} = ${q} (${thing})`]], `${q} ${thing}`), hint: "Giảm đi mấy lần thì chia." };
 };
 
 export const timThanhPhanNhanChia: Generator = (r) => {
@@ -542,7 +548,7 @@ export const tienVN3: Generator = (r) => {
   return { type: "fill_blank", difficulty: "medium", tags: ["tiền Việt Nam", "toán có lời văn"],
     question: `${name} có ${fmtInt(note)} đồng, mua ${item} giá ${fmtInt(price)} đồng. Hỏi ${name} còn lại bao nhiêu tiền? Trả lời: ___ đồng.`,
     ...blanks(fmtInt(note - price)),
-    explanation: `Số tiền còn lại: ${fmtInt(note)} - ${fmtInt(price)} = ${fmtInt(note - price)} (đồng).`,
+    explanation: baiGiai([[`${name} còn lại số tiền là:`, `${fmtInt(note)} - ${fmtInt(price)} = ${fmtInt(note - price)} (đồng)`]], `${fmtInt(note - price)} đồng`),
     hint: "Lấy số tiền có trừ đi giá tiền." };
 };
 
