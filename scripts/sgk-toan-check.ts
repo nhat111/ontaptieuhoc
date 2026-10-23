@@ -82,6 +82,12 @@ for (const book of SGK_BOOKS) {
           for (const o of row.options) if (o !== row.correct_answer && scoreAnswer(q, o)) fail(`${tag}: nhiễu "${o}" cũng được tính đúng — ${row.content}`);
         }
         if (/undefined|NaN|\[object/.test(row.content + row.options.join())) fail(`${tag}: chuỗi lỗi — ${row.content}`);
+        if (row.content.startsWith("Viết phép tính thích hợp")) {
+          // Lớp 1: hai số trong câu chuyện, phép tính ghi trong lời giải và đáp án phải khớp nhau.
+          const [x, y] = [...row.content.matchAll(/\d+/g)].map((v) => +v[0]);
+          const pm = (q.explanation ?? "").match(/^Phép tính: (\d+) ([+-]) (\d+) = (\d+)\./);
+          if (!pm || +pm[1] !== x || +pm[3] !== y || +pm[4] !== (pm[2] === "+" ? x + y : x - y) || pm[4] !== right) fail(`${tag}: phép tính thích hợp sai — ${row.content}`);
+        }
         const sol = q.explanation ?? "";
         if (sol.startsWith("Bài giải") && !sol.match(/\nĐáp số: (.+)\.$/)?.[1].startsWith(right)) fail(`${tag}: “Đáp số” không khớp đáp án ${right} — ${row.content}`);
       });

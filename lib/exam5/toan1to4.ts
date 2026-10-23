@@ -296,8 +296,9 @@ const STORY_SUB: Story[] = [
 ];
 
 /** Lớp 1: "Viết phép tính thích hợp" — chưa học trình bày bài giải, chỉ phép tính và câu trả lời. */
-export const phepTinhThichHop = (max: 10 | 100, ops: "+" | "+-"): Generator => (r) => {
-  const op = ops === "+" || chance(r, 0.5) ? "+" : "-";
+export const phepTinhThichHop = (max: 10 | 100, ops: "+" | "-" | "+-"): Generator => (r) => {
+  // "+" và "+-" rút số y như trước (đề Tạo đề nhanh đã chia sẻ không đổi); "-" chỉ ra phép trừ.
+  const op = ops === "-" ? "-" : ops === "+" || chance(r, 0.5) ? "+" : "-";
   const [a, b] = max === 10
     ? (op === "+" ? (() => { const x = int(r, 2, 8); return [x, int(r, 1, 10 - x)]; })() : (() => { const x = int(r, 4, 10); return [x, int(r, 1, x - 1)]; })())
     : noCarry(r, op);
