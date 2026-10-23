@@ -55,7 +55,7 @@ export default function TvChuDiemList({ guide }: { guide: TvGuide }) {
                       <span className="min-w-0">
                         <span className="block font-semibold text-slate-800">{b.doc}</span>
                         <span className="block text-xs text-slate-500">
-                          {[b.ltvc && `Luyện từ và câu: ${b.ltvc.ten}`, `Viết: ${b.viet.ten}`, b.them]
+                          {[b.ltvc && `Luyện từ và câu: ${b.ltvc.ten}`, vietLabel(b.viet.ten), b.them]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
@@ -87,6 +87,11 @@ export default function TvChuDiemList({ guide }: { guide: TvGuide }) {
       </p>
     </section>
   );
+}
+
+/** “Nghe - viết: …”, “Ôn chữ viết hoa …” đã tự nói là phần Viết, không thêm tiền tố. */
+function vietLabel(ten: string) {
+  return /^(Nghe|Nhớ) - viết|^Ôn/.test(ten) ? ten : `Viết: ${ten}`;
 }
 
 function SkillGroup({ title, icon, skills }: { title: string; icon: React.ReactNode; skills: TvSkill[] }) {
