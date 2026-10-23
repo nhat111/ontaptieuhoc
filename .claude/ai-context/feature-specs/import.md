@@ -14,10 +14,11 @@ Một component trung tâm: `ImportClient.tsx`. Khác nhau qua props `examMode` 
 **Cả khu này bị khoá bằng `IMPORT_PASSWORD`** — chi tiết ở `access-control.md`. Chốt chặn nằm ở `app/import/layout.tsx` và trong từng API ghi, **không phải `proxy.ts`**.
 
 ## Components
-- `ImportClient` — form meta + danh sách câu
-- `QuestionCard` (import) — editor từng câu, 4 loại `QType`, ảnh, lời giải
-- `PasteImportModal` — paste text/HTML/URL → parser; kèm nút **Quét ảnh đề** (OCR)
-- `TiptapEditor` — nội dung rich text / LaTeX, có hook `onPasteText`
+- `ImportClient` — thẻ **Bạn muốn bắt đầu thế nào?** (bài mới, chưa gõ gì: Dán đề có sẵn / Chụp ảnh đề giấy / Soạn từng câu), form thông tin (chương + số thứ tự gập trong **Tuỳ chọn thêm**), danh sách câu, khung **Kiểm tra trước khi lưu** (máy tính) + thanh Lưu ghim đáy (dưới `lg`), menu **Quản lý** (Góp ý, Thống kê)
+- `QuestionCard` (import) — editor từng câu, 4 loại `QType` (nhãn + ví dụ trong `TYPE_OPTIONS`, dùng chung với nhãn trang làm bài), ảnh, lời giải; đầu thẻ hiện **Xong / Chưa xong**; xoá câu đã có nội dung thì hỏi lại
+- `PasteImportModal` ("Đưa đề có sẵn vào") — dán chữ, chụp ảnh (miễn phí + AI nếu có key), phần "Cách khác" (URL, HTML); prop `focus` chọn phần nào lên đầu, `hasExisting` quyết định hỏi thay thế / thêm vào
+- `StudentPreview` — **Xem như học sinh**: đề đang soạn hiện bằng chính `components/quiz/QuestionCard` (có nút Kiểm tra), không lưu gì
+- `TiptapEditor` — ô soạn nội dung; thanh chèn: ký hiệu chữ thường (× : ≤ ≥ ° π) và nút **Phân số / Số mũ / Căn** mở ô điền rồi máy viết LaTeX; dòng "Học sinh sẽ thấy" chỉ hiện khi ô có công thức (`hasMath`); hook `onPasteText`
 - `AudioMapper` — trang `/import/giong-doc/[id]`
 - `MathText` — preview trong sidebar
 
@@ -41,6 +42,8 @@ type QDraft = {
 };
 ```
 
+**Kiểm tra câu: `lib/importDraft.ts`** (test: `tests/importDraft.test.ts`) — `draftProblems(q)` / `lessonProblems(...)` là nguồn duy nhất cho danh sách "Còn … chỗ cần sửa", huy hiệu Chưa xong và việc chặn Lưu. Chặn cả lỗi chấm sai im lặng: hai đáp án trùng chữ, `1.250` ở câu Điền số (máy hiểu 1,25). **`correctIdx = -1` (`NO_ANSWER`) = chưa chọn đáp án đúng**: câu mới, câu dán vào không có dòng "Đáp án:", câu quét ảnh không thấy dấu khoanh, và câu trong DB mà `correct_answer` không khớp lựa chọn nào (`GET /api/lesson/[id]`) đều để trống thay vì chọn tạm A. `encodeCorrectAnswer` / `draftToQuestion` dùng chung cho lúc lưu và màn xem thử.
+
 Khi lưu, `images` / `imageUrl` / `solution` / `audioUrl` gói chung vào blob JSON `questions.explanation`. Không có cột riêng. `ImportClient` chuẩn hoá `imageUrl` cũ thành `images: [{ url, position: "after" }]` lúc hydrate.
 
 ## Create flow
@@ -54,7 +57,7 @@ Khi lưu, `images` / `imageUrl` / `solution` / `audioUrl` gói chung vào blob J
 ## Edit flow (`/import/edit/[id]`)
 1. `GET /api/lesson/[id]` → `initialData`
 2. `POST /api/update-lesson` — cập nhật lesson, **xoá hết** questions cũ, insert lại
-3. Không autosave `localStorage`
+3. Không autosave `localStorage` — thay vào đó so bản đang sửa với `initialData` (không tính chương, vì chương nạp sau); khác thì hiện nhãn **Có thay đổi chưa lưu** và `beforeunload` hỏi lại khi đóng trang
 
 `update-lesson` **re-attach `audioUrl` theo nội dung câu**, nên sửa bài không còn xoá mất giọng đọc đã ghép. Đây cũng là lý do `/api/lesson-audio` không đi qua route này.
 
@@ -109,7 +112,7 @@ Tách xong thì báo đã làm gì và cho **Hoàn tác** — hoàn tác trả l
 ## Giọng đọc gắn sẵn
 Xem `tts-audio.md`. Tóm tắt: `/import/giong-doc/[id]` ghép file theo **số trong tên file**, `POST /api/upload-audio` (đặt tên theo hash nội dung) + `POST /api/lesson-audio` (read-merge-write vào `explanation`).
 
-## LaTeX sidebar
+## LaTeX sidebar (gập trong "Công thức nâng cao (LaTeX)")
 - `focusedEditor.ts` — insert vào Tiptap đang focus
 - Nút cheat-sheet **bắt buộc** `onMouseDown` + `preventDefault`, không thì focus nhảy đi trước khi chèn
 

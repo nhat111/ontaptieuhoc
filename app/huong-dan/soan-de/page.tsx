@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn soạn bài và đề kiểm tra",
   description:
-    "Hướng dẫn thầy cô, phụ huynh soạn bài học và đề kiểm tra trên Ôn Tập Phổ Thông: gõ câu hỏi, dán cả đề, quét ảnh đề, thêm ảnh và công thức, sửa đề, gắn giọng đọc.",
+    "Hướng dẫn thầy cô, phụ huynh soạn bài học và đề kiểm tra trên Ôn Tập Phổ Thông: dán đề có sẵn, chụp ảnh đề, soạn từng câu, xem như học sinh, sửa đề, gắn giọng đọc.",
   alternates: { canonical: "/huong-dan/soan-de" },
 };
 
@@ -27,50 +27,62 @@ const STEPS: GuideStep[] = [
     cta: { href: "/import", label: "Mở khu soạn đề" },
   },
   {
+    id: "bat-dau",
+    title: "Chọn cách bắt đầu",
+    points: [
+      <>Mở trang soạn, web hỏi <b>Bạn muốn bắt đầu thế nào?</b> với 3 lựa chọn:</>,
+      <><b>Dán đề có sẵn</b> — đề đã có trong Word, Zalo, trang web: chép rồi dán vào, máy tự tách câu hỏi và đáp án.</>,
+      <><b>Chụp ảnh đề giấy</b> — chụp đề in, máy đọc chữ giúp.</>,
+      <><b>Soạn từng câu</b> — gõ từng câu hỏi và đáp án.</>,
+      <>Đang soạn dở vẫn đưa thêm đề vào được bằng nút <b>Dán / chụp đề có sẵn</b> ở đầu trang.</>,
+    ],
+  },
+  {
     id: "thong-tin",
     title: "Điền thông tin bài",
     points: [
-      <>Chọn <b>Lớp</b> và <b>Môn học</b>.</>,
-      <>Chọn <b>Chương</b> có sẵn, hoặc bấm nút <b>+</b> cạnh ô chương để <b>Tạo chương mới</b>. Để <b>— Không phân chương —</b> thì bài vẫn hiện trên web, trong một chương mặc định.</>,
-      <>Điền <b>Tên bài học</b>, <b>STT bài</b> (số thứ tự, vd 01) và <b>Thời gian làm bài (phút)</b> — mặc định 15 phút.</>,
+      <>Chọn <b>Lớp</b>, <b>Môn học</b>, <b>Thời gian (phút)</b> (mặc định 15 phút) và gõ <b>Tên bài</b>.</>,
+      <>Muốn xếp bài vào một chương hay đổi số thứ tự, mở <b>Tuỳ chọn thêm: chương, số thứ tự</b>. Bấm <b>+ Tạo chương mới</b> nếu chưa có chương. Không chọn chương thì bài vẫn hiện trên web, trong một chương mặc định.</>,
     ],
   },
   {
     id: "soan-cau-hoi",
     title: "Soạn từng câu hỏi",
     points: [
-      <>Bấm <b>Thêm câu hỏi</b> (hoặc <b>Ctrl+Enter</b>), rồi chọn loại câu:</>,
-      <><b>Trắc nghiệm</b>: 2–6 lựa chọn, <b>nhấn ô tròn</b> cạnh đáp án đúng. Bấm <b>+ Thêm đáp án</b> khi cần thêm lựa chọn.</>,
-      <><b>Nhiều đáp án</b>: <b>tick ô vuông</b> ở mọi đáp án đúng — bé phải chọn đủ các đáp án đúng và không chọn thừa mới được tính đúng.</>,
-      <><b>Tự luận ngắn</b>: gõ đáp án mẫu; nhiều cách viết được chấp nhận thì ngăn bằng dấu <Code>|</Code>, vd <Code>Hà Nội|Ha Noi</Code>. Không phân biệt chữ hoa, chữ thường.</>,
-      <><b>Trả lời số</b>: gõ số đáp án; bé gõ <Code>3,5</Code> hay <Code>3.5</Code> đều được chấm đúng.</>,
-      <><b>Thêm ảnh</b> cho câu hỏi (JPG, PNG, WEBP, GIF, SVG, tối đa 10MB). Ô <b>Lời giải</b> không bắt buộc — có thì hiện ở trang kết quả sau khi bé nộp bài.</>,
+      <>Bấm <b>Thêm câu hỏi</b> (hoặc <b>Ctrl+Enter</b>), rồi chọn <b>Loại câu hỏi</b> — mỗi loại có ví dụ ngay dưới tên:</>,
+      <><b>Trắc nghiệm</b>: 2–6 đáp án, <b>bấm vào chữ cái</b> (A, B, C…) của đáp án đúng. Câu mới chưa chọn sẵn đáp án nào — chưa chọn thì không lưu được. Bấm <b>+ Thêm đáp án</b> khi cần thêm lựa chọn, hoặc <b>Biến thành câu Đúng / Sai</b>.</>,
+      <><b>Chọn nhiều đáp án</b>: bấm vào chữ cái của <b>mọi</b> đáp án đúng — bé phải chọn đủ các đáp án đúng và không chọn thừa mới được tính đúng.</>,
+      <><b>Điền chữ</b>: gõ đáp án đúng; nhiều cách viết được chấp nhận thì ngăn bằng dấu <Code>|</Code>, vd <Code>Hà Nội | Ha Noi</Code>. Không phân biệt chữ hoa, chữ thường.</>,
+      <><b>Điền số</b>: gõ một số; bé gõ <Code>3,5</Code> hay <Code>3.5</Code> đều được chấm đúng. Số nghìn viết liền (<Code>1250</Code>) — viết <Code>1.250</Code> máy sẽ hiểu là 1,25 nên web không cho lưu.</>,
+      <><b>Thêm ảnh</b> cho câu hỏi (JPG, PNG, WEBP, GIF, SVG, tối đa 10MB). Ô <b>Lời giải</b> không bắt buộc — có thì bé xem được sau khi nộp bài.</>,
+      <>Dán cả câu kèm <Code>A.</Code> <Code>B.</Code> <Code>C.</Code> <Code>D.</Code> vào ô <b>Nội dung câu hỏi</b> thì máy tự tách đáp án ra từng ô (có nút <b>Hoàn tác</b> nếu tách sai).</>,
     ],
     tip: (
       <>
-        Công thức toán: bấm các nút trong cột <b>LaTeX nhanh</b> để chèn vào ô đang gõ, hoặc gõ thẳng giữa hai dấu $, vd{" "}
-        <Code>$\frac{"{1}{2}"}$</Code> sẽ hiện thành phân số một phần hai.
+        Phân số, số mũ, căn: bấm nút <b>Phân số</b>, <b>Số mũ</b> hoặc <b>Căn</b> trên ô câu hỏi, điền số vào các ô nhỏ rồi bấm <b>Chèn</b>. Dấu ×, :, ≤, ≥ có sẵn nút. Ô nào có công thức thì ngay dưới có dòng <b>Học sinh sẽ thấy</b> để soát.
       </>
     ),
   },
   {
     id: "dan-ca-de",
-    title: "Nhập nhanh cả đề (không gõ từng câu)",
+    title: "Đưa cả đề vào một lần",
     points: [
-      <>Bấm <b>Dán đề từ văn bản</b> ở đầu trang soạn. Có 3 cách đưa đề vào:</>,
-      <><b>Dán chữ</b> từ Word, Google Docs, trang web vào ô <b>Nội dung đề</b>. Mỗi câu mở đầu bằng <Code>Câu 1.</Code>, đáp án <Code>A.</Code> <Code>B.</Code>… và dòng <Code>Đáp án: B</Code>. Nhiều đáp án đúng: <Code>Đáp án: A, C</Code>. Câu tự luận: chỉ ghi <Code>Đáp án: Hà Nội</Code>. Bấm <b>Chèn ví dụ</b> để xem mẫu.</>,
-      <><b>Tải nội dung từ URL</b>: dán đường link bài trên loigiaihay.com, vietjack.com… rồi bấm <b>Tải về</b>.</>,
-      <><b>Quét ảnh đề — miễn phí</b>: chụp hoặc chọn ảnh đề (chọn nhiều ảnh cho đề nhiều trang). Máy đọc chữ ngay trên điện thoại, không gửi ảnh đi đâu. Nếu có mục <b>Quét ảnh bằng AI</b> thì cách đó đọc được cả đáp án khoanh bằng bút.</>,
-      <>Bấm <b>Phân tích đề</b> để xem trước, rồi chọn <b>Thêm vào danh sách</b> (nối vào các câu đang có) hoặc <b>Thay thế toàn bộ</b>.</>,
+      <>Bấm <b>Dán đề có sẵn</b> hoặc <b>Chụp ảnh đề giấy</b> (hoặc nút <b>Dán / chụp đề có sẵn</b> khi đang soạn). Hộp <b>Đưa đề có sẵn vào</b> mở ra:</>,
+      <><b>Dán đề đã có</b>: dán chữ từ Word, Zalo, trang web. Mỗi câu mở đầu bằng <Code>Câu 1.</Code>, đáp án <Code>A.</Code> <Code>B.</Code>… và dòng <Code>Đáp án: B</Code>. Nhiều đáp án đúng: <Code>Đáp án: A, C</Code>. Câu điền: chỉ ghi <Code>Đáp án: Hà Nội</Code>. Bấm <b>Xem mẫu</b> để xem đề mẫu.</>,
+      <><b>Chụp ảnh đề giấy</b>: chụp hoặc chọn ảnh (chọn nhiều ảnh cho đề nhiều trang). Máy đọc chữ ngay trên điện thoại, chữ đọc được hiện vào ô dán để sửa. Nếu có nút <b>Chụp / chọn ảnh (đọc cả đáp án khoanh)</b> thì cách đó đọc được cả đáp án khoanh bằng bút.</>,
+      <>Bấm <b>Đọc đề</b> để xem trước. Câu thiếu đáp án đúng được tô đỏ. Bấm <b>Đưa … câu vào bài</b>; nếu bài đang có câu thì chọn <b>Thêm vào sau các câu đang có</b> hoặc <b>Thay toàn bộ câu đang có</b>.</>,
+      <>Lấy đề từ trang web (loigiaihay.com, vietjack.com…): mở <b>Cách khác</b> ở cuối hộp, dán địa chỉ trang rồi bấm <b>Lấy đề</b>.</>,
     ],
-    tip: "Quét ảnh miễn phí không nhận ra đáp án khoanh bút, và máy có thể đọc sai vài chữ — luôn xem lại từng câu và tự chọn đáp án đúng trước khi lưu.",
+    tip: "Đề không có dòng “Đáp án:” hoặc ảnh không có dấu khoanh thì các câu đó chưa có đáp án đúng — sau khi đưa vào, bấm chọn đáp án ở những câu có chữ “Chưa xong”.",
   },
   {
     id: "luu",
-    title: "Lưu bài",
+    title: "Kiểm tra và lưu",
     points: [
-      <>Bấm <b>Lưu bài học</b> hoặc <b>Lưu đề kiểm tra</b> (phím tắt <b>Ctrl+S</b>). Bài hiện ngay trên trang lớp để các bé làm.</>,
-      <>Khi đang soạn bài mới, web <b>tự lưu nháp vào trình duyệt</b>: lỡ đóng tab thì mở lại vẫn còn. Nháp chỉ nằm trên máy đang dùng, chưa lên web cho tới khi bấm Lưu.</>,
+      <>Khung <b>Kiểm tra trước khi lưu</b> (trên điện thoại là thanh dưới đáy màn hình) liệt kê chỗ còn thiếu, vd <i>Câu 3: Chưa chọn đáp án đúng</i>. Bấm vào dòng đó để nhảy tới câu cần sửa.</>,
+      <>Bấm <b>Xem như học sinh</b> để làm thử đúng như các bé: chọn đáp án, bấm <b>Kiểm tra</b> xem máy chấm đúng chưa. Bản xem thử không lưu gì.</>,
+      <>Bấm <b>Lưu bài</b> (phím tắt <b>Ctrl+S</b>). Bài hiện ngay trên trang lớp để các bé làm.</>,
+      <>Khi đang soạn bài mới, web <b>tự lưu nháp trên máy</b>: lỡ đóng tab thì mở lại vẫn còn. Nháp chỉ nằm trên máy đang dùng, chưa lên web cho tới khi bấm Lưu.</>,
     ],
   },
   {
@@ -78,9 +90,9 @@ const STEPS: GuideStep[] = [
     title: "Sửa bài hoặc đề đã có",
     points: [
       <>Mở bài như khi làm bài, ở màn đầu bấm <b>Sửa đề</b>.</>,
-      <>Sửa xong bấm <b>Cập nhật bài học</b> / <b>Cập nhật đề kiểm tra</b>. Muốn sửa lần lượt cả chương thì bấm <b>Lưu &amp; sang bài tiếp</b>.</>,
+      <>Sửa xong bấm <b>Lưu thay đổi</b>. Muốn sửa lần lượt cả chương thì bấm <b>Lưu &amp; sang bài tiếp theo</b>. Còn thay đổi chưa lưu thì đầu trang có nhãn <b>Có thay đổi chưa lưu</b>, và web hỏi lại nếu lỡ đóng trang.</>,
     ],
-    tip: "Cập nhật sẽ thay toàn bộ câu hỏi của bài bằng những gì đang có trên màn hình — kiểm tra đủ câu rồi hãy bấm, vì không có nút hoàn tác.",
+    tip: "Lưu thay đổi sẽ thay toàn bộ câu hỏi của bài bằng những gì đang có trên màn hình — kiểm tra đủ câu rồi hãy bấm, vì không có nút hoàn tác.",
   },
   {
     id: "giong-doc",
@@ -98,24 +110,24 @@ const STEPS: GuideStep[] = [
 const FAQ: GuideFaq[] = [
   {
     q: "Soạn trên điện thoại được không?",
-    a: "Được, nhưng gõ nhiều câu thì máy tính tiện hơn. Trên điện thoại, cách nhanh nhất là Quét ảnh đề hoặc Dán đề từ văn bản.",
+    a: "Được. Trên điện thoại cách nhanh nhất là Chụp ảnh đề giấy hoặc Dán đề có sẵn; nút Lưu bài luôn nằm ở thanh dưới đáy màn hình.",
   },
   {
     q: "Dán đề xong không nhận ra câu nào?",
     a: (
       <>
         Kiểm tra mỗi câu có mở đầu bằng <Code>Câu 1.</Code> hoặc <Code>Câu 1:</Code>, và đáp án bắt đầu bằng <Code>A.</Code>{" "}
-        <Code>B.</Code>… Có thể sửa chữ ngay trong ô Nội dung đề rồi bấm Phân tích đề lại.
+        <Code>B.</Code>… Có thể sửa chữ ngay trong ô dán rồi bấm Đọc đề lại.
       </>
     ),
   },
   {
     q: "Lỡ lưu nhầm, có khôi phục bản cũ được không?",
-    a: "Không — web không giữ bản cũ. Nên xem lại trước khi bấm Cập nhật, nhất là với đề đã có nhiều câu.",
+    a: "Không — web không giữ bản cũ. Nên bấm Xem như học sinh để soát trước khi bấm Lưu thay đổi, nhất là với đề đã có nhiều câu.",
   },
   {
     q: "Công thức hiện ra toàn ký hiệu $ \\frac…?",
-    a: "Kiểm tra công thức đã nằm trọn giữa hai dấu $ và đủ cặp ngoặc nhọn { }. Trong trang soạn, đáp án và lời giải có công thức được hiện thử ngay dưới ô gõ để soát trước khi lưu.",
+    a: "Dùng nút Phân số / Số mũ / Căn để máy viết công thức giúp. Nếu tự gõ thì công thức phải nằm trọn giữa hai dấu $ và đủ cặp ngoặc nhọn { }. Ô nào có công thức thì dòng Học sinh sẽ thấy ngay dưới ô cho biết nó hiện ra thế nào.",
   },
 ];
 
