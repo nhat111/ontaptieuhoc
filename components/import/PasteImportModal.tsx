@@ -494,15 +494,18 @@ export default function PasteImportModal({ open, onClose, onImport, focus = "pas
       <div className="mt-3 space-y-3">
         <div>
           <label className="text-sm font-semibold text-slate-700 block mb-1.5">
-            Địa chỉ trang web <span className="font-normal text-slate-400">(vd loigiaihay.com, vietjack.com)</span>
+            Địa chỉ trang web
           </label>
+          <p className="mb-1.5 text-sm text-slate-500">
+            Chỉ lấy đề bạn có quyền sử dụng (đề tự soạn, đề của trường mình). Đề và lời giải trên các trang web khác thuộc bản quyền của họ.
+          </p>
           <div className="flex flex-wrap gap-2">
             <input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !fetchingUrl) { e.preventDefault(); handleFetchUrl(); } }}
-              placeholder="https://loigiaihay.com/..."
+              placeholder="https://..."
               className="flex-1 min-w-[200px] border border-slate-300 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
             />
             <button
