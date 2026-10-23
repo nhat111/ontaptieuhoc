@@ -26,7 +26,7 @@ Sinh đề ~1–2 ms/đề, chạy trên máy, không AI, không DB. Cùng `seed
 ## Lộ trình đã thống nhất với chủ dự án
 
 1. ~~**Toán lớp 1–4 lên cấu trúc đề thật**~~ — **xong.** Lớp 1–2: 6 câu trắc nghiệm + tính 4 ý + "Số?"/tính 4 ý + bài toán 2đ + bài 4 1đ (35 phút); lớp 3–4: 8 + đặt tính 4 ý + 2 ý + bài toán 2đ + bài 4 1đ (40 phút). Mỗi kì một blueprint trong `BLUEPRINTS[lớp][kì]`. Còn có thể làm thêm: đề lớp 1 có tranh minh hoạ cho "viết phép tính thích hợp" (hiện là chữ); hình khối (lập phương, hộp, trụ, cầu) lớp 1–2; bảng số liệu lớp 3.
-2. **Tiếng Việt lớp 4, rồi lớp 3** (vừa) — **lớp 4 xong** (`tvContent4.ts`, cần người duyệt). Lớp 3: thêm một `TvContent` mới vào `TV_CONTENT` trong `lib/exam5/tiengViet.ts`; viết bài đọc mới (tự soạn, không chép SGK), câu LTVC theo chương trình từng lớp. Lớp 1–2: thêm phần chính tả/vần, dùng lại bộ từ `lib/dailySheet.ts`. **Nội dung viết tay phải có người duyệt.**
+2. **Tiếng Việt lớp 4, rồi lớp 3** — **xong** (`tvContent4.ts`, `tvContent3.ts`; cần người duyệt). Lớp 3 dùng chung khuôn đề lớp 4–5 (đọc thành tiếng 3đ + đọc hiểu 7đ, viết một đoạn văn 5–7 câu); đề lớp 3 ngoài đời thường có thêm chính tả nghe – viết trong phần Viết, chưa làm. Lớp 1–2: thêm phần chính tả/vần, dùng lại bộ từ `lib/dailySheet.ts`. **Nội dung viết tay phải có người duyệt.**
 3. **THCS (6–9): không tự sinh** — "Tạo đề nhanh" lấy ngẫu nhiên câu từ các đề thầy cô đã nhập (`lessons.type='exam'` theo lớp/môn), thay vì generator.
 4. Thêm bài đọc cho TV5 (mỗi kì mới 2 bài → hay lặp).
 
