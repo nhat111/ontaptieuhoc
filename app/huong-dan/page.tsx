@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn sử dụng",
   description:
-    "Hướng dẫn phụ huynh dùng Ôn Tập Phổ Thông: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–5.",
+    "Hướng dẫn phụ huynh dùng Ôn Tập Cùng Con: chọn lớp, cho bé làm bài, nghe đọc đề, xem kết quả và lời giải, tải đề in ra giấy, chơi trò chơi lớp 1–5.",
   alternates: { canonical: "/huong-dan" },
 };
 
@@ -159,7 +159,7 @@ export default function ParentGuidePage() {
   return (
     <GuidePage
       title="Hướng dẫn sử dụng"
-      intro="Lần đầu dùng Ôn Tập Phổ Thông? Các bước dưới đây chỉ cho phụ huynh cách dùng — mất khoảng 2 phút đọc."
+      intro="Lần đầu dùng Ôn Tập Cùng Con? Các bước dưới đây chỉ cho phụ huynh cách dùng — mất khoảng 2 phút đọc."
       steps={STEPS}
       faq={FAQ}
       switchTo={{

@@ -83,7 +83,7 @@ export default function TvChuDiemList({ guide }: { guide: TvGuide }) {
       })}
 
       <p className="px-1 text-xs text-slate-400">
-        Hướng dẫn và ví dụ do Ôn Tập Phổ Thông tự soạn theo mục lục sách, không chép sách giáo khoa.
+        Hướng dẫn và ví dụ do Ôn Tập Cùng Con tự soạn theo mục lục sách, không chép sách giáo khoa.
       </p>
     </section>
   );

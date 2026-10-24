@@ -1,6 +1,6 @@
 // lib/exam5/tvContent3.ts
 // Nội dung đề Tiếng Việt lớp 3 — VIẾT TAY, không sinh bằng máy, không chép sách giáo khoa:
-// bài đọc do Ôn Tập Phổ Thông tự soạn theo các chủ điểm của Tiếng Việt 3 (trải nghiệm, trường
+// bài đọc do Ôn Tập Cùng Con tự soạn theo các chủ điểm của Tiếng Việt 3 (trải nghiệm, trường
 // học, gia đình, cộng đồng, thiên nhiên, bài học cuộc sống, đất nước, Trái Đất).
 // CẦN NGƯỜI DUYỆT trước khi coi là xong: máy chỉ soát được hình thức, không soát được ý.
 //

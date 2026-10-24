@@ -36,7 +36,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 
 ### SEO
 - `app/sitemap.ts` (`/sitemap.xml`, dynamic) + `app/robots.ts` (`/robots.txt`)
-- `metadataBase` + title template `%s · Ôn Tập Phổ Thông` + OG/Twitter mặc định trong `app/layout.tsx`
+- `metadataBase` + title template `%s · Ôn Tập Cùng Con` + OG/Twitter mặc định trong `app/layout.tsx`
 - `generateMetadata` cho `/lop/[grade]` (theo môn + `view=exam`, canonical bỏ môn mặc định) và `/quiz` (bài 0 câu → `noindex`)
 - Trang editor/tài khoản (`/import*`, `/progress`, `/nang-cap`) → `robots: { index: false }`
 - Base URL qua `lib/siteUrl.ts` (`NEXT_PUBLIC_SITE_URL` → `VERCEL_*` → localhost)

@@ -71,7 +71,7 @@ export default function Header() {
         <Link href="/" className="flex items-center gap-2 rounded-md">
           <LogoMark size={28} />
           <span className="text-[15px] font-bold tracking-tight text-slate-900 whitespace-nowrap">
-            Ôn Tập <span className="text-blue-600">Phổ Thông</span>
+            Ôn Tập <span className="text-blue-600">Cùng Con</span>
           </span>
         </Link>
 

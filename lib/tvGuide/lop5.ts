@@ -1,6 +1,6 @@
 // lib/tvGuide/lop5.ts
 // Tiếng Việt 5 – Kết nối tri thức: mục lục (nguyên văn) và hướng dẫn cách làm từng dạng bài.
-// Luyện từ và câu: hướng dẫn, ví dụ do Ôn Tập Phổ Thông TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT.
+// Luyện từ và câu: hướng dẫn, ví dụ do Ôn Tập Cùng Con TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT.
 // Viết: lấy dàn ý từ hướng dẫn làm văn lớp 5 (lib/lamVan.ts) và trỏ sang trang chi tiết,
 // để hai nơi không bao giờ lệch nhau.
 // Dùng ngoặc kép cong “ ”. `npx tsx scripts/tv-guide-check.ts` kiểm tra phần máy kiểm được.

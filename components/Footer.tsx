@@ -37,7 +37,7 @@ export default function Footer() {
           <Link href="/" className="inline-flex items-center gap-2">
             <LogoMark size={32} />
             <span className="text-base font-extrabold tracking-tight text-slate-900">
-              Ôn Tập <span className="text-primary-600">Phổ Thông</span>
+              Ôn Tập <span className="text-primary-600">Cùng Con</span>
             </span>
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-600">
@@ -68,7 +68,7 @@ export default function Footer() {
       {/* Dải bản quyền: nền slate-50 tách khỏi phần link nền trắng phía trên */}
       <div className="border-t border-slate-200 bg-slate-50">
         <p className="mx-auto max-w-6xl px-4 py-6 text-center text-xs text-slate-500 sm:text-left">
-          © {new Date().getFullYear()} Ôn Tập Phổ Thông • Phát triển bởi NhatLab
+          © {new Date().getFullYear()} Ôn Tập Cùng Con • Phát triển bởi NhatLab
         </p>
       </div>
     </footer>

@@ -1,6 +1,6 @@
 // lib/tvGuide/lop3.ts
 // Tiếng Việt 3 – Kết nối tri thức: mục lục và hướng dẫn cách làm từng dạng bài.
-// Hướng dẫn và ví dụ do Ôn Tập Phổ Thông TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT nội dung.
+// Hướng dẫn và ví dụ do Ôn Tập Cùng Con TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT nội dung.
 // Dùng ngoặc kép cong “ ”. `npx tsx scripts/tv-guide-check.ts` kiểm tra phần máy kiểm được.
 //
 // Sách lớp 3 xếp khác lớp 4, 5: bài lẻ = Đọc · Nói và nghe / Kể chuyện · Nghe – viết;

@@ -1,6 +1,6 @@
 // lib/tvGuide/lop4.ts
 // Tiếng Việt 4 – Kết nối tri thức: mục lục (nguyên văn) và hướng dẫn cách làm từng dạng bài.
-// Hướng dẫn và ví dụ do Ôn Tập Phổ Thông TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT nội dung.
+// Hướng dẫn và ví dụ do Ôn Tập Cùng Con TỰ VIẾT, không chép sách. CẦN NGƯỜI DUYỆT nội dung.
 // Dùng ngoặc kép cong “ ”. `npx tsx scripts/tv-guide-check.ts` kiểm tra phần máy kiểm được.
 
 import type { TvGuide, TvSkill } from "./types";
