@@ -3,6 +3,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import AudioMapper from "@/components/import/AudioMapper";
 import { getQuestionsFromDB, getLessonMetaFromDB } from "@/lib/db";
+import { lessonRights } from "@/lib/editorAuth";
 
 // Gắn file giọng đọc sinh sẵn cho từng câu của một đề.
 //
@@ -35,9 +36,10 @@ export default async function AudioMapPage({
     );
   }
 
-  const [questions, lesson] = await Promise.all([
+  const [questions, lesson, rights] = await Promise.all([
     getQuestionsFromDB(lessonId),
     getLessonMetaFromDB(lessonId),
+    lessonRights(lessonId),
   ]);
 
   return (
@@ -60,7 +62,11 @@ export default async function AudioMapPage({
           bao nhiêu lần cũng được — không tốn hạn mức của nhà cung cấp nào.
         </p>
 
-        {questions.length === 0 ? (
+        {!rights.canEdit ? (
+          <p className="rounded-2xl bg-white p-4 text-sm text-slate-600">
+            Bài này do người khác soạn — bạn chỉ gắn giọng đọc được cho bài của mình.
+          </p>
+        ) : questions.length === 0 ? (
           <p className="rounded-2xl bg-white p-4 text-sm text-red-500">
             Bài này chưa có câu hỏi nào.
           </p>

@@ -109,7 +109,7 @@ Role prompts: `PROMPTS/*.txt` in this skill folder.
 ## Never
 
 - **Remove or weaken the `/import` lock.** It exists on purpose: `app/import/layout.tsx` for
-  pages, `blockIfNoImportAccess(req)` inside every write route. `/api/update-lesson` wipes and
+  pages, a `require…()` gate from `lib/editorAuth.ts` inside every write route (`requireEditor` / `requireLessonEditor` / `requireLessonDelete` / `requireAdmin`; admin-only pages call `adminOnly()`). `/api/update-lesson` wipes and
   reinserts a lesson's questions and there are no backups
 - **Put access control in `proxy.ts`.** Its manifest ships empty here, so a gate there works
   under `next start` locally and is silently inert on Vercel — see `ai-context/feature-specs/access-control.md`

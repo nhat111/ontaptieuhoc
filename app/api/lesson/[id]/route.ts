@@ -1,7 +1,7 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { blockDeleteUnlessLocked, isImportProtected } from "@/lib/importAuth";
+import { currentEditor, lessonRights, requireLessonDelete } from "@/lib/editorAuth";
 import type { QDraft, QImage, QType } from "@/components/import/QuestionCard";
 
 function decodeImages(explanation: unknown): QImage[] {
@@ -126,8 +126,9 @@ export async function GET(
     durationMinutes: (lesson as any).duration_minutes ?? 15,
     questions: qDrafts,
     type: lesson.type === "exam" ? "exam" : "lesson",
-    // Nút xoá chỉ hiện khi đã đặt mật khẩu (DELETE từ chối nếu chưa) — xem blockDeleteUnlessLocked.
-    canDelete: isImportProtected(),
+    // Ẩn nút Lưu / Xoá với bài của người khác; API ghi vẫn tự kiểm lại.
+    ...(await lessonRights(lessonId)),
+    editorRole: (await currentEditor())?.role ?? null,
   });
 }
 
@@ -140,14 +141,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const blocked = await blockDeleteUnlessLocked(req);
-  if (blocked) return blocked;
-
   const { id } = await params;
   const lessonId = Number(id);
   if (!Number.isInteger(lessonId) || lessonId <= 0) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
+  const gate = await requireLessonDelete(lessonId);
+  if (gate.response) return gate.response;
 
   const { data, error } = await getSupabaseServer()
     .from("lessons")

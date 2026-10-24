@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { createHash } from "crypto";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireEditor } from "@/lib/editorAuth";
 import { AUDIO_BUCKET as BUCKET, ensureAudioBucket } from "@/lib/audioStorage";
 
 // Nhận file giọng đọc sinh sẵn ngoài web (Piper, Audacity, thu âm thật…) và cất
@@ -25,8 +25,8 @@ const ALLOWED = new Map<string, string>([
 ]);
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
 
   let form: FormData;
   try {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
+import { adminOnly } from "@/components/import/AdminOnly";
 import GameVoiceRecorder, { type VoiceGroup } from "@/components/import/GameVoiceRecorder";
 import { GAME_CLIPS } from "@/lib/gameClips";
 import { TONES, WORDS } from "@/lib/vietWords";
@@ -47,7 +48,11 @@ function groupTexts(): VoiceGroup[] {
   ];
 }
 
-export default function GameVoicePage() {
+export const dynamic = "force-dynamic";
+
+export default async function GameVoicePage() {
+  const blocked = await adminOnly();
+  if (blocked) return blocked;
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />

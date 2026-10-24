@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireEditor } from "@/lib/editorAuth";
 
 // Quét ảnh đề (ảnh chụp / scan) thành câu hỏi có cấu trúc bằng Claude vision.
 //
@@ -72,8 +72,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

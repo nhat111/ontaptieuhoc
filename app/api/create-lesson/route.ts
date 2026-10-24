@@ -2,7 +2,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensureDefaultChapterIdResult } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireEditor } from "@/lib/editorAuth";
+import { ownerForNewLesson } from "@/lib/editorRules";
 
 type QImagePayload = { url: string; position: "before" | "after" };
 
@@ -31,8 +32,12 @@ function buildExplanation(q: QPayload): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
+  // Người soạn được mời thì bài mang tên họ (chỉ họ và quản trị sửa được). Quản
+  // trị tạo thì để trống — và không gửi cột này, để DB chưa chạy
+  // supabase/nguoi-soan.sql vẫn tạo bài được như trước.
+  const ownerId = ownerForNewLesson(gate.editor);
 
   const { chapterId, grade, subject, title, indexLabel, questions, type, durationMinutes } =
     await req.json();
@@ -81,6 +86,7 @@ export async function POST(req: NextRequest) {
       order_index: 99,
       type: lessonType,
       duration_minutes: dur,
+      ...(ownerId ? { owner_id: ownerId } : {}),
     })
     .select("id")
     .single();

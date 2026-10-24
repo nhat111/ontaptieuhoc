@@ -30,7 +30,7 @@ App **đọc/ghi hầu hết bảng nội dung qua service role** (`getSupabaseS
 
 ## Khoá ghi hiện tại — không phải RLS
 
-Vì mọi route ghi chạy bằng service role, **RLS không bảo vệ được nội dung**. Cái chặn thật là mật khẩu chung `IMPORT_PASSWORD`: `app/import/layout.tsx` cho trang, `blockIfNoImportAccess(req)` gọi trong từng route `/api/*`. Bỏ trống biến → mở hết. Chi tiết + lý do không chặn ở `proxy.ts`: `feature-specs/access-control.md`.
+Vì mọi route ghi chạy bằng service role, **RLS không bảo vệ được nội dung**. Cái chặn thật là `lib/editorAuth.ts`: mật khẩu chung `IMPORT_PASSWORD` (quản trị) hoặc tài khoản người soạn được mời (bảng `editors`, chỉ sửa bài có `owner_id` của mình); `app/import/layout.tsx` cho trang, cổng `require…()` gọi trong từng route `/api/*`. Bỏ trống biến → mở hết (trừ xoá, góp ý). Chi tiết + lý do không chặn ở `proxy.ts`: `feature-specs/access-control.md`.
 
 ## Future tightening
 

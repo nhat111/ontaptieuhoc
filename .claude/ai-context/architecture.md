@@ -88,7 +88,7 @@
 **Không đặt kiểm tra quyền trong `proxy.ts`.** `next build` để `middleware-manifest.json` rỗng ở repo này, nên trên Vercel proxy **không được đăng ký thành Edge Function**: chặn ở đó chạy đúng khi `next start` dưới máy nhưng im lặng vô hiệu khi deploy — trông như đã khoá mà thực ra mở toang. Đã kiểm bằng tay: cùng commit, cùng env, bản production dưới máy redirect, bản preview trên Vercel thì không.
 
 - **Trang**: `app/import/layout.tsx` (cùng runtime với API route, đọc được env trên Vercel).
-- **API**: mỗi route ghi tự gọi `blockIfNoImportAccess(req)` — `/api/*` không có layout, và đây mới là chỗ nguy hiểm (`update-lesson` xoá sạch câu hỏi rồi chèn lại).
+- **API**: mỗi route ghi tự gọi một cổng `require…()` của `lib/editorAuth.ts` — `/api/*` không có layout, và đây mới là chỗ nguy hiểm (`update-lesson` xoá sạch câu hỏi rồi chèn lại).
 - Trang nhập mật khẩu ở `/import-khoa`, **ngoài** `/import/*`; để bên trong thì chính nó bị chặn → vòng lặp redirect.
 - Chưa đặt `IMPORT_PASSWORD` → mọi cổng đều là no-op, mở như cũ.
 

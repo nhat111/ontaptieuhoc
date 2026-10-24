@@ -1,6 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireEditor } from "@/lib/editorAuth";
 
 const BUCKET = "question-images";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -21,8 +21,8 @@ async function ensureBucket(sb: Sb): Promise<{ error?: string }> {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
 
   let form: FormData;
   try {

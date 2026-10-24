@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireLessonEditor } from "@/lib/editorAuth";
 
 // Gắn / gỡ file giọng đọc cho từng câu hỏi.
 //
@@ -14,9 +14,6 @@ import { blockIfNoImportAccess } from "@/lib/importAuth";
 type Item = { questionId: number; url: string | null };
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
-
   let body: { lessonId?: unknown; items?: unknown };
   try {
     body = await req.json();
@@ -28,6 +25,8 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(lessonId) || lessonId <= 0) {
     return NextResponse.json({ error: "Thiếu mã bài học." }, { status: 400 });
   }
+  const gate = await requireLessonEditor(lessonId);
+  if (gate.response) return gate.response;
 
   const items: Item[] = Array.isArray(body.items)
     ? body.items

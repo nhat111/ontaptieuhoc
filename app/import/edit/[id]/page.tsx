@@ -43,5 +43,23 @@ export default function EditLessonPage() {
     );
   }
 
+  // Người soạn được mời mở bài của người khác (vd từ nút "Sửa đề" ở trang làm bài):
+  // nói rõ thay vì cho sửa rồi bị từ chối lúc bấm Lưu.
+  if (data.canEdit === false) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-md mx-auto px-4 py-16 text-center">
+          <h1 className="text-xl font-extrabold text-slate-900">Bài này do người khác soạn</h1>
+          <p className="mt-2 text-sm text-slate-600">Bạn chỉ sửa được bài do chính mình soạn.</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <a href={`/quiz?lessonId=${data.lessonId}`} className="rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700">Xem bài</a>
+            <a href="/import/bai-cua-toi" className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-bold text-white">Bài của tôi</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return <ImportClient initialData={data} examMode={data.type === "exam"} />;
 }

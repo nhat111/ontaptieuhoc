@@ -13,7 +13,7 @@ import MathText from "@/components/MathText";
 import { insertIntoFocused } from "@/lib/focusedEditor";
 import { NO_ANSWER, draftProblems, encodeCorrectAnswer, isBlankDraft, lessonProblems, type LessonProblem } from "@/lib/importDraft";
 import {
-  AlertCircle, BarChart3, Camera, CheckCircle2, ChevronDown, ClipboardPaste, Eye, HelpCircle, Inbox, Loader2, PencilLine, Plus, Save,
+  AlertCircle, BarChart3, Camera, FolderOpen, Users, CheckCircle2, ChevronDown, ClipboardPaste, Eye, HelpCircle, Inbox, Loader2, PencilLine, Plus, Save,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -30,9 +30,15 @@ export type InitialData = {
   durationMinutes?: number;
   questions: QDraft[];
   type?: "exam" | "lesson";
-  /** Đã đặt IMPORT_PASSWORD — chưa đặt thì API xoá từ chối, nên ẩn nút. */
+  /** Người đang mở được sửa bài này (quản trị, hoặc người soạn là chủ bài) — lib/editorAuth.ts. */
+  canEdit?: boolean;
+  /** Được xoá: như canEdit, và đã đặt IMPORT_PASSWORD (chưa đặt thì API xoá từ chối). */
   canDelete?: boolean;
+  /** Vai của người đang mở (trang sửa lấy từ GET /api/lesson/[id]). */
+  editorRole?: EditorRole;
 };
+
+export type EditorRole = "admin" | "teacher" | null;
 
 const DRAFT_KEY = "ontap_import_draft_v1";
 const EXAM_DRAFT_KEY = "ontap_exam_draft_v1";
@@ -110,7 +116,17 @@ function encodeQuestion(q: QDraft) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ImportClient({ initialData, examMode: examModeProp }: { initialData?: InitialData; examMode?: boolean }) {
+export default function ImportClient({
+  initialData,
+  examMode: examModeProp,
+  editorRole: roleProp,
+}: {
+  initialData?: InitialData;
+  examMode?: boolean;
+  /** Người soạn được mời chỉ thấy "Bài của tôi"; quản trị thấy cả mục quản lý. */
+  editorRole?: EditorRole;
+}) {
+  const editorRole = roleProp ?? initialData?.editorRole ?? null;
   const editMode = !!initialData;
   const examMode = initialData?.type === "exam" || examModeProp === true;
   const draftKey = examMode ? EXAM_DRAFT_KEY : DRAFT_KEY;
@@ -543,12 +559,19 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
             <Link href="/huong-dan/soan-de" target="_blank" className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
               <HelpCircle className="h-4 w-4" aria-hidden /> Hướng dẫn
             </Link>
+            <Link href="/import/bai-cua-toi" className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
+              <FolderOpen className="h-4 w-4" aria-hidden /> {editorRole === "admin" ? "Bài đã soạn" : "Bài của tôi"}
+            </Link>
             {/* Việc của người quản lý trang — gom vào một menu cho khỏi lẫn với công cụ soạn đề. */}
+            {editorRole === "admin" && (
             <details className="relative">
               <summary className={`${ACTION_MD} ${ACTION_SECONDARY} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
                 Quản lý <ChevronDown className="h-4 w-4" aria-hidden />
               </summary>
               <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-pop">
+                <Link href="/import/nguoi-soan" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                  <Users className="h-4 w-4" aria-hidden /> Người soạn đề
+                </Link>
                 <Link href="/import/gop-y" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                   <Inbox className="h-4 w-4" aria-hidden /> Góp ý đã nhận
                 </Link>
@@ -557,6 +580,7 @@ export default function ImportClient({ initialData, examMode: examModeProp }: { 
                 </Link>
               </div>
             </details>
+            )}
             {!fresh && (
               <button onClick={() => openPaste("paste")} className={`${ACTION_MD} ${ACTION_SECONDARY}`}>
                 <ClipboardPaste className="h-4 w-4" aria-hidden /> Dán / chụp đề có sẵn

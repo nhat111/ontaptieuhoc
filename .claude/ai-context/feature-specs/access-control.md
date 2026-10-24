@@ -1,22 +1,42 @@
-# Khoá khu soạn nội dung (`IMPORT_PASSWORD`)
+# Khoá khu soạn nội dung (`IMPORT_PASSWORD` + người soạn được mời)
 
 ## Vì sao
 
 `/import/edit/[id]` mở cho khách, mà `POST /api/update-lesson` **xoá sạch câu hỏi rồi chèn lại**. Ai đoán được id bài là xoá trắng được nội dung, và **không có bản sao lưu nào**.
 
-Cố ý **không** dựng hệ thống tài khoản: đây là site một người quản trị: một mật khẩu chung chặn gần hết rủi ro mà không đẻ thêm bảng, thêm màn hình. Đăng nhập Supabase vẫn tồn tại song song nhưng chỉ phục vụ `/progress` của học sinh, không liên quan gì tới khoá này.
+**Bỏ trống `IMPORT_PASSWORD` thì mọi người là quản trị** (trừ xoá, góp ý — luôn khoá) — dev và bản đang chạy không gãy khi cập nhật.
 
-**Bỏ trống `IMPORT_PASSWORD` thì mọi cổng đều là no-op** — dev và bản đang chạy không gãy khi cập nhật.
+## Hai vai (`lib/editorRules.ts` thuần + `lib/editorAuth.ts` đọc phiên)
+
+| Vai | Vào bằng | Được làm |
+|-----|----------|----------|
+| **Quản trị** | mật khẩu chung `IMPORT_PASSWORD` (cookie `ontap_import`); hoặc mọi người khi chưa đặt mật khẩu | mọi thứ: sửa / xoá mọi bài, xoá chương, mời người soạn, góp ý, thống kê, thu giọng trò chơi, chẩn đoán |
+| **Người soạn được mời** | đăng nhập Supabase bằng email **đã xác nhận** có trong bảng `editors` | tạo bài, đề, chương; sửa / xoá / gắn giọng **chỉ bài có `lessons.owner_id` = mình**; upload ảnh, quét ảnh |
+
+- Bài người soạn tạo mang `owner_id` của họ; quản trị tạo thì **không gửi** cột này (DB chưa chạy SQL vẫn tạo bài được). Bài cũ `owner_id = NULL` = của quản trị — người soạn không đụng được.
+- **Phải đòi email đã xác nhận** (`email_confirmed_at`): nếu Supabase tắt xác nhận, ai cũng đăng ký được bằng email của người được mời.
+- Lần đầu người được mời vào, `editors.user_id` được ghi lại để trang quản lý đếm bài theo người.
+- Thôi mời (xoá khỏi `editors`): bài của họ giữ nguyên `owner_id`, họ hết vào được; quản trị vẫn sửa được.
+- SQL: `supabase/nguoi-soan.sql` (cũng chép ở cuối `schema.sql`). Chưa chạy → `editorStatus().setupMissing`, chỉ còn đường mật khẩu như trước; `/import/nguoi-soan`, `/import/bai-cua-toi`, `/import/kiem-tra` báo cần chạy SQL.
 
 ## Chốt chặn nằm ở đâu
 
 | Bề mặt | Chặn ở |
 |--------|--------|
-| Trang `/import/*` | `app/import/layout.tsx` — redirect `/import-khoa` |
-| Mọi API ghi | `blockIfNoImportAccess(req)` gọi trong **từng route** |
-| Trang nhập mật khẩu | `/import-khoa` — **ngoài** segment `/import` |
+| Trang `/import/*` | `app/import/layout.tsx` → `currentEditor()`, không có thì redirect `/import-khoa` |
+| Trang chỉ quản trị (`gop-y`, `thong-ke`, `kiem-tra`, `giong-tro-choi`, `nguoi-soan`) | `adminOnly()` (`components/import/AdminOnly.tsx`) ngay đầu trang |
+| Trang theo chủ bài (`edit/[id]`, `giong-doc/[id]`, nút ở `chapter/[id]`) | `lessonRights` / `editableLessonIds` — chỉ để ẩn nút, API vẫn tự kiểm |
+| Mọi API ghi | `require…()` của `lib/editorAuth.ts` trong **từng route** |
+| Trang khoá | `/import-khoa` — **ngoài** segment `/import`; nói rõ vì sao chưa vào được (chưa đăng nhập / email chưa mời / chưa xác nhận / chưa chạy SQL) |
 
-Route ghi có gọi: `create-lesson`, `update-lesson`, `chapters` (POST), `upload-image`, `upload-audio`, `lesson-audio`, `ocr-exam`.
+| Route | Cổng |
+|-------|------|
+| `create-lesson`, `chapters` POST, `upload-image`, `upload-audio`, `ocr-exam` | `requireEditor` |
+| `update-lesson`, `lesson-audio` | `requireLessonEditor(lessonId)` |
+| `DELETE /api/lesson/[id]` | `requireLessonDelete` (403 khi chưa đặt mật khẩu) |
+| `DELETE /api/chapters`, `/api/editors`, `feedback/resolve`, `game-audio` POST/DELETE | `requireAdmin` (xoá chương, góp ý: thêm 403 khi chưa đặt mật khẩu) |
+
+Đã kiểm đầu-cuối bằng một Supabase giả (auth + PostgREST) trong phiên làm PR này: khách / email chưa xác nhận / chưa mời → 401; người soạn sửa bài người khác hoặc bài cũ → 403; quản trị qua hết; `owner_id` chỉ gửi khi người soạn tạo.
 
 ## ĐỪNG chặn trong `proxy.ts`
 
@@ -35,7 +55,7 @@ Trông như đã khoá mà thực ra mở toang. Đã kiểm bằng tay: cùng c
 
 ## `/api/*` không có layout
 
-Đây mới là chỗ nội dung bị phá. Chặn mỗi trang là để hở đúng chỗ nguy hiểm nhất, nên mỗi route ghi **tự** gọi `blockIfNoImportAccess`, trả `401` + thông báo tiếng Việt chỉ sang `/import-khoa`.
+Đây mới là chỗ nội dung bị phá. Chặn mỗi trang là để hở đúng chỗ nguy hiểm nhất, nên mỗi route ghi **tự** gọi một hàm `require…()`, trả `401`/`403` + thông báo tiếng Việt.
 
 ## Cơ chế (`lib/importAuth.ts`)
 
@@ -43,7 +63,7 @@ Trông như đã khoá mà thực ra mở toang. Đã kiểm bằng tay: cùng c
 - Token **suy ra được**, không lưu ở đâu → không cần bảng session.
 - Dùng **Web Crypto** (`crypto.subtle`) chứ không phải `node:crypto`, vì hàm này chạy cả trong `proxy.ts` nơi không chắc có API của Node.
 - So sánh bằng `safeEqual` — không phụ thuộc thời gian, không rò rỉ độ dài khớp.
-- `isImportProtected()` false → `hasImportAccess` trả `true` và `blockIfNoImportAccess` trả `null`.
+- `isImportProtected()` false → `hasImportAccess` trả `true` (mọi người là quản trị).
 
 ## API cookie
 
