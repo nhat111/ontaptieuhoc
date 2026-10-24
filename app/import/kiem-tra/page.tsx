@@ -14,16 +14,39 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Row = { grade: number; name: string };
+type Row = { grade: number; name: string; chapters: number; lessons: number; filled: number; questions: number };
 
+type RawSubject = {
+  grade: number;
+  name: string;
+  chapters: { lessons: { questions: { count: number }[] }[] }[] | null;
+};
+
+/**
+ * Môn trong DB kèm số chương / bài / câu — để biết môn bị ẩn là nội dung thật
+ * đang mất khỏi web (cần thêm vào lib/subjects.ts) hay chỉ là dòng trống còn
+ * sót từ dữ liệu mẫu (xoá được). Một truy vấn lồng, không gọi từng môn.
+ */
 async function readSubjects(): Promise<{ rows: Row[] | null; error?: string }> {
   try {
     const { data, error } = await getSupabaseServer()
       .from("subjects")
-      .select("grade, name")
+      .select("grade, name, chapters(lessons(questions(count)))")
       .order("grade");
     if (error) return { rows: null, error: `${error.code ?? ""} ${error.message}`.trim() };
-    return { rows: (data ?? []) as Row[] };
+    const rows = ((data ?? []) as unknown as RawSubject[]).map((s) => {
+      const lessons = (s.chapters ?? []).flatMap((c) => c.lessons ?? []);
+      const counts = lessons.map((l) => l.questions?.[0]?.count ?? 0);
+      return {
+        grade: s.grade,
+        name: s.name,
+        chapters: (s.chapters ?? []).length,
+        lessons: lessons.length,
+        filled: counts.filter((n) => n > 0).length,
+        questions: counts.reduce((a, b) => a + b, 0),
+      };
+    });
+    return { rows };
   } catch (e) {
     return { rows: null, error: e instanceof Error ? e.message : String(e) };
   }
@@ -103,9 +126,11 @@ export default async function ConfigCheckPage() {
 
   const dbOk = subjects.rows !== null;
   const byGrade = new Map<number, string[]>();
+  const stats = new Map<string, Row>();
   for (const r of subjects.rows ?? []) {
     if (!byGrade.has(r.grade)) byGrade.set(r.grade, []);
     byGrade.get(r.grade)!.push(r.name);
+    stats.set(`${r.grade}|${r.name}`, r);
   }
 
   const grades = GRADES.map((g) => {
@@ -120,6 +145,10 @@ export default async function ConfigCheckPage() {
     };
   });
   const totalExtra = grades.reduce((sum, g) => sum + g.extra.length, 0);
+  const hiddenWithContent = grades.reduce(
+    (sum, g) => sum + g.extra.filter((n) => (stats.get(`${g.grade}|${n}`)?.filled ?? 0) > 0).length,
+    0,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -224,10 +253,12 @@ export default async function ConfigCheckPage() {
                 <div key={g.grade} className="rounded-xl border border-gray-100 p-3">
                   <div className="mb-1.5 flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-700">Lớp {g.grade}</span>
-                    {g.extra.length === 0 ? (
-                      <Pill ok>khớp</Pill>
+                    {g.extra.some((n) => (stats.get(`${g.grade}|${n}`)?.filled ?? 0) > 0) ? (
+                      <Pill ok={false}>có môn bị ẩn</Pill>
+                    ) : g.extra.length ? (
+                      <Pill ok>khớp · {g.extra.length} môn trống trong DB</Pill>
                     ) : (
-                      <Pill ok={false}>{g.extra.length} môn bị ẩn</Pill>
+                      <Pill ok>khớp</Pill>
                     )}
                   </div>
                   <p className="text-xs text-gray-600">
@@ -236,12 +267,28 @@ export default async function ConfigCheckPage() {
                   <p className="text-xs text-gray-600">
                     <span className="text-gray-400">DB:</span> {g.db.join(", ") || "(trống)"}
                   </p>
-                  {g.extra.length > 0 && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      ❌ Có trong DB, thiếu trong code: <b>{g.extra.join(", ")}</b> — thêm vào
-                      <code> lib/subjects.ts</code> để hiện lại.
-                    </p>
-                  )}
+                  {g.extra.map((name) => {
+                    const st = stats.get(`${g.grade}|${name}`);
+                    const hasContent = !!st && st.filled > 0;
+                    return hasContent ? (
+                      <p key={name} className="mt-1.5 text-xs text-red-600">
+                        ❌ <b>{name}</b>: có nội dung đang bị ẩn — {st.chapters} chương, {st.filled} bài có câu hỏi
+                        ({st.questions} câu). Thêm môn này vào <code>lib/subjects.ts</code> để hiện lại.
+                      </p>
+                    ) : (
+                      <div key={name} className="mt-1.5 text-xs text-gray-600">
+                        <p>
+                          ○ <b>{name}</b>: không có bài nào có câu hỏi
+                          {st && st.lessons > 0 ? ` (${st.chapters} chương, ${st.lessons} bài trống)` : st && st.chapters > 0 ? ` (${st.chapters} chương trống)` : ""}
+                          {" "}— chỉ là dòng còn sót, web không mất gì. Muốn dọn thì chạy trong Supabase SQL Editor
+                          {st && st.chapters > 0 ? " (xoá luôn các chương, bài trống bên trong)" : ""}:
+                        </p>
+                        <code className="mt-1 block break-all rounded bg-gray-50 px-2 py-1 text-[11px] text-gray-700">
+                          DELETE FROM subjects WHERE grade = {g.grade} AND name = &apos;{name.replace(/'/g, "''")}&apos;;
+                        </code>
+                      </div>
+                    );
+                  })}
                   {g.missing.length > 0 && (
                     <p className="mt-1 text-xs text-amber-600">
                       ⚠ Khai báo trong code nhưng DB chưa có: {g.missing.join(", ")} — sẽ tự tạo khi
@@ -252,7 +299,7 @@ export default async function ConfigCheckPage() {
               ))}
               <p className="pt-1 text-xs font-medium text-gray-600">
                 {totalExtra > 0
-                  ? `Tổng ${totalExtra} môn trong DB đang bị ẩn khỏi web.`
+                  ? `Tổng ${totalExtra} môn trong DB không có trong code — ${hiddenWithContent} môn trong đó có bài thật đang bị ẩn.`
                   : "Không có môn nào bị ẩn."}
               </p>
             </div>
