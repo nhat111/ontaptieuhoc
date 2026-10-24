@@ -1,4 +1,4 @@
-# Workflow Guide — Ôn Tập Phổ Thông
+# Workflow Guide — Ôn Tập Cùng Con
 
 Reference: `.claude/ai-context/` · `CLAUDE.md`
 

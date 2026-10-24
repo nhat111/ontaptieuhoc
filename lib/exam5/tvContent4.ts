@@ -1,6 +1,6 @@
 // lib/exam5/tvContent4.ts
 // Nội dung đề Tiếng Việt lớp 4 — VIẾT TAY, không sinh bằng máy, không chép sách giáo khoa:
-// bài đọc do Ôn Tập Phổ Thông tự soạn theo các chủ điểm của chương trình GDPT 2018
+// bài đọc do Ôn Tập Cùng Con tự soạn theo các chủ điểm của chương trình GDPT 2018
 // (trải nghiệm – khám phá, sáng tạo – ước mơ, yêu thương – nhớ nguồn, quê hương – đoàn kết).
 // CẦN NGƯỜI DUYỆT trước khi coi là xong: máy chỉ soát được hình thức, không soát được ý.
 //

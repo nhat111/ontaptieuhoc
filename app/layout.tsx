@@ -15,7 +15,7 @@ const nunito = Nunito({
   variable: "--font-nunito",
 });
 
-const SITE_NAME = "Ôn Tập Phổ Thông";
+const SITE_NAME = "Ôn Tập Cùng Con";
 const SITE_DESCRIPTION =
   "Nền tảng ôn tập miễn phí cho học sinh Tiểu học và THCS Việt Nam — bài tập và đề kiểm tra lớp 1 đến lớp 9, bám sát sách giáo khoa, làm bài và chấm điểm ngay trên web.";
 

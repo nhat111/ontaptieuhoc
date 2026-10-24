@@ -1,6 +1,6 @@
 // lib/exam5/tvContent1.ts
 // Nội dung đề Tiếng Việt lớp 1 — VIẾT TAY, không sinh bằng máy, không chép sách giáo khoa:
-// bài đọc do Ôn Tập Phổ Thông tự soạn theo chủ đề của Tiếng Việt 1 (gia đình, bạn bè, trường
+// bài đọc do Ôn Tập Cùng Con tự soạn theo chủ đề của Tiếng Việt 1 (gia đình, bạn bè, trường
 // học, thiên nhiên, quê hương). CẦN NGƯỜI DUYỆT trước khi coi là xong.
 //
 // Quy tắc (scripts/tv12-check.ts kiểm tra phần máy kiểm được):

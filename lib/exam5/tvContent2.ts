@@ -1,6 +1,6 @@
 // lib/exam5/tvContent2.ts
 // Nội dung đề Tiếng Việt lớp 2 — VIẾT TAY, không sinh bằng máy, không chép sách giáo khoa:
-// bài đọc do Ôn Tập Phổ Thông tự soạn theo chủ điểm của Tiếng Việt 2 (em lớn lên từng ngày,
+// bài đọc do Ôn Tập Cùng Con tự soạn theo chủ điểm của Tiếng Việt 2 (em lớn lên từng ngày,
 // đi học vui sao, mái ấm gia đình, vẻ đẹp quanh em, hành tinh xanh, nghề nghiệp, quê hương).
 // CẦN NGƯỜI DUYỆT trước khi coi là xong.
 //

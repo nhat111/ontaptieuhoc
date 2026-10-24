@@ -7,7 +7,7 @@ import { CONTACT, hasContact } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Góp ý & liên hệ",
-  description: "Gửi góp ý, báo lỗi hoặc liên hệ với Ôn Tập Phổ Thông. Không cần đăng nhập.",
+  description: "Gửi góp ý, báo lỗi hoặc liên hệ với Ôn Tập Cùng Con. Không cần đăng nhập.",
   alternates: { canonical: "/gop-y" },
 };
 
