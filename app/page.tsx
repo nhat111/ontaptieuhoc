@@ -8,7 +8,8 @@ import TryQuestion from "@/components/home/TryQuestion";
 import HeroArt from "@/components/home/HeroArt";
 import { SCHOOL_LEVELS, getSubjects } from "@/lib/subjects";
 import { getGradeStats } from "@/lib/db";
-import { SGK_BOOKS, TV_BOOKS, hidesOldLessons, sgkLessons, sgkReady } from "@/lib/sgk";
+import { SGK_BOOKS, TV_BOOKS, freshSeed, hidesOldLessons, sgkLessons, sgkReady } from "@/lib/sgk";
+import { pickTryQuestions } from "@/lib/tryQuestions";
 
 // Số bài/đề đếm từ DB; làm mới mỗi 5 phút là đủ, không cần truy vấn mỗi lượt xem.
 export const revalidate = 300;
@@ -21,6 +22,8 @@ export default async function HomePage() {
     const s = (stats[b.grade] ??= { lessons: 0, exams: 0 });
     s.lessons += sgkLessons(b.grade, b.slug).filter((x) => sgkReady(b.grade, x.lesson, b.slug)).length;
   }
+  // Câu làm thử chọn lại mỗi lần trang làm mới (revalidate ở trên).
+  const tryQuestions = pickTryQuestions(freshSeed());
   const total = Object.values(stats).reduce((n, g) => n + g.lessons + g.exams, 0);
 
   // Chỉ ghi những gì web thật sự làm được.
@@ -98,7 +101,7 @@ export default async function HomePage() {
           <div className="relative lg:col-start-2 lg:row-span-2 lg:row-start-1">
             <HeroArt className="mx-auto -mb-10 hidden h-auto w-full max-w-md lg:block" />
             <div id="try-question" className="relative">
-              <TryQuestion />
+              <TryQuestion questions={tryQuestions} />
             </div>
           </div>
 
