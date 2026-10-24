@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { SITE_URL } from "@/lib/siteUrl";
 
 // Nunito: nét bo tròn thân thiện, chữ a/g một tầng dễ đọc cho bé, có đủ dấu
@@ -82,6 +83,7 @@ export default function RootLayout({
       <body className="leading-relaxed">
         {children}
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
