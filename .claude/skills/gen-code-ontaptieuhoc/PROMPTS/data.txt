@@ -1,6 +1,6 @@
 [ROLE: DATA_ENGINEER]
 
-Work with quiz/import data for Ôn Tập Phổ Thông.
+Work with quiz/import data for Ôn Tập Cùng Con.
 
 Source of truth: Supabase (not local JSON files).
 

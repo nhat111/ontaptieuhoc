@@ -4,7 +4,7 @@ import GuidePage, { type GuideFaq, type GuideStep } from "@/components/guide/Gui
 export const metadata: Metadata = {
   title: "Hướng dẫn soạn bài và đề kiểm tra",
   description:
-    "Hướng dẫn thầy cô, phụ huynh soạn bài học và đề kiểm tra trên Ôn Tập Phổ Thông: gõ câu hỏi, dán cả đề, quét ảnh đề, thêm ảnh và công thức, sửa đề, gắn giọng đọc.",
+    "Hướng dẫn thầy cô, phụ huynh soạn bài học và đề kiểm tra trên Ôn Tập Cùng Con: gõ câu hỏi, dán cả đề, quét ảnh đề, thêm ảnh và công thức, sửa đề, gắn giọng đọc.",
   alternates: { canonical: "/huong-dan/soan-de" },
 };
 

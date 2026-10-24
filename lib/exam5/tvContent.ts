@@ -1,6 +1,6 @@
 // lib/exam5/tvContent.ts
 // Nội dung đề Tiếng Việt lớp 5 — VIẾT TAY, không sinh bằng máy, không chép sách giáo khoa:
-// bài đọc do Ôn Tập Phổ Thông tự soạn theo các chủ điểm của chương trình GDPT 2018.
+// bài đọc do Ôn Tập Cùng Con tự soạn theo các chủ điểm của chương trình GDPT 2018.
 //
 // Quy tắc khi thêm/sửa (scripts/exam5-check.ts kiểm tra phần máy kiểm được):
 //   • Mỗi câu trắc nghiệm có đúng MỘT đáp án đúng; đáp án nhiễu phải sai rõ ràng.

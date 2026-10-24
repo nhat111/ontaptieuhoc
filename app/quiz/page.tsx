@@ -35,7 +35,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   const description = questions.length
     ? `${lesson.title}${context ? ` — ${context}` : ""}: ${questions.length} câu hỏi, ${lesson.durationMinutes ?? 15} phút. Làm bài trực tuyến miễn phí, chấm điểm ngay và xem lời giải từng câu.`
-    : `${lesson.title}${context ? ` — ${context}` : ""} trên Ôn Tập Phổ Thông.`;
+    : `${lesson.title}${context ? ` — ${context}` : ""} trên Ôn Tập Cùng Con.`;
 
   return {
     title: lesson.title,

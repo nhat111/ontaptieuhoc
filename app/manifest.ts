@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // có biểu tượng sách xanh. Không có service worker — site vẫn cần mạng.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Ôn Tập Phổ Thông",
+    name: "Ôn Tập Cùng Con",
     short_name: "Ôn Tập",
     description: "Bài tập, đề kiểm tra, phiếu in và trò chơi học tập lớp 1–9. Miễn phí.",
     lang: "vi",
