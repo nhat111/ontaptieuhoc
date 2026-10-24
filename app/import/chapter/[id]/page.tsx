@@ -6,6 +6,7 @@ import { BookOpen, Eye, FilePlus2, Lock, Pencil, Plus } from "lucide-react";
 import { DeleteChapterButton, DeleteLessonButton } from "@/components/import/DeleteButtons";
 import { ACTION_MD, ACTION_PRIMARY, ACTION_SECONDARY, ACTION_SM } from "@/components/import/actionStyles";
 import { isImportProtected } from "@/lib/importAuth";
+import { currentEditor, editableLessonIds } from "@/lib/editorAuth";
 
 // Editor dashboard — nothing to index.
 export const metadata: Metadata = {
@@ -47,7 +48,12 @@ export default async function ChapterDashboardPage({
     );
   }
 
-  // Chưa đặt mật khẩu thì API xoá từ chối (blockDeleteUnlessLocked) — ẩn nút luôn.
+  // Chưa đặt mật khẩu thì API xoá từ chối — ẩn nút luôn. Người soạn được mời
+  // chỉ sửa / xoá bài của mình; xoá cả chương (chứa bài của người khác) là việc
+  // của quản trị. API vẫn tự kiểm lại, đây chỉ là để không hiện nút bấm vào bị từ chối.
+  const editor = await currentEditor();
+  const isAdmin = editor?.role === "admin";
+  const editable = editor ? await editableLessonIds(editor, lessons.map((l) => l.id)) : new Set<number>();
   const canDelete = isImportProtected();
   const filled = lessons.filter((l) => l.questionCount > 0).length;
   const empty = lessons.length - filled;
@@ -98,7 +104,7 @@ export default async function ChapterDashboardPage({
               <FilePlus2 className="h-4 w-4" aria-hidden />
               Tạo đề
             </Link>
-            {canDelete && (
+            {canDelete && isAdmin && (
               <DeleteChapterButton
                 chapterId={chapterId}
                 title={ctx.chapterTitle}
@@ -109,7 +115,7 @@ export default async function ChapterDashboardPage({
           </div>
         </div>
 
-        {!canDelete && (
+        {!canDelete && isAdmin && (
           <p className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
             Nút xoá bài / xoá chương đang ẩn vì chưa đặt mật khẩu soạn đề (IMPORT_PASSWORD trên Vercel). Đặt mật khẩu xong thì chỉ ai nhập đúng mật khẩu mới xoá được.
@@ -153,11 +159,15 @@ export default async function ChapterDashboardPage({
                       <Eye className="h-3.5 w-3.5" aria-hidden />
                       Xem
                     </Link>
-                    <Link href={`/import/edit/${l.id}`} className={`${ACTION_SM} ${ACTION_PRIMARY}`}>
-                      <Pencil className="h-3.5 w-3.5" aria-hidden />
-                      {filled ? "Sửa" : "Nhập"}
-                    </Link>
-                    {canDelete && (
+                    {editable.has(l.id) ? (
+                      <Link href={`/import/edit/${l.id}`} className={`${ACTION_SM} ${ACTION_PRIMARY}`}>
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                        {filled ? "Sửa" : "Nhập"}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-slate-500" title="Bạn chỉ sửa được bài của mình">Người khác soạn</span>
+                    )}
+                    {canDelete && editable.has(l.id) && (
                       <DeleteLessonButton
                         lessonId={l.id}
                         title={l.title}

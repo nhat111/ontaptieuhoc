@@ -130,7 +130,7 @@ Xem `tts-audio.md`. Tóm tắt: `/import/giong-doc/[id]` ghép file theo **số 
 | POST | `/api/upload-audio` | multipart file audio |
 | POST | `/api/lesson-audio` | Merge `audioUrl` vào `explanation` |
 
-Mọi route ghi ở trên tự gọi `blockIfNoImportAccess(req)`.
+Mọi route ghi ở trên tự gọi một cổng `require…()` của `lib/editorAuth.ts` (quản trị / người soạn được mời — xem `access-control.md`).
 
 ## Chapter dashboard
 `/import/chapter/[id]` — server page: `getChapterContext` + `getLessonsInChapter`, thống kê bài đã có câu / trống, link sửa từng bài.

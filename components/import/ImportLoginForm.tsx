@@ -32,7 +32,6 @@ export default function ImportLoginForm({ next }: { next: string }) {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        autoFocus
         placeholder="Mật khẩu"
         className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
       />

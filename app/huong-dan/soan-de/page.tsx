@@ -21,7 +21,8 @@ const STEPS: GuideStep[] = [
     title: "Vào khu soạn đề",
     points: [
       <>Bấm nút <b>Mở khu soạn đề</b> ngay dưới đây (hoặc gõ địa chỉ <Code>/import</Code>, nên lưu lại làm dấu trang). Nếu đã đăng nhập thì mở menu tài khoản, chọn <b>Tạo bài học</b> hoặc <b>Tạo đề kiểm tra</b>.</>,
-      <>Nếu web yêu cầu <b>Nhập mật khẩu</b>, hãy hỏi người quản trị web mật khẩu soạn đề. Phần làm bài của các bé vẫn mở bình thường, không cần mật khẩu.</>,
+      <>Trang <b>Khu soạn đề</b> có hai lối vào. <b>Thầy cô được mời soạn đề</b>: bấm <b>Đăng nhập bằng email</b> và dùng <b>đúng email đã được mời</b> (chưa có tài khoản thì chọn <b>Đăng ký</b>, rồi bấm đường link xác nhận trong hộp thư). <b>Người quản trị</b>: nhập mật khẩu soạn đề chung.</>,
+      <>Người được mời chỉ sửa, xoá được <b>bài do chính mình soạn</b> — xem lại ở nút <b>Bài của tôi</b> đầu trang soạn. Phần làm bài của các bé vẫn mở bình thường, không cần đăng nhập.</>,
       <><b>Bài học</b> là bài luyện theo chương. <b>Đề kiểm tra</b> hiện ở mục Đề kiểm tra và trong kho đề, có thời gian làm bài.</>,
     ],
     cta: { href: "/import", label: "Mở khu soạn đề" },
@@ -108,6 +109,14 @@ const STEPS: GuideStep[] = [
 ];
 
 const FAQ: GuideFaq[] = [
+  {
+    q: "Muốn mời thêm người cùng soạn đề?",
+    a: "Người quản trị vào khu soạn đề, mở Quản lý → Người soạn đề, dán email của từng người rồi bấm Mời soạn đề. Trang đó có sẵn hướng dẫn để gửi cho người được mời. Bấm Thôi mời thì người đó hết vào được; bài họ đã soạn vẫn giữ nguyên.",
+  },
+  {
+    q: "Mở bài thấy “Bài này do người khác soạn”?",
+    a: "Mỗi người được mời chỉ sửa được bài của mình, để không ai lỡ tay sửa nhầm bài của người khác. Cần sửa thì nhờ người soạn bài đó hoặc người quản trị.",
+  },
   {
     q: "Soạn trên điện thoại được không?",
     a: "Được. Trên điện thoại cách nhanh nhất là Chụp ảnh đề giấy hoặc Dán đề có sẵn; nút Lưu bài luôn nằm ở thanh dưới đáy màn hình.",

@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { IMPORT_COOKIE, hasImportAccess, isImportProtected } from "@/lib/importAuth";
+import { currentEditor } from "@/lib/editorAuth";
 
 // Chặn khu soạn nội dung ngay trong layout, KHÔNG dùng `proxy.ts`.
 //
@@ -22,11 +21,8 @@ export default async function ImportLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (isImportProtected()) {
-    const jar = await cookies();
-    if (!(await hasImportAccess(jar.get(IMPORT_COOKIE)?.value))) {
-      redirect("/import-khoa");
-    }
-  }
+  // Quản trị (mật khẩu chung, hoặc chưa đặt mật khẩu) hoặc người soạn được mời
+  // (lib/editorAuth.ts). Trang chỉ dành cho quản trị tự chặn thêm bằng AdminOnly.
+  if (!(await currentEditor())) redirect("/import-khoa");
   return <>{children}</>;
 }

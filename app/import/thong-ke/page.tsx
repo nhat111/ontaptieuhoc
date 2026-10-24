@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
+import { adminOnly } from "@/components/import/AdminOnly";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { USAGE_EVENTS, type UsageEventName } from "@/lib/usage";
 
@@ -69,6 +70,8 @@ function tally<T extends string | number>(items: T[]): [T, number][] {
 }
 
 export default async function UsageStatsPage() {
+  const blocked = await adminOnly();
+  if (blocked) return blocked;
   const { totals, rows, truncated, error } = await load();
   const used = totals.filter((t) => t.month > 0);
   const byGrade = tally(rows.filter((r) => r.grade).map((r) => r.grade as number));

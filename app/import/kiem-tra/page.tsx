@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
+import { adminOnly } from "@/components/import/AdminOnly";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { GRADES, getSubjects } from "@/lib/subjects";
 
@@ -40,6 +41,21 @@ async function countTable(table: "chapters" | "lessons" | "questions") {
   }
 }
 
+/** Đã chạy supabase/nguoi-soan.sql chưa (bảng editors + cột lessons.owner_id). */
+async function checkEditorsSetup(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const sb = getSupabaseServer();
+    const [a, b] = await Promise.all([
+      sb.from("editors").select("email", { count: "exact", head: true }),
+      sb.from("lessons").select("owner_id", { count: "exact", head: true }),
+    ]);
+    const err = a.error ?? b.error;
+    return err ? { ok: false, error: `${err.code ?? ""} ${err.message}`.trim() } : { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
     <span
@@ -73,13 +89,16 @@ function readTarget() {
 }
 
 export default async function ConfigCheckPage() {
+  const blocked = await adminOnly();
+  if (blocked) return blocked;
   const target = readTarget();
 
-  const [subjects, chapters, lessons, questions] = await Promise.all([
+  const [subjects, chapters, lessons, questions, editorsSetup] = await Promise.all([
     readSubjects(),
     countTable("chapters"),
     countTable("lessons"),
     countTable("questions"),
+    checkEditorsSetup(),
   ]);
 
   const dbOk = subjects.rows !== null;
@@ -110,6 +129,20 @@ export default async function ConfigCheckPage() {
         <p className="text-sm text-gray-500 mb-6">
           Trang chẩn đoán — mở được trên điện thoại, không cần chạy lệnh. Chỉ đọc, không sửa gì.
         </p>
+
+        {/* Nhiều người soạn */}
+        <section className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+          <h2 className="text-sm font-bold text-gray-700 mb-2">Nhiều người soạn đề</h2>
+          <p className="text-xs text-gray-600">
+            Bảng <code>editors</code> và cột <code>lessons.owner_id</code>:{" "}
+            {editorsSetup.ok ? <Pill ok>đã có</Pill> : <Pill ok={false}>chưa có</Pill>}
+          </p>
+          {!editorsSetup.ok && (
+            <p className="mt-1 text-[11px] text-gray-500">
+              Chạy file <code>supabase/nguoi-soan.sql</code> trong Supabase SQL Editor. ({editorsSetup.error})
+            </p>
+          )}
+        </section>
 
         {/* Kết nối DB */}
         <section className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">

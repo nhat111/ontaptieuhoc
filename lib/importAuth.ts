@@ -61,45 +61,5 @@ export async function checkPassword(input: unknown): Promise<boolean> {
   return typeof input === "string" && safeEqual(input, pass);
 }
 
-/**
- * Chặn route XOÁ khi chưa có quyền — và từ chối luôn khi chưa đặt mật khẩu.
- *
- * Khác `blockIfNoImportAccess` (chưa đặt mật khẩu thì mở): xoá không có thùng
- * rác, không khôi phục được, nên không để ai vào trang `/import/chapter/[id]`
- * là xoá được cả chương. Giống hộp thư góp ý (`/api/feedback/resolve`).
- */
-export async function blockDeleteUnlessLocked(req: Request): Promise<Response | null> {
-  if (!isImportProtected()) {
-    return new Response(
-      JSON.stringify({ error: "Chưa đặt mật khẩu soạn đề (IMPORT_PASSWORD) nên chức năng xoá đang khoá." }),
-      { status: 403, headers: { "content-type": "application/json" } }
-    );
-  }
-  return blockIfNoImportAccess(req);
-}
-
-/**
- * Chặn route ghi dữ liệu khi chưa có quyền. Trả về `null` nghĩa là cho đi tiếp.
- *
- * Bắt buộc phải gọi ở TỪNG route ghi: `proxy.ts` không chạy cho `/api/*`, nên
- * chặn mỗi giao diện là để hở đúng chỗ nguy hiểm nhất — API xoá và ghi đè.
- */
-export async function blockIfNoImportAccess(
-  req: Request
-): Promise<Response | null> {
-  if (!isImportProtected()) return null;
-
-  const cookie = req.headers
-    .get("cookie")
-    ?.split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${COOKIE}=`))
-    ?.slice(COOKIE.length + 1);
-
-  if (await hasImportAccess(cookie)) return null;
-
-  return new Response(
-    JSON.stringify({ error: "Cần mật khẩu để sửa nội dung. Vào /import-khoa để nhập." }),
-    { status: 401, headers: { "content-type": "application/json" } }
-  );
-}
+// Chặn từng route ghi: xem lib/editorAuth.ts (require…), nơi gộp mật khẩu chung
+// này với tài khoản người soạn được mời.

@@ -3,7 +3,8 @@ import { ensureSubjectId } from "@/lib/db";
 import { getSubjects } from "@/lib/subjects";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { blockDeleteUnlessLocked, blockIfNoImportAccess } from "@/lib/importAuth";
+import { isImportProtected } from "@/lib/importAuth";
+import { requireAdmin, requireEditor } from "@/lib/editorAuth";
 
 // Chapters are addressed by (grade, subject name) — the subject catalogue lives
 // in lib/subjects.ts, so the client never has to know a `subjects.id`.
@@ -33,8 +34,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
 
   const { grade, subject: rawSubject, title } = await req.json();
   const subject = readSubject(Number(grade), rawSubject ?? null);
@@ -72,8 +73,13 @@ export async function POST(req: NextRequest) {
  * (ON DELETE CASCADE). Giao diện hỏi xác nhận kèm số bài trước khi gọi.
  */
 export async function DELETE(req: NextRequest) {
-  const blocked = await blockDeleteUnlessLocked(req);
-  if (blocked) return blocked;
+  // Một chương chứa bài của nhiều người soạn — chỉ quản trị xoá, và chỉ khi đã
+  // đặt mật khẩu (xoá không khôi phục được, không bao giờ mở cho mọi người).
+  if (!isImportProtected()) {
+    return NextResponse.json({ error: "Chưa đặt mật khẩu soạn đề (IMPORT_PASSWORD) nên chức năng xoá đang khoá." }, { status: 403 });
+  }
+  const gate = await requireAdmin();
+  if (gate.response) return gate.response;
 
   const id = Number(req.nextUrl.searchParams.get("id"));
   if (!Number.isInteger(id) || id <= 0) {

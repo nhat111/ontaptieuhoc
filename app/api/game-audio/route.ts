@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { blockIfNoImportAccess } from "@/lib/importAuth";
+import { requireAdmin } from "@/lib/editorAuth";
 import { AUDIO_BUCKET, ensureAudioBucket } from "@/lib/audioStorage";
 import { GAME_TEXTS, RECORD_DIR, clipSlug, recordingPath } from "@/lib/gameRecordings";
 
@@ -41,8 +41,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  // Giọng đọc trò chơi dùng chung cho cả site — chỉ quản trị thu / xoá.
+  const gate = await requireAdmin();
+  if (gate.response) return gate.response;
 
   let form: FormData;
   try {
@@ -90,8 +91,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const blocked = await blockIfNoImportAccess(req);
-  if (blocked) return blocked;
+  // Giọng đọc trò chơi dùng chung cho cả site — chỉ quản trị thu / xoá.
+  const gate = await requireAdmin();
+  if (gate.response) return gate.response;
 
   const text = req.nextUrl.searchParams.get("text");
   if (!text || !GAME_TEXTS.includes(text)) {

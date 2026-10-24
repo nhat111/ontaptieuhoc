@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import ResolveButton from "@/components/feedback/ResolveButton";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { reasonLabel } from "@/lib/feedback";
-import { IMPORT_COOKIE, hasImportAccess, isImportProtected } from "@/lib/importAuth";
+import { isImportProtected } from "@/lib/importAuth";
+import { adminOnly } from "@/components/import/AdminOnly";
 
 // Hộp thư góp ý cho người quản lý — nằm trong /import nên có khoá mật khẩu
 // (app/import/layout.tsx). Đọc bằng service role vì bảng feedback bật RLS.
@@ -74,11 +73,11 @@ function when(iso: string) {
 export default async function FeedbackInboxPage({ searchParams }: { searchParams: Promise<{ tat_ca?: string }> }) {
   // Góp ý chứa SĐT/email người dùng để lại, nên khác phần còn lại của /import:
   // chưa đặt mật khẩu thì KHÔNG mở cho ai cả (không theo kiểu "chưa đặt → mở").
-  // Kiểm tra cookie lại ở đây chứ không chỉ trông vào layout, để trang này tự
-  // đứng vững nếu sau này ai đó chuyển nó ra khỏi /import.
+  // Chỉ quản trị: người soạn được mời qua được layout nhưng không được đọc
+  // thông tin liên lạc của phụ huynh. Tự kiểm ở đây, không chỉ trông vào layout.
   if (!isImportProtected()) return <Locked />;
-  const jar = await cookies();
-  if (!(await hasImportAccess(jar.get(IMPORT_COOKIE)?.value))) redirect("/import-khoa");
+  const blocked = await adminOnly();
+  if (blocked) return blocked;
 
   const { tat_ca } = await searchParams;
   const showAll = tat_ca === "1";
