@@ -13,6 +13,12 @@ const META = {
       "Tạo phiếu bài tập Toán tiểu học theo chủ đề: chọn lớp, số câu, số đề; tải Word hoặc in PDF kèm đáp án và lời giải. Miễn phí.",
     url: "/phieu-bai-tap",
   },
+  "tieng-viet": {
+    title: "Phiếu bài tập Tiếng Việt lớp 2, lớp 3 in được",
+    description:
+      "Phiếu bài tập Tiếng Việt lớp 2, lớp 3 theo chủ đề: chính tả, từ chỉ sự vật – hoạt động – đặc điểm, từ trái nghĩa, so sánh, câu kể – câu hỏi – câu cảm – câu khiến, Khi nào? Ở đâu? Bằng gì?, dấu câu. Tải Word hoặc in PDF kèm đáp án. Miễn phí.",
+    url: "/phieu-bai-tap?loai=tieng-viet",
+  },
   "hang-ngay": {
     title: "Phiếu luyện hằng ngày Toán, Tiếng Việt lớp 1, lớp 2",
     description:
@@ -28,7 +34,7 @@ const META = {
 } as const;
 
 type Tab = keyof typeof META;
-const tabOf = (loai?: string): Tab => (loai === "hang-ngay" || loai === "ai" ? loai : "chu-de");
+const tabOf = (loai?: string): Tab => (loai === "hang-ngay" || loai === "ai" || loai === "tieng-viet" ? loai : "chu-de");
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ loai?: string }> }): Promise<Metadata> {
   const m = META[tabOf((await searchParams).loai)];
@@ -41,7 +47,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 }
 
 const TABS = [
-  { key: "chu-de", label: "Phiếu theo chủ đề", sub: "Toán lớp 1–5, trắc nghiệm + tự luận" },
+  { key: "chu-de", label: "Toán theo chủ đề", sub: "Lớp 1–5, trắc nghiệm + tự luận" },
+  { key: "tieng-viet", label: "Tiếng Việt", sub: "Lớp 2, 3 theo chủ đề" },
   { key: "hang-ngay", label: "Phiếu luyện hằng ngày", sub: "Toán, Tiếng Việt lớp 1, 2" },
   { key: "ai", label: "Hoạt động AI", sub: "Lớp 4, 5 · QĐ 2422" },
 ] as const;
@@ -67,7 +74,7 @@ export default async function WorksheetPage({ searchParams }: { searchParams: Pr
           <p className="text-sm text-slate-600 sm:text-base">
             Chọn loại phiếu, bấm tạo phiếu rồi tải Word hoặc in PDF cho bé làm trên giấy.
           </p>
-          <div className="mt-6 grid grid-cols-3 gap-1 sm:gap-2 rounded-2xl bg-white/80 p-1.5 shadow-soft ring-1 ring-primary-100 backdrop-blur">
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-2 rounded-2xl bg-white/80 p-1.5 shadow-soft ring-1 ring-primary-100 backdrop-blur">
             {TABS.map((t) => (
               <Link
                 key={t.key}
@@ -84,7 +91,8 @@ export default async function WorksheetPage({ searchParams }: { searchParams: Pr
           </div>
         </div>
       </section>
-      {tab === "hang-ngay" ? <DailySheetClient /> : tab === "ai" ? <AiSheetClient /> : <WorksheetClient />}
+      {tab === "hang-ngay" ? <DailySheetClient /> : tab === "ai" ? <AiSheetClient />
+        : tab === "tieng-viet" ? <WorksheetClient key="tv" subject="tieng-viet" /> : <WorksheetClient key="toan" />}
     </div>
   );
 }
