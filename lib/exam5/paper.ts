@@ -22,7 +22,7 @@ export interface PaperQuestion {
   lines?: number;
   /** Câu mở: in ra, không chấm trên máy. `answerHint` là gợi ý đáp án cho hướng dẫn chấm. */
   open?: { answerHint: string };
-  /** Câu trắc nghiệm chỉ làm trên giấy (VD nghe: người lớn đọc lời), không vào bài làm trên máy. */
+  /** Câu trắc nghiệm chỉ làm trên giấy (VD câu nghe chưa có file: người lớn đọc lời), không vào bài làm trên máy. */
   printOnly?: boolean;
   /** Lời đọc cho câu nghe — in ở hướng dẫn chấm (và trang dành cho người coi thi). */
   script?: string;

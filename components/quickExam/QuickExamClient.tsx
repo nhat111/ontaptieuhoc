@@ -204,7 +204,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
               {spec.subject === "Tiếng Việt"
                 ? "Bài đọc và câu hỏi do Ôn Tập Cùng Con tự soạn theo chủ điểm sách giáo khoa; mỗi lần bấm chọn bài đọc, câu hỏi và đề văn khác. Câu viết và bài tập làm văn chấm trên giấy."
                 : spec.subject === "Tiếng Anh"
-                ? "Câu hỏi và bài đọc do Ôn Tập Cùng Con tự soạn theo chủ đề, mẫu câu của từng Unit sách Global Success; mỗi lần bấm ra một đề mới. Phần Listening: người lớn đọc lời in ở trang hướng dẫn chấm, mỗi câu hai lần. Listening và Speaking chấm trên giấy."
+                ? "Câu hỏi và bài đọc do Ôn Tập Cùng Con tự soạn theo chủ đề, mẫu câu của từng Unit sách Global Success; mỗi lần bấm ra một đề mới. Phần Listening: làm trên máy thì bé bấm Nghe hội thoại ở mỗi câu; làm trên giấy thì người lớn đọc lời in ở trang hướng dẫn chấm, mỗi câu hai lần. Speaking chấm trên giấy."
                 : "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một đề mới. Đề theo cấu trúc đề giấy (trắc nghiệm, tự luận, có hình vẽ) và thứ tự các chủ đề thường gặp trong sách giáo khoa; đề của trường có thể khác đôi chút."}
             </p>
             {spec.subject === "Tiếng Việt" && grade === 5 && (
