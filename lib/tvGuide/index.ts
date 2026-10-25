@@ -1,6 +1,7 @@
 // lib/tvGuide/index.ts — hướng dẫn cách làm bài Tiếng Việt theo chủ điểm, mỗi lớp một file.
 // Trang /lop/[grade] (tab Tiếng Việt, Bài tập) chỉ đọc danh sách này.
 
+import { TV_GUIDE_2 } from "./lop2";
 import { TV_GUIDE_3 } from "./lop3";
 import { TV_GUIDE_4 } from "./lop4";
 import { TV_GUIDE_5 } from "./lop5";
@@ -8,7 +9,7 @@ import type { TvBai, TvBaiRef, TvChuDiem, TvGuide, TvSkill } from "./types";
 
 export type { TvBai, TvChuDiem, TvGuide, TvSkill } from "./types";
 
-export const TV_GUIDES: TvGuide[] = [TV_GUIDE_3, TV_GUIDE_4, TV_GUIDE_5];
+export const TV_GUIDES: TvGuide[] = [TV_GUIDE_2, TV_GUIDE_3, TV_GUIDE_4, TV_GUIDE_5];
 
 export function tvGuide(grade: number): TvGuide | null {
   return TV_GUIDES.find((g) => g.grade === grade) ?? null;
