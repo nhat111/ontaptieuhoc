@@ -30,3 +30,12 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      # Test trình duyệt trên chính bản build vừa xong (playwright.config.ts tự chạy next start).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
