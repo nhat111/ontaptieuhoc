@@ -75,6 +75,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 1. **Tiếng Việt theo chủ điểm lớp 1–2** (hướng dẫn cách làm), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay (trang mục lục phân trang `/e<id>/N.html`; tập 1 và tập 2 có HTML khác nhau), nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
 
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
+- **Bật sao lưu DB**: thêm secret `SUPABASE_DB_URL` (Session pooler) và `BACKUP_PASSPHRASE` trên GitHub, rồi chạy tay "Sao lưu DB" một lần — các bước ở `feature-specs/backup.md`.
 - **Bật nhiều người soạn đề**: chạy `supabase/nguoi-soan.sql` trong Supabase SQL Editor (một lần), đặt `IMPORT_PASSWORD` trên Vercel nếu chưa, rồi mời người ở `/import/nguoi-soan`. Kiểm đã chạy SQL chưa ở `/import/kiem-tra`. Supabase Auth phải **bật xác nhận email** (mặc định đã bật) — người soạn chỉ được nhận quyền khi email đã xác nhận.
 - **Vercel Function Region → `bom1` (Mumbai)** cho trùng với Supabase (`ap-south-1`). Đây là cách tăng tốc lớn nhất, chưa xác nhận đã đổi chưa. Đổi xong thì đo lại tốc độ: `curl -w "%{time_total}"` trên `/lop/1?view=exam`; trước khi đổi mất 1,7–2,6 s.
 - **Duyệt nội dung viết tay**:
