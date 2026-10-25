@@ -8,7 +8,7 @@ import { GAME_TEXTS, RECORD_DIR, clipSlug, recordingPath } from "@/lib/gameRecor
 //
 // GET    — công khai: { clips: { "<câu>": "<url>" } } cho những câu đã thu.
 // POST   — cần mật khẩu soạn đề: multipart { text, file (WAV) }, ghi đè bản cũ.
-// DELETE — cần mật khẩu soạn đề: ?text=… xoá bản thu, trò chơi quay về Piper.
+// DELETE — cần mật khẩu soạn đề: ?text=… xoá bản thu, trò chơi quay về file đọc sẵn (public/audio/tro-choi).
 //
 // Chỉ nhận câu có trong GAME_TEXTS: không ai ghi được file tuỳ ý vào kho.
 
@@ -34,7 +34,7 @@ export async function GET() {
     }
     return NextResponse.json({ clips }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
-    // Chưa có bucket / lỗi mạng: trò chơi vẫn chạy bằng file Piper.
+    // Chưa có bucket / lỗi mạng: trò chơi vẫn chạy bằng file đọc sẵn.
     console.error("[/api/game-audio GET]", e);
     return NextResponse.json({ clips: {} }, { headers: { "Cache-Control": "no-store" } });
   }

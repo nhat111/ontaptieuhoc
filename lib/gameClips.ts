@@ -1,5 +1,5 @@
 // TỰ SINH bởi scripts/gen-game-audio.py — đừng sửa tay, chạy lại script.
-// Câu các trò chơi nói -> file mp3 đọc sẵn bằng Piper (xem docstring script).
+// Câu các trò chơi nói -> file mp3 đọc sẵn bằng giọng Edge HoaiMy (xem docstring script).
 
 export const GAME_CLIPS: Record<string, string> = {
   "Âm a": "/audio/tro-choi/am-a-157bfa.mp3",
