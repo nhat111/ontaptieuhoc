@@ -9,14 +9,14 @@
 //   • 300 seed mỗi kì: đủ 4 + 2 + 4 + 4 + 2 câu, 4 câu hỏi nói, tổng 10 điểm, không câu trùng,
 //     đáp án nằm trong lựa chọn, câu sắp xếp có đúng một đáp án đúng thứ tự, bản in có lời đọc
 //     (có đáp án) hoặc trang dành cho người coi thi (không đáp án).
-//   • Mọi hội thoại có file nghe (lib/enListenClips.ts, file có thật trong public/), không thừa
-//     file; trên máy có đủ 4 câu nghe, mỗi câu mang đúng file của lời đọc của nó.
+//   • Mọi hội thoại và mọi bài đọc có file nghe (lib/enListenClips.ts, file có thật trong public/),
+//     không thừa file; trên máy có đủ 4 câu nghe, mỗi câu mang đúng file của lời đọc của nó.
 //
 // Chạy: npx tsx scripts/tieng-anh-check.ts
 
 import { existsSync } from "node:fs";
-import { buildTiengAnh, enPassages, listenScript, unitsFor, wrongOrders, type EnContent } from "../lib/exam5/tiengAnh";
-import { EN_LISTEN_CLIPS } from "../lib/enListenClips";
+import { buildTiengAnh, enPassages, listenScript, passageAudio, unitsFor, wrongOrders, type EnContent } from "../lib/exam5/tiengAnh";
+import { EN_LISTEN_CLIPS, EN_PASSAGE_CLIPS } from "../lib/enListenClips";
 import { EN, EXAM_KINDS, examKindLabel } from "../lib/quickExam";
 import { paperRows, questionsOf } from "../lib/exam5/paper";
 import { buildPaperHtml } from "../lib/exam5/print";
@@ -33,6 +33,12 @@ function checkContent(c: EnContent) {
   for (const u of c.units) for (const x of u.qa) {
     const url = EN_LISTEN_CLIPS[listenScript(x)];
     if (!url) fail(`lớp ${c.grade} Unit ${u.n}: hội thoại chưa có file nghe (chạy scripts/gen-en-listen-audio.py) — ${listenScript(x)}`);
+    else if (!existsSync(`public${url}`)) fail(`lớp ${c.grade}: thiếu file ${url}`);
+    else usedClips.add(url);
+  }
+  for (const p of c.passages) {
+    const url = passageAudio(p);
+    if (!url) fail(`lớp ${c.grade}: bài đọc “${p.title}” chưa có file đọc (chạy scripts/gen-en-listen-audio.py)`);
     else if (!existsSync(`public${url}`)) fail(`lớp ${c.grade}: thiếu file ${url}`);
     else usedClips.add(url);
   }
@@ -133,11 +139,11 @@ function checkContent(c: EnContent) {
 }
 
 for (const c of Object.values(EN)) checkContent(c);
-const extra = Object.values(EN_LISTEN_CLIPS).filter((u) => !usedClips.has(u));
+const extra = [...Object.values(EN_LISTEN_CLIPS), ...Object.values(EN_PASSAGE_CLIPS)].filter((u) => !usedClips.has(u));
 if (extra.length) fail(`${extra.length} file nghe không hội thoại nào dùng (chạy lại scripts/gen-en-listen-audio.py)`);
 
 if (errors.length) {
   console.error(`✗ tieng-anh: ${errors.length} lỗi\n  ` + errors.join("\n  "));
   process.exit(1);
 }
-console.log(`✓ tieng-anh: ${Object.values(EN).map((c) => `lớp ${c.grade} ${c.units.length} Unit, ${c.passages.length} bài đọc`).join("; ")}; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn, ${usedClips.size} file nghe`);
+console.log(`✓ tieng-anh: ${Object.values(EN).map((c) => `lớp ${c.grade} ${c.units.length} Unit, ${c.passages.length} bài đọc`).join("; ")}; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn, ${usedClips.size} file nghe (hội thoại + bài đọc)`);

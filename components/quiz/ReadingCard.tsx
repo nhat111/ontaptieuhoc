@@ -1,9 +1,12 @@
 import { BookOpen } from "lucide-react";
 import type { Reading } from "@/lib/quizData";
+import SpeakButton from "@/components/SpeakButton";
 
 /**
- * Bài đọc chung của đề Tiếng Việt (phần đọc hiểu), đặt trên các câu hỏi như đề giấy.
+ * Bài đọc chung của đề (phần đọc hiểu), đặt trên các câu hỏi như đề giấy.
  * Gập/mở được: trên điện thoại bài đọc dài, bé gập lại khi đã đọc xong để làm bài.
+ * Bài có file đọc sẵn (bài đọc tiếng Anh) thì có nút Nghe bài đọc; file hỏng thì lần bấm sau
+ * đọc bằng giọng máy.
  */
 export default function ReadingCard({ reading, defaultOpen = true }: { reading: Reading; defaultOpen?: boolean }) {
   return (
@@ -14,6 +17,17 @@ export default function ReadingCard({ reading, defaultOpen = true }: { reading: 
         <span className="ml-auto text-xs font-semibold text-amber-700 group-open:hidden">Mở bài đọc</span>
         <span className="ml-auto hidden text-xs font-semibold text-amber-700 group-open:inline">Thu gọn</span>
       </summary>
+      {reading.audioUrl && (
+        <div className="mt-3 flex justify-end">
+          <SpeakButton
+            segments={[{ text: `${reading.title}. ${reading.text}`, lang: "en-US" }]}
+            audioUrl={reading.audioUrl}
+            label="Nghe bài đọc"
+            ariaLabel="Nghe bài đọc"
+            className="whitespace-nowrap"
+          />
+        </div>
+      )}
       <h2 className="mt-4 text-center text-lg font-extrabold uppercase tracking-wide text-slate-900">{reading.title}</h2>
       <div className="mt-3 space-y-2.5 text-[17px] leading-relaxed text-slate-800">
         {reading.text.split(/\n\s*\n/).map((p, i) => (

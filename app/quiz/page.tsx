@@ -4,6 +4,8 @@ import QuizClient from "@/components/quiz/QuizClient";
 import { getQuestionsFromDB, getLessonMetaFromDB } from "@/lib/db";
 import { cleanSeed, quickExamById, quickExamHref, rowToQuestion } from "@/lib/quickExam";
 import { paperRows } from "@/lib/exam5/paper";
+import { passageAudio } from "@/lib/exam5/tiengAnh";
+import type { Reading } from "@/lib/quizData";
 
 interface Props {
   searchParams: Promise<{ lessonId?: string; de?: string; seed?: string }>;
@@ -52,6 +54,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
+/** Bài đọc tiếng Anh có file đọc sẵn thì gắn vào, để ReadingCard hiện nút nghe. */
+function withAudio(p: Reading | undefined): Reading | undefined {
+  if (!p) return p;
+  const audioUrl = passageAudio(p);
+  return audioUrl ? { ...p, audioUrl } : p;
+}
+
 export default async function QuizPage({ searchParams }: Props) {
   const sp = await searchParams;
   const quick = quickExamOf(sp);
@@ -64,7 +73,7 @@ export default async function QuizPage({ searchParams }: Props) {
         {
           reading: paper.reading
             ? { title: paper.reading.title, text: paper.reading.text }
-            : paper.sections.find((x) => x.passage)?.passage,
+            : withAudio(paper.sections.find((x) => x.passage)?.passage),
           id: 0,
           title: quick.spec.title,
           grade: quick.spec.grade,

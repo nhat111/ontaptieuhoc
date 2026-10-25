@@ -87,4 +87,7 @@ test("Tạo đề nhanh Tiếng Anh: câu nghe có nút Nghe hội thoại và p
   await buttons.first().click();
   const res = await mp3;
   expect(res.status()).toBeLessThan(400);
+
+  // Bài đọc phần Reading cũng có nút nghe.
+  await expect(page.getByRole("button", { name: "Nghe bài đọc" })).toBeVisible();
 });

@@ -15,7 +15,7 @@ import type { GenQuestionRow } from "../mathGen";
 import type { ExamKind } from "../quickExam";
 import { itemRng } from "../tvGen/core";
 import type { ExamPaper, PaperQuestion, PaperSection } from "./paper";
-import { EN_LISTEN_CLIPS } from "../enListenClips";
+import { EN_LISTEN_CLIPS, EN_PASSAGE_CLIPS } from "../enListenClips";
 
 /** Một lượt hội thoại: `a` chứa nguyên văn `key`; `wrong` là hai đáp án nhiễu cùng loại. */
 export interface EnQa { q: string; a: string; key: string; wrong: [string, string] }
@@ -111,6 +111,12 @@ export function wrongOrders(s: string): string[] {
 
 /** Lời đọc của một câu nghe: in ở hướng dẫn chấm, và là khoá của file nghe trong lib/enListenClips.ts. */
 export const listenScript = (x: EnQa) => `A: ${x.q}  B: ${x.a}`;
+
+/** Khoá file đọc sẵn của một bài đọc (lib/enListenClips.ts → EN_PASSAGE_CLIPS): đổi chữ là đổi file. */
+export const passageKey = (p: { title: string; text: string }) => `${p.title}\n\n${p.text}`;
+
+/** File đọc sẵn của bài đọc (phần Reading), nếu đã sinh. */
+export const passageAudio = (p: { title: string; text: string }): string | undefined => EN_PASSAGE_CLIPS[passageKey(p)];
 
 /** Câu sắp xếp được: 4–9 từ, không có dấu phẩy, có hai cách đổi chỗ ra câu sai. */
 export const reorderable = (s: string) =>
