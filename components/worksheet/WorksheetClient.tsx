@@ -24,7 +24,7 @@ const SUBJECTS: Record<WorksheetSubject, { name: string; slug: string; lessons: 
   },
   "tieng-viet": {
     name: "Tiếng Việt", slug: "tieng-viet", lessons: TV_SHEET_LESSONS,
-    note: "Câu hỏi lấy từ kho từ ngữ, câu văn soạn sẵn theo chương trình lớp 2, lớp 3; máy trộn ngẫu nhiên nên mỗi lần bấm ra một bộ mới. Toàn bộ là câu trắc nghiệm.",
+    note: "Câu hỏi lấy từ kho từ ngữ, câu văn soạn sẵn theo chương trình từng lớp; máy trộn ngẫu nhiên nên mỗi lần bấm ra một bộ mới. Toàn bộ là câu trắc nghiệm.",
   },
 };
 

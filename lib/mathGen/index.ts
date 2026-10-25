@@ -228,6 +228,12 @@ export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, 
       for (let i = 0; i < counts[gi]; i++) {
         let row = toQuestionRow(gen(r), r);
         for (let t = 0; t < 30 && seen.has(key(row)); t++) row = toQuestionRow(gen(r), r);
+        // Dạng này đã hết câu mới (kho nhỏ, phiếu nhiều câu): mượn dạng khác của cùng chủ đề
+        // thay vì in lặp. Chỉ chạy khi trước đây sẽ ra câu lặp, nên phiếu cũ không đổi.
+        for (let t = 0; t < 60 && seen.has(key(row)) && spec.mix.length > 1; t++) {
+          const [other] = spec.mix[(gi + 1 + (t % (spec.mix.length - 1))) % spec.mix.length];
+          row = toQuestionRow(other(r), r);
+        }
         seen.add(key(row));
         rows.push(row);
       }

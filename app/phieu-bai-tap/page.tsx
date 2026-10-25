@@ -14,9 +14,9 @@ const META = {
     url: "/phieu-bai-tap",
   },
   "tieng-viet": {
-    title: "Phiếu bài tập Tiếng Việt lớp 2, lớp 3 in được",
+    title: "Phiếu bài tập Tiếng Việt lớp 1–5 in được",
     description:
-      "Phiếu bài tập Tiếng Việt lớp 2, lớp 3 theo chủ đề: chính tả, từ chỉ sự vật – hoạt động – đặc điểm, từ trái nghĩa, so sánh, câu kể – câu hỏi – câu cảm – câu khiến, Khi nào? Ở đâu? Bằng gì?, dấu câu. Tải Word hoặc in PDF kèm đáp án. Miễn phí.",
+      "Phiếu bài tập Tiếng Việt lớp 1 đến lớp 5 theo chủ đề: âm, vần, dấu thanh, chính tả, từ loại, so sánh, nhân hoá, chủ ngữ – vị ngữ, trạng ngữ, từ đồng nghĩa, từ đa nghĩa, đại từ, kết từ, câu ghép, liên kết câu, dấu câu. Tải Word hoặc in PDF kèm đáp án. Miễn phí.",
     url: "/phieu-bai-tap?loai=tieng-viet",
   },
   "hang-ngay": {
@@ -48,7 +48,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 const TABS = [
   { key: "chu-de", label: "Toán theo chủ đề", sub: "Lớp 1–5, trắc nghiệm + tự luận" },
-  { key: "tieng-viet", label: "Tiếng Việt", sub: "Lớp 2, 3 theo chủ đề" },
+  { key: "tieng-viet", label: "Tiếng Việt", sub: "Lớp 1–5 theo chủ đề" },
   { key: "hang-ngay", label: "Phiếu luyện hằng ngày", sub: "Toán, Tiếng Việt lớp 1, 2" },
   { key: "ai", label: "Hoạt động AI", sub: "Lớp 4, 5 · QĐ 2422" },
 ] as const;
