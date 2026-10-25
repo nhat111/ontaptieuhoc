@@ -1,0 +1,32 @@
+name: CI
+
+# master deploy thẳng lên site, nên mỗi PR phải qua đúng những gì
+# `npm run check` chạy ở máy, cộng thêm `next build`.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Build không cần DB thật: trang đọc Supabase bắt lỗi và trả mặc định.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:9
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: x
+      SUPABASE_SERVICE_ROLE_KEY: x
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build

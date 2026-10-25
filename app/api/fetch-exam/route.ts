@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lookup } from "node:dns/promises";
+import { requireEditor } from "@/lib/editorAuth";
+import { isPrivateAddress } from "@/lib/privateAddress";
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
-
-// RFC1918 + loopback + link-local + IPv6 ULA/loopback/link-local.
-function isPrivateAddress(ip: string): boolean {
-  return (
-    /^10\./.test(ip) ||
-    /^127\./.test(ip) ||
-    /^169\.254\./.test(ip) ||
-    /^172\.(1[6-9]|2[0-9]|3[01])\./.test(ip) ||
-    /^192\.168\./.test(ip) ||
-    /^0\./.test(ip) ||
-    ip === "::1" ||
-    /^fc/i.test(ip) ||
-    /^fd/i.test(ip) ||
-    /^fe80:/i.test(ip)
-  );
-}
 
 // Strip HTML tags while preserving LaTeX math delimiters and converting <sup>
 function extractText(html: string): string {
@@ -76,6 +62,11 @@ function tableToText(tableHtml: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Chỉ người soạn đề mới dùng: để mở thì ai cũng mượn được máy chủ này đi tải
+  // trang bất kỳ.
+  const gate = await requireEditor();
+  if (gate.response) return gate.response;
+
   const rawUrl = req.nextUrl.searchParams.get("url");
   if (!rawUrl) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
