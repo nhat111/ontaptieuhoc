@@ -8,7 +8,7 @@ export type VoiceGroup = { id: string; title: string; tip: string; texts: string
 
 interface Props {
   groups: VoiceGroup[];
-  /** Câu → file Piper hiện đang dùng, để nghe so sánh. */
+  /** Câu → file đọc sẵn hiện đang dùng (scripts/gen-game-audio.py), để nghe so sánh. */
   piper: Record<string, string>;
 }
 
