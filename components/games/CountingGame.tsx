@@ -1,6 +1,7 @@
 "use client";
 import GameShell, { type GameRound } from "./GameShell";
 import { makeCountQuestion, type CountLevel, type CountQuestion } from "@/lib/games";
+import { GAME_MATH_CLIPS } from "@/lib/gameClips";
 
 const LEVELS = [
   { id: "dem", label: "🔢 Đếm số", hint: "Đếm xem có mấy hình (1–10)" },
@@ -76,6 +77,7 @@ export default function CountingGame({ backHref }: { backHref: string }) {
       intro="Nhìn hình, đếm rồi chọn số đúng. Mỗi lượt 10 câu."
       levels={LEVELS}
       make={make}
+      clips={GAME_MATH_CLIPS}
       backHref={backHref}
     />
   );

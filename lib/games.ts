@@ -49,6 +49,13 @@ export type CountQuestion = {
   say: string;
 };
 
+// Lời đọc của các trò Toán lớp 1. Viết một chỗ để mathClipTexts() liệt kê đúng từng câu
+// mà scripts/gen-game-audio.py cần đọc sẵn.
+const countSay = (name: string) => `Có mấy ${name}?`;
+const calcSay = (a: number, word: "cộng" | "trừ", b: number) => `${a} ${word} ${b} bằng mấy?`;
+export const appleSay = (a: number, word: string, b: number) => `Hái quả táo có kết quả ${a} ${word} ${b}`;
+export const compareSay = (a: number, b: number) => `So sánh ${a} và ${b}`;
+
 /** Đáp án đúng + 3 số gần nó, nằm trong 0–10. */
 function numberOptions(answer: number, min: number): number[] {
   const set = new Set([answer]);
@@ -66,7 +73,7 @@ export function makeCountQuestion(level: CountLevel): CountQuestion {
     return {
       emoji: thing.emoji, a, b: 0, op: "dem", answer: a,
       options: numberOptions(a, 1),
-      say: `Có mấy ${thing.name}?`,
+      say: countSay(thing.name),
     };
   }
   if (level === "tru10") {
@@ -75,7 +82,7 @@ export function makeCountQuestion(level: CountLevel): CountQuestion {
     return {
       emoji: thing.emoji, a, b, op: "-", answer: a - b,
       options: numberOptions(a - b, 0),
-      say: `${a} trừ ${b} bằng mấy?`,
+      say: calcSay(a, "trừ", b),
     };
   }
   const max = level === "cong5" ? 5 : 10;
@@ -84,7 +91,7 @@ export function makeCountQuestion(level: CountLevel): CountQuestion {
   return {
     emoji: thing.emoji, a, b, op: "+", answer: a + b,
     options: numberOptions(a + b, 1),
-    say: `${a} cộng ${b} bằng mấy?`,
+    say: calcSay(a, "cộng", b),
   };
 }
 
@@ -162,7 +169,26 @@ export function makeCompareQuestion(level: CompareLevel): CompareQuestion {
   else b = randInt(level === "pham-vi-10" ? 0 : 10, max);
   b = Math.min(b, max); // a = 100 ở nhánh "cùng chục" cho ra 101–109
   const answer = a > b ? ">" : a < b ? "<" : "=";
-  return { a, b, answer, emoji: pick(THINGS).emoji, reveal: `${a} ${COMPARE_WORDS[answer]} ${b}` };
+  return { a, b, answer, emoji: pick(THINGS).emoji, reveal: compareReveal(a, b) };
+}
+
+function compareReveal(a: number, b: number): string {
+  const sign = a > b ? ">" : a < b ? "<" : "=";
+  return `${a} ${COMPARE_WORDS[sign]} ${b}`;
+}
+
+/**
+ * Mọi câu các trò Toán lớp 1 có thể đọc: Đếm hình (4 cấp), Hái táo lớp 1, So sánh phạm vi 10.
+ * Phạm vi khớp makeCountQuestion / makeCompareQuestion; scripts/games-extra-check.ts rút
+ * thử các generator và báo câu nào lọt ra ngoài danh sách. Phạm vi 100 (hơn 8 000 cặp số)
+ * không đọc sẵn, vẫn dùng giọng máy.
+ */
+export function mathClipTexts(): string[] {
+  const out: string[] = THINGS.map((t) => countSay(t.name));
+  for (let a = 1; a <= 9; a++) for (let b = 1; a + b <= 10; b++) out.push(calcSay(a, "cộng", b), appleSay(a, "cộng", b));
+  for (let a = 2; a <= 10; a++) for (let b = 1; b < a; b++) out.push(calcSay(a, "trừ", b), appleSay(a, "trừ", b));
+  for (let a = 0; a <= 10; a++) for (let b = 0; b <= 10; b++) out.push(compareSay(a, b), compareReveal(a, b));
+  return [...new Set(out)];
 }
 
 // ── Sao tích luỹ ─────────────────────────────────────────────────────────────

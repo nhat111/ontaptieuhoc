@@ -18,6 +18,13 @@ Chạy (một lần, trên máy có Python, cần mạng):
     python3 -m venv .venv && .venv/bin/pip install edge-tts
     .venv/bin/python scripts/gen-game-audio.py
 
+Thêm các câu Toán lớp 1 (Đếm hình, Hái táo, So sánh phạm vi 10: "3 cộng 2 bằng mấy?", "So sánh 4
+và 7", "4 bé hơn 7"…), lấy từ mathClipTexts() trong lib/games.ts qua scripts/game-audio-jobs.ts,
+ghi vào GAME_MATH_CLIPS. Bản đồ riêng để trang thu giọng chỉ liệt kê 80 câu Tiếng Việt.
+
+File đã có thì giữ (tên file theo câu), chạy lại chỉ sinh câu mới và xoá file thừa. Đổi giọng
+hay tốc độ thì xoá thư mục public/audio/tro-choi rồi chạy lại.
+
 Ghi ra public/audio/tro-choi/*.mp3 và lib/gameClips.ts (câu -> file). Tên file (slug) giữ
 nguyên như trước, nên bản thu ở /import/giong-tro-choi (lib/gameRecordings.ts) vẫn khớp và
 vẫn được ưu tiên hơn file này.
@@ -30,7 +37,9 @@ lại script cũng không vỡ trò chơi — chỉ kém hay hơn.
 
 import asyncio
 import hashlib
+import json
 import re
+import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -106,31 +115,57 @@ async def to_mp3(text: str) -> bytes:
     return out
 
 
+def math_texts() -> list[str]:
+    out = subprocess.run(
+        ["npx", "tsx", "scripts/game-audio-jobs.ts"], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout
+    return json.loads(out)
+
+
+def render(texts: list[str]) -> list[tuple[str, str]]:
+    entries = []
+    for text in texts:
+        name = slug(text)
+        path = OUT_DIR / f"{name}.mp3"
+        if not path.exists():
+            path.write_bytes(asyncio.run(to_mp3(text)))
+        entries.append((text, name))
+    return entries
+
+
+def ts_map(name: str, entries: list[tuple[str, str]]) -> list[str]:
+    return [
+        f"export const {name}: Record<string, string> = {{",
+        *[f'  "{text}": "/audio/tro-choi/{slug_}.mp3",' for text, slug_ in entries],
+        "};",
+        "",
+    ]
+
+
 def main() -> None:
     if len(sys.argv) != 1:
         sys.exit(__doc__)
     texts = collect()
+    maths = [t for t in math_texts() if t not in texts]
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    wanted = {f"{slug(t)}.mp3" for t in texts + maths}
     for old in OUT_DIR.glob("*.mp3"):
-        old.unlink()
-    entries = []
-    for text in texts:
-        name = slug(text)
-        (OUT_DIR / f"{name}.mp3").write_bytes(asyncio.run(to_mp3(text)))
-        entries.append((text, name))
+        if old.name not in wanted:
+            old.unlink()
+    entries = render(texts)
+    math_entries = render(maths)
 
     lines = [
         "// TỰ SINH bởi scripts/gen-game-audio.py — đừng sửa tay, chạy lại script.",
         "// Câu các trò chơi nói -> file mp3 đọc sẵn bằng giọng Edge HoaiMy (xem docstring script).",
         "",
-        "export const GAME_CLIPS: Record<string, string> = {",
-        *[f'  "{text}": "/audio/tro-choi/{name}.mp3",' for text, name in entries],
-        "};",
-        "",
+        *ts_map("GAME_CLIPS", entries),
+        "// Toán lớp 1 (Đếm hình, Hái táo, So sánh phạm vi 10); không có trên trang thu giọng.",
+        *ts_map("GAME_MATH_CLIPS", math_entries),
     ]
     MANIFEST.write_text("\n".join(lines), encoding="utf-8")
-    print(f"{len(entries)} câu -> {OUT_DIR.relative_to(ROOT)}, {MANIFEST.relative_to(ROOT)}")
+    print(f"{len(entries)} + {len(math_entries)} câu -> {OUT_DIR.relative_to(ROOT)}, {MANIFEST.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

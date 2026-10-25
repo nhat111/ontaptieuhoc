@@ -1,7 +1,8 @@
 "use client";
 import GameShell, { type BoardProps, type GameRound } from "./GameShell";
-import { makeCountQuestion, type CountLevel } from "@/lib/games";
+import { appleSay, makeCountQuestion, type CountLevel } from "@/lib/games";
 import { calcWord, makeCalcQuestion, type CalcLevel } from "@/lib/games2";
+import { GAME_MATH_CLIPS } from "@/lib/gameClips";
 
 const LEVELS_1 = [
   { id: "cong5", label: "➕ Cộng trong phạm vi 5", hint: "Hái quả có kết quả phép cộng" },
@@ -28,7 +29,7 @@ const BASKET = { left: 50, top: 86 };
 
 function round(a: number, sign: string, word: string, b: number, answer: number, options: number[]): GameRound {
   return {
-    say: `Hái quả táo có kết quả ${a} ${word} ${b}`,
+    say: appleSay(a, word, b),
     visual: (
       <p className="text-5xl font-extrabold text-gray-700 tracking-wide">
         {a} {sign} {b} = <span className="text-orange-500">?</span>
@@ -108,6 +109,7 @@ export default function AppleGame({ backHref, grade = 1 }: { backHref: string; g
       intro="Tính nhẩm rồi chạm vào quả táo có kết quả đúng — táo sẽ rơi vào giỏ!"
       levels={grade === 2 ? LEVELS_2 : LEVELS_1}
       make={grade === 2 ? make2 : make1}
+      clips={grade === 1 ? GAME_MATH_CLIPS : undefined}
       Board={AppleTree}
       backHref={backHref}
     />

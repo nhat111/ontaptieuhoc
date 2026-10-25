@@ -5,7 +5,9 @@
 //
 // Chạy: npx tsx scripts/games-extra-check.ts
 
-import { makeCompareQuestion, type CompareLevel } from "../lib/games";
+import { existsSync } from "node:fs";
+import { appleSay, compareSay, makeCompareQuestion, makeCountQuestion, mathClipTexts, type CompareLevel, type CountLevel } from "../lib/games";
+import { GAME_MATH_CLIPS } from "../lib/gameClips";
 import { NOTES, makeMoneyQuestion, type MoneyLevel } from "../lib/games2";
 import { makeRoundQuestion, type RoundLevel } from "../lib/games3";
 import {
@@ -217,6 +219,30 @@ for (const level of ["tim-gia-tri", "ti-so"] as PercentLevel[]) {
   for (const c of CONNECTIVES) {
     if (c.text.split("___").length !== 2) fail("ket-tu", `cần đúng một chỗ trống: ${c.text}`);
     checkOptions(`ket-tu "${c.text}"`, c.options, c.answer);
+  }
+}
+
+// ── Lớp 1: giọng đọc sẵn của Đếm hình, Hái táo, So sánh phạm vi 10 ──
+// Câu nào generator đọc mà không có file thì cả lượt quay về giọng máy — không vỡ, chỉ kém hay.
+{
+  const listed = new Set(mathClipTexts());
+  const spoken = new Set<string>();
+  for (const level of ["dem", "cong5", "cong10", "tru10"] as CountLevel[]) {
+    for (let i = 0; i < RUNS; i++) {
+      const q = makeCountQuestion(level);
+      spoken.add(q.say);
+      if (q.op !== "dem") spoken.add(appleSay(q.a, q.op === "+" ? "cộng" : "trừ", q.b));
+    }
+  }
+  for (let i = 0; i < RUNS; i++) {
+    const q = makeCompareQuestion("pham-vi-10");
+    spoken.add(compareSay(q.a, q.b)).add(q.reveal);
+  }
+  for (const t of spoken) if (!listed.has(t)) fail("giong-toan-1", `mathClipTexts thiếu: ${t}`);
+  for (const t of listed) {
+    const url = GAME_MATH_CLIPS[t];
+    if (!url) fail("giong-toan-1", `chưa có file (chạy scripts/gen-game-audio.py): ${t}`);
+    else if (!existsSync(`public${url}`)) fail("giong-toan-1", `thiếu ${url}`);
   }
 }
 
