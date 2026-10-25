@@ -242,3 +242,5 @@ export const EN_LISTEN_CLIPS: Record<string, string> = {
   "A: What is she going to do this summer?  B: She's going to join a music club.": "/audio/tieng-anh/a8fccb0b3597.mp3",
   "A: Where are they going to stay?  B: They're going to stay in a hotel.": "/audio/tieng-anh/19711551d48d.mp3",
 };
+
+export const EN_PASSAGE_CLIPS: Record<string, string> = {};

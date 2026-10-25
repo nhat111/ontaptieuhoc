@@ -42,7 +42,12 @@ export type LessonMeta = {
   reading?: Reading;
 };
 
-export type Reading = { title: string; text: string };
+export type Reading = {
+  title: string;
+  text: string;
+  /** File đọc sẵn của bài (bài đọc tiếng Anh, Tạo đề nhanh): có thì ReadingCard hiện nút Nghe bài đọc. */
+  audioUrl?: string;
+};
 
 export type QuizResult = {
   questions: Question[];
