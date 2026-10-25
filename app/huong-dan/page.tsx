@@ -92,6 +92,17 @@ const STEPS: GuideStep[] = [
     cta: { href: "/phieu-bai-tap", label: "Tạo phiếu bài tập" },
   },
   {
+    id: "phieu-tieng-viet",
+    title: "Phiếu bài tập Tiếng Việt lớp 2, lớp 3",
+    points: [
+      <>Ở trang <b>Phiếu bài tập</b>, chọn thẻ <b>Tiếng Việt</b>, rồi chọn <b>Lớp 2</b> hoặc <b>Lớp 3</b>.</>,
+      <><b>Lớp 2</b>: chính tả (c/k, g/gh, ng/ngh, ch/tr, s/x, l/n, r/d/gi, vần dễ lẫn, dấu hỏi / dấu ngã), từ chỉ sự vật – hoạt động – đặc điểm, câu giới thiệu – câu nêu hoạt động – câu nêu đặc điểm, dấu câu, viết hoa và bảng chữ cái, mở rộng vốn từ.</>,
+      <><b>Lớp 3</b>: chính tả, từ chỉ sự vật – hoạt động – đặc điểm, từ có nghĩa giống nhau – trái ngược nhau, biện pháp so sánh, câu kể – câu hỏi – câu cảm – câu khiến, Khi nào? Ở đâu? Bằng gì? Để làm gì?, dấu câu, mở rộng vốn từ.</>,
+      <>Mọi câu là trắc nghiệm, bé khoanh vào chữ đặt trước câu trả lời đúng. Chọn số câu, số đề rồi bấm <b>Tạo phiếu</b>, <b>Tải Word (.doc)</b> hoặc <b>In / lưu PDF</b>; đáp án (kèm giải thích nếu chọn) ở trang cuối.</>,
+    ],
+    cta: { href: "/phieu-bai-tap?loai=tieng-viet", label: "Tạo phiếu Tiếng Việt" },
+  },
+  {
     id: "phieu-hang-ngay",
     title: "Phiếu luyện hằng ngày lớp 1, lớp 2 (Toán, Tiếng Việt)",
     points: [

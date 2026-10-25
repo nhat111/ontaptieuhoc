@@ -1,19 +1,34 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MATH_LESSONS, buildWorksheetQuestions, type MathGrade } from "@/lib/mathGen";
+import { MATH_LESSONS, buildWorksheetQuestions, type MathGrade, type MathLessonSpec } from "@/lib/mathGen";
+import { TV_SHEET_LESSONS } from "@/lib/tvSheet";
 import { buildWorksheetHtml, answerText, type AnswerMode, type WorksheetVersion } from "@/lib/worksheetExport";
 import { buildWordDoc } from "@/lib/wordDoc";
 import { latexToPlain } from "@/lib/exportLesson";
 import type { GenQuestionRow } from "@/lib/mathGen";
 import {
-  BookOpen, Calculator, Check, Clock, Download, Eye, Hash, PieChart, Plus, Printer, RefreshCw, Ruler, Shapes, X,
+  BookOpen, Calculator, Check, Clock, Download, Eye, Hash, Library, MessageSquare, PieChart, Plus, Printer, Quote,
+  RefreshCw, Ruler, Scale, Shapes, SpellCheck, Type, X,
   type LucideIcon,
 } from "lucide-react";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { track } from "@/lib/usage";
 
-const GRADES = [...new Set(MATH_LESSONS.map((l) => l.grade))].sort((a, b) => a - b) as MathGrade[];
+export type WorksheetSubject = "toan" | "tieng-viet";
+
+const SUBJECTS: Record<WorksheetSubject, { name: string; slug: string; lessons: MathLessonSpec[]; note: string }> = {
+  toan: {
+    name: "Toán", slug: "toan", lessons: MATH_LESSONS,
+    note: "Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một bộ mới.",
+  },
+  "tieng-viet": {
+    name: "Tiếng Việt", slug: "tieng-viet", lessons: TV_SHEET_LESSONS,
+    note: "Câu hỏi lấy từ kho từ ngữ, câu văn soạn sẵn theo chương trình lớp 2, lớp 3; máy trộn ngẫu nhiên nên mỗi lần bấm ra một bộ mới. Toàn bộ là câu trắc nghiệm.",
+  },
+};
+
+const gradesOf = (lessons: MathLessonSpec[]) => [...new Set(lessons.map((l) => l.grade))].sort((a, b) => a - b) as MathGrade[];
 const COUNTS = [10, 15, 20];
 const VERSIONS = [1, 2, 3, 4];
 const ANSWER_MODES: { value: AnswerMode; label: string }[] = [
@@ -22,10 +37,12 @@ const ANSWER_MODES: { value: AnswerMode; label: string }[] = [
   { value: "none", label: "Không kèm" },
 ];
 
-const topicsOf = (g: MathGrade) => MATH_LESSONS.filter((l) => l.grade === g);
 const newSeed = () => Math.random().toString(36).slice(2, 8);
 
-export default function WorksheetClient() {
+export default function WorksheetClient({ subject = "toan" }: { subject?: WorksheetSubject }) {
+  const S = SUBJECTS[subject];
+  const GRADES = gradesOf(S.lessons);
+  const topicsOf = (g: MathGrade) => S.lessons.filter((l) => l.grade === g);
   const [grade, setGrade] = useState<MathGrade>(GRADES[0]);
   const [topicIds, setTopicIds] = useState<string[]>([topicsOf(GRADES[0])[0].id]);
   const [count, setCount] = useState(10);
@@ -34,7 +51,7 @@ export default function WorksheetClient() {
   // Câu hỏi chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
 
-  const specs = useMemo(() => topicsOf(grade).filter((t) => topicIds.includes(t.id)), [grade, topicIds]);
+  const specs = useMemo(() => S.lessons.filter((t) => t.grade === grade && topicIds.includes(t.id)), [S, grade, topicIds]);
 
   const versions: WorksheetVersion[] = useMemo(() => {
     if (!seed || specs.length === 0) return [];
@@ -44,7 +61,7 @@ export default function WorksheetClient() {
     }));
   }, [seed, specs, count, versionCount]);
 
-  const title = `Phiếu bài tập Toán lớp ${grade}`;
+  const title = `Phiếu bài tập ${S.name} lớp ${grade}`;
   const theme = gradeTheme(grade);
 
   function pickGrade(g: MathGrade) {
@@ -69,7 +86,7 @@ export default function WorksheetClient() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `phieu-toan-lop-${grade}-${seed}.doc`;
+    a.download = `phieu-${S.slug}-lop-${grade}-${seed}.doc`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -111,7 +128,7 @@ export default function WorksheetClient() {
             <div className="grid gap-2.5 sm:grid-cols-2">
               {topicsOf(grade).map((t) => {
                 const on = topicIds.includes(t.id);
-                const Icon = topicIcon(t.title);
+                const Icon = subject === "tieng-viet" ? tvTopicIcon(t.title) : topicIcon(t.title);
                 return (
                   <label
                     key={t.id}
@@ -193,7 +210,7 @@ export default function WorksheetClient() {
             )}
           </div>
           <p className="text-xs leading-relaxed text-slate-500">
-            Câu hỏi do máy tính sinh và tính đáp án, mỗi lần bấm ra một bộ mới. Mỗi đề nằm trên một trang riêng, đáp án ở trang cuối.
+            {S.note} Mỗi đề nằm trên một trang riêng, đáp án ở trang cuối.
           </p>
         </div>
 
@@ -254,6 +271,19 @@ function topicIcon(title: string): LucideIcon {
   if (/nhân|chia|gấp/.test(t)) return X;
   if (/cộng|trừ/.test(t)) return Plus;
   return Calculator;
+}
+
+/** Biểu tượng cho thẻ chủ đề Tiếng Việt. */
+function tvTopicIcon(title: string): LucideIcon {
+  const t = title.toLowerCase();
+  if (/chính tả/.test(t)) return SpellCheck;
+  if (/dấu/.test(t)) return Quote;
+  if (/viết hoa|chữ cái/.test(t)) return Type;
+  if (/so sánh|giống nhau|trái ngược/.test(t)) return Scale;
+  if (/khi nào/.test(t)) return Clock;
+  if (/câu/.test(t)) return MessageSquare;
+  if (/vốn từ/.test(t)) return Library;
+  return BookOpen;
 }
 
 /**
