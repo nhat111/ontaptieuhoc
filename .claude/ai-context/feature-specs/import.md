@@ -98,7 +98,7 @@ Tách xong thì báo đã làm gì và cho **Hoàn tác** — hoàn tác trả l
 
 ## Quét ảnh đề (`POST /api/ocr-exam`)
 
-- Multipart `file` (ảnh ≤10MB, jpg/png/webp/gif) → Claude vision (`claude-opus-5`) với ràng buộc output `json_schema` → `{ title, questions: [{content, options, correctIndex}], usage }`
+- Multipart `file` (ảnh ≤10MB, jpg/png/webp/gif) → Claude vision (`claude-opus-5-5`, effort `high`) với ràng buộc output `json_schema` → `{ title, questions: [{content, options, correctIndex}], usage }`
 - Đọc được **đáp án khoanh bút** — OCR thường không làm được. Không thấy dấu khoanh thì trả `correctIndex: -1`; model được dặn **không đoán**, UI báo người dùng tự tick.
 - `stop_reason: 'refusal'` được kiểm trước khi đọc content
 - Beta `fallbacks` là best-effort: gặp 400 nhắc tới nó thì thử lại một lần không bật
