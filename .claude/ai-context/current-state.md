@@ -72,7 +72,7 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
 
 ## Việc tiếp theo (ưu tiên từ trên xuống)
 
-1. **Tiếng Việt theo chủ điểm lớp 1–2** (hướng dẫn cách làm), cùng khuôn `lib/tvGuide/lop<N>.ts`. Mục lục lấy từ loigiaihay (trang mục lục phân trang `/e<id>/N.html`; tập 1 và tập 2 có HTML khác nhau), nhớ chuẩn hoá NFC khi phân tích HTML (xem *Lưu ý vận hành*).
+1. **Tiếng Việt theo chủ điểm lớp 1** (lớp 2 xong: `lib/tvGuide/lop2.ts`). Lớp 1 khác hẳn: tập 1 là bài âm, vần, không có Luyện từ và câu hay viết đoạn, nên kiểu `TvBai` (bắt buộc `viet`, Luyện từ và câu theo bài chẵn/lẻ) không vừa; cần quyết định có làm không, hay chỉ làm tập 2 (8 chủ đề).
 
 ### Cần chủ site làm hoặc duyệt (không phải việc code)
 - **Bật sao lưu DB**: thêm secret `SUPABASE_DB_URL` (Session pooler) và `BACKUP_PASSPHRASE` trên GitHub, rồi chạy tay "Sao lưu DB" một lần — các bước ở `feature-specs/backup.md`.
@@ -84,7 +84,8 @@ _Last synced with codebase: Oct 2026 (sau PR #105 + lời giải lớp 2–4)_
   - `lib/tvGen/am.ts`, `lop1.ts` (mới): kho tiếng lớp 1, câu điền từ theo chủ đề tập hai.
   - `lib/tvGen/spell.ts`, `ltvc.ts` (mới): kho vần lớp 2, từ hỏi/ngã, từ chỉ sự vật – hoạt động – đặc điểm, câu mẫu, chủ đề mở rộng vốn từ, tên riêng / câu viết hoa.
   - `lib/exam5/tvContent3.ts` (mới): 8 bài đọc lớp 3, câu hỏi, đáp án nhiễu, ngân hàng luyện từ và câu.
-  - `lib/tvGuide/lop3.ts` (mới): tên phần Luyện tập của bài chẵn là tóm tắt từ các yêu cầu bài tập (mục lục chỉ ghi “Luyện tập”), cách làm và ví dụ của 26 dạng bài, gợi ý đọc hiểu.
+  - `lib/tvGuide/lop2.ts` (mới): tên phần Luyện từ và câu, viết đoạn của bài chẵn là tóm tắt từ yêu cầu bài tập; cách làm và ví dụ của 19 dạng bài; gợi ý đọc hiểu 9 chủ điểm.
+  - `lib/tvGuide/lop3.ts`: tên phần Luyện tập của bài chẵn là tóm tắt từ các yêu cầu bài tập (mục lục chỉ ghi “Luyện tập”), cách làm và ví dụ của 26 dạng bài, gợi ý đọc hiểu.
   - `lib/tvGuide/lop4.ts`, `lop5.ts`: công dụng dấu gạch ngang (lớp 5 có ghi cả "phần chú thích"), dấu ngoặc kép, các gợi ý đọc hiểu (viết theo tên chủ điểm). TV5 tập 2 bài 6 chưa tìm được phần Nói và nghe.
   - Tình huống trong 12 dạng lời văn lớp 5 (`lv*` trong `lib/mathGen/kntt/lop5.ts`).
 - **Dọn dữ liệu rác trong DB** bằng nút xoá: chương "tập đọc" lớp 1 (bài abc, fff), chương "aâ" lớp 3, đề "uu" lớp 1.
