@@ -1,7 +1,8 @@
 "use client";
 import GameShell, { type GameRound } from "./GameShell";
 import { CompareRow, SIGN_OPTIONS } from "./MathBits";
-import { makeCompareQuestion, type CompareLevel } from "@/lib/games";
+import { compareSay, makeCompareQuestion, type CompareLevel } from "@/lib/games";
+import { GAME_MATH_CLIPS } from "@/lib/gameClips";
 
 const LEVELS = [
   { id: "pham-vi-10", label: "🔟 Phạm vi 10", hint: "So sánh hai số từ 0 đến 10, có hình để đếm" },
@@ -26,7 +27,7 @@ function make(level: string): GameRound {
   const q = makeCompareQuestion(level as CompareLevel);
   const dots = level === "pham-vi-10";
   return {
-    say: `So sánh ${q.a} và ${q.b}`,
+    say: compareSay(q.a, q.b),
     reveal: q.reveal,
     visual: <CompareRow left={<Side n={q.a} emoji={q.emoji} dots={dots} />} right={<Side n={q.b} emoji={q.emoji} dots={dots} />} />,
     options: SIGN_OPTIONS,
@@ -41,6 +42,7 @@ export default function CompareGame({ backHref }: { backHref: string }) {
       intro="Số nào lớn hơn? Chọn dấu lớn hơn, bé hơn hoặc bằng. Mỗi lượt 10 câu."
       levels={LEVELS}
       make={make}
+      clips={GAME_MATH_CLIPS}
       optionCols={3}
       backHref={backHref}
     />
