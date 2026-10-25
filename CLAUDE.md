@@ -20,9 +20,10 @@ npm run lint     # eslint
 npm run typecheck  # tsc --noEmit
 npm test         # unit tests: tests/*.test.ts (node:test via tsx, no test framework)
 npm run check    # lint + typecheck + test + every scripts/*-check.ts (scripts/run-checks.mjs)
+npm run test:e2e # Playwright (e2e/), against `next start` of the last `npm run build`, fake Supabase
 ```
 
-**Run `npm run check` before calling a change done.** CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm run check` and `npm run build` (dummy Supabase env) on every PR and push to `master`. Unit tests cover the code where a mistake fails silently: `scoreAnswer` per question type (incl. NFD input from Unikey "Unicode tổ hợp", spacing, duplicate multi picks), `parseExamText` (type inference, `1.250` thousands → `short`), `splitOptions`, `cleanOcrText`, `safeNext` (open-redirect, incl. tab/newline), audio filename → question index, `readAloudEnabled`, and that `stopSpeaking` really stops a multi-segment read. A new content generator gets a `scripts/<name>-check.ts` and `run-checks.mjs` picks it up by name.
+**Run `npm run check` before calling a change done.** CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm run check`, `npm run build` (dummy Supabase env) and `npm run test:e2e` on every PR and push to `master`. The e2e tests only touch pages that need no DB (Toán theo sách, Tạo đề nhanh, the `/import` lock with `IMPORT_PASSWORD` set by `playwright.config.ts`); the quiz test rebuilds the answers from the same generator and seed and expects 10/10, so it covers scoring end to end. `@playwright/test` is pinned to the version of the container's preinstalled Chromium. Unit tests cover the code where a mistake fails silently: `scoreAnswer` per question type (incl. NFD input from Unikey "Unicode tổ hợp", spacing, duplicate multi picks), `parseExamText` (type inference, `1.250` thousands → `short`), `splitOptions`, `cleanOcrText`, `safeNext` (open-redirect, incl. tab/newline), audio filename → question index, `readAloudEnabled`, and that `stopSpeaking` really stops a multi-segment read. A new content generator gets a `scripts/<name>-check.ts` and `run-checks.mjs` picks it up by name.
 
 ## Environment
 
