@@ -110,7 +110,7 @@ export default function GameShell({
     if (timer.current) clearTimeout(timer.current);
   }, []);
 
-  // Bản thu giọng thật (thu ở /import/giong-tro-choi) đè lên file Piper cùng câu.
+  // Bản thu giọng thật (thu ở /import/giong-tro-choi) đè lên file đọc sẵn cùng câu.
   const recorded = useRecordedClips(!!clips);
   const allClips = clips ? { ...clips, ...recorded } : undefined;
 
