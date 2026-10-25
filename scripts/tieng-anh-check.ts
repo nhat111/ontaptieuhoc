@@ -9,10 +9,14 @@
 //   • 300 seed mỗi kì: đủ 4 + 2 + 4 + 4 + 2 câu, 4 câu hỏi nói, tổng 10 điểm, không câu trùng,
 //     đáp án nằm trong lựa chọn, câu sắp xếp có đúng một đáp án đúng thứ tự, bản in có lời đọc
 //     (có đáp án) hoặc trang dành cho người coi thi (không đáp án).
+//   • Mọi hội thoại có file nghe (lib/enListenClips.ts, file có thật trong public/), không thừa
+//     file; trên máy có đủ 4 câu nghe, mỗi câu mang đúng file của lời đọc của nó.
 //
 // Chạy: npx tsx scripts/tieng-anh-check.ts
 
-import { buildTiengAnh, enPassages, unitsFor, wrongOrders, type EnContent } from "../lib/exam5/tiengAnh";
+import { existsSync } from "node:fs";
+import { buildTiengAnh, enPassages, listenScript, unitsFor, wrongOrders, type EnContent } from "../lib/exam5/tiengAnh";
+import { EN_LISTEN_CLIPS } from "../lib/enListenClips";
 import { EN, EXAM_KINDS, examKindLabel } from "../lib/quickExam";
 import { paperRows, questionsOf } from "../lib/exam5/paper";
 import { buildPaperHtml } from "../lib/exam5/print";
@@ -23,7 +27,15 @@ const fail = (msg: string) => { if (errors.length < 40) errors.push(msg); };
 const flat = (s: string) => s.replace(/\s+/g, " ");
 const count = (s: string, sub: string) => s.split(sub).length - 1;
 
+const usedClips = new Set<string>();
+
 function checkContent(c: EnContent) {
+  for (const u of c.units) for (const x of u.qa) {
+    const url = EN_LISTEN_CLIPS[listenScript(x)];
+    if (!url) fail(`lớp ${c.grade} Unit ${u.n}: hội thoại chưa có file nghe (chạy scripts/gen-en-listen-audio.py) — ${listenScript(x)}`);
+    else if (!existsSync(`public${url}`)) fail(`lớp ${c.grade}: thiếu file ${url}`);
+    else usedClips.add(url);
+  }
   const g = `lớp ${c.grade}`;
   c.units.forEach((u, i) => { if (u.n !== i + 1) fail(`${g}: Unit thứ ${i + 1} đánh số ${u.n}`); });
   if (c.units.length !== 20) fail(`${g}: cần 20 Unit, có ${c.units.length}`);
@@ -98,7 +110,14 @@ function checkContent(c: EnContent) {
       for (const q of paper.sections[4].items.flatMap(questionsOf)) {
         if (wrongOrders(q.row.correct_answer).some((w) => w === q.row.correct_answer)) fail(`${where}: câu sắp xếp sai trùng câu đúng — ${q.row.correct_answer}`);
       }
-      if (paperRows(paper).length !== 12) fail(`${where}/${seed}: làm trên máy ${paperRows(paper).length} câu, cần 12`);
+      const rows = paperRows(paper);
+      if (rows.length !== 16) fail(`${where}/${seed}: làm trên máy ${rows.length} câu, cần 16`);
+      for (const q of paper.sections[0].items.flatMap(questionsOf)) {
+        const url = EN_LISTEN_CLIPS[q.script ?? ""];
+        const listen = (JSON.parse(q.row.explanation) as { listen?: { url: string; script: string } }).listen;
+        if (q.printOnly || !listen || listen.url !== url || listen.script !== q.script) fail(`${where}/${seed}: câu nghe không có file — ${q.script}`);
+        if (!rows.includes(q.row)) fail(`${where}/${seed}: câu nghe không có trong bài làm trên máy`);
+      }
 
       if (s < 3) {
         if (JSON.stringify(buildTiengAnh(c, k.key, examKindLabel(k.key), seed)) !== JSON.stringify(paper)) fail(`${where}/${seed}: cùng seed ra đề khác`);
@@ -114,9 +133,11 @@ function checkContent(c: EnContent) {
 }
 
 for (const c of Object.values(EN)) checkContent(c);
+const extra = Object.values(EN_LISTEN_CLIPS).filter((u) => !usedClips.has(u));
+if (extra.length) fail(`${extra.length} file nghe không hội thoại nào dùng (chạy lại scripts/gen-en-listen-audio.py)`);
 
 if (errors.length) {
   console.error(`✗ tieng-anh: ${errors.length} lỗi\n  ` + errors.join("\n  "));
   process.exit(1);
 }
-console.log(`✓ tieng-anh: ${Object.values(EN).map((c) => `lớp ${c.grade} ${c.units.length} Unit, ${c.passages.length} bài đọc`).join("; ")}; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn`);
+console.log(`✓ tieng-anh: ${Object.values(EN).map((c) => `lớp ${c.grade} ${c.units.length} Unit, ${c.passages.length} bài đọc`).join("; ")}; ${EXAM_KINDS.length} kì × ${SEEDS} seed đều ổn, ${usedClips.size} file nghe`);

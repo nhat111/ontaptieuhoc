@@ -1,7 +1,9 @@
 // lib/exam5/tiengAnh.ts
 // Đề kiểm tra Tiếng Anh tiểu học theo sách Tiếng Anh Global Success (Kết nối tri thức), 10 điểm:
 //   PART 1. LISTENING (2 điểm): 4 câu × 0,5 — người lớn đọc lời (in ở hướng dẫn chấm), bé khoanh
-//           trên giấy. Không làm trên máy (giọng máy đọc sẽ đọc luôn đáp án).
+//           trên giấy. Hội thoại nào có file nghe làm sẵn (lib/enListenClips.ts) thì làm được cả trên
+//           máy: bé bấm “Nghe hội thoại”; hội thoại chưa có file vẫn chỉ in (giọng máy đọc câu sẽ
+//           không đọc lời thoại, bé không có gì để nghe).
 //   PART 2. READING (3 điểm): chọn từ khác loại 2 × 0,5; đọc đoạn văn, chọn True / False 4 × 0,5.
 //   PART 3. WRITING (3 điểm): chọn đáp án đúng 4 × 0,5; chọn câu đúng thứ tự từ 2 × 0,5.
 //   PART 4. SPEAKING (2 điểm): giáo viên hỏi 4 câu, chấm theo biểu điểm.
@@ -13,6 +15,7 @@ import type { GenQuestionRow } from "../mathGen";
 import type { ExamKind } from "../quickExam";
 import { itemRng } from "../tvGen/core";
 import type { ExamPaper, PaperQuestion, PaperSection } from "./paper";
+import { EN_LISTEN_CLIPS } from "../enListenClips";
 
 /** Một lượt hội thoại: `a` chứa nguyên văn `key`; `wrong` là hai đáp án nhiễu cùng loại. */
 export interface EnQa { q: string; a: string; key: string; wrong: [string, string] }
@@ -106,6 +109,9 @@ export function wrongOrders(s: string): string[] {
   return out;
 }
 
+/** Lời đọc của một câu nghe: in ở hướng dẫn chấm, và là khoá của file nghe trong lib/enListenClips.ts. */
+export const listenScript = (x: EnQa) => `A: ${x.q}  B: ${x.a}`;
+
 /** Câu sắp xếp được: 4–9 từ, không có dấu phẩy, có hai cách đổi chỗ ra câu sai. */
 export const reorderable = (s: string) =>
   !/[,“”"]/.test(s) && !/[.?!] /.test(s) && tokens(s).length >= 4 && tokens(s).length <= 9 && wrongOrders(s).length === 2;
@@ -127,10 +133,14 @@ export function buildTiengAnh(c: EnContent, kind: ExamKind, kindLabel: string, s
   for (const x of qas) if (listenQa.length < 4 && !listenQa.some((y) => y.q === x.q)) listenQa.push(x);
   const listening = listenQa.map((x) => {
     const shown = x.a.replace(x.key, "___");
+    const script = listenScript(x);
     // Lời giải để trống: hướng dẫn chấm đã in lời đọc (script) ngay dưới đáp án.
-    return q(row(`${x.q} – ${shown}`, shuffle(r, [x.key, ...x.wrong]), x.key, ""), 0.5, {
-      printOnly: true, script: `A: ${x.q}  B: ${x.a}`,
-    });
+    const rw = row(`${x.q} – ${shown}`, shuffle(r, [x.key, ...x.wrong]), x.key, "");
+    // Có file nghe thì câu vào cả bài làm trên máy. Không gọi thêm r(): đề in và link đã chia
+    // sẻ giữ nguyên, chỉ bài làm trên máy có thêm câu nghe.
+    const url = EN_LISTEN_CLIPS[script];
+    if (url) rw.explanation = JSON.stringify({ ...JSON.parse(rw.explanation), listen: { url, script } });
+    return q(rw, 0.5, { printOnly: !url, script });
   });
 
   // Reading 1: chọn từ khác loại — 3 từ một nhóm + 1 từ nhóm khác (cùng phạm vi kì).

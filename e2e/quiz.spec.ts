@@ -74,3 +74,17 @@ test("Tạo đề nhanh: tạo đề Toán 3 rồi mở làm trên máy", async 
   await expect(page).toHaveURL(/\/quiz\?de=toan-3-giua-hk1&seed=/);
   await expect(page.getByRole("button", { name: /Bắt đầu làm bài/ })).toBeVisible();
 });
+
+test("Tạo đề nhanh Tiếng Anh: câu nghe có nút Nghe hội thoại và phát được file", async ({ page }) => {
+  await page.goto("/quiz?de=tieng-anh-5-giua-hk1&seed=e2e");
+  await page.getByRole("button", { name: /Bắt đầu làm bài/ }).click();
+
+  const buttons = page.getByRole("button", { name: /Nghe hội thoại/ });
+  await expect(buttons).toHaveCount(4);
+
+  // Bấm nghe thì trình duyệt phải tải được đúng file mp3 của câu đó.
+  const mp3 = page.waitForResponse((r) => r.url().includes("/audio/tieng-anh/") && r.url().endsWith(".mp3"));
+  await buttons.first().click();
+  const res = await mp3;
+  expect(res.status()).toBeLessThan(400);
+});

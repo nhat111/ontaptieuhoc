@@ -20,6 +20,8 @@ interface Props {
   audioUrl?: string | null;
   /** Nhãn phụ cạnh icon, bỏ trống thì chỉ hiện icon. */
   label?: string;
+  /** Tên nút cho trình đọc màn hình khi chưa phát (mặc định "Nghe đọc"). */
+  ariaLabel?: string;
   className?: string;
 }
 
@@ -27,7 +29,7 @@ interface Props {
  * Nút 🔊 đọc nội dung thành tiếng. Bấm lần nữa (hoặc rời trang) thì dừng.
  * Ẩn hẳn khi trình duyệt không hỗ trợ, thay vì hiện nút bấm không ăn thua.
  */
-export default function SpeakButton({ segments, audioUrl, label, className = "" }: Props) {
+export default function SpeakButton({ segments, audioUrl, label, ariaLabel = "Nghe đọc", className = "" }: Props) {
   const [speaking, setSpeaking] = useState(false);
   // File hỏng thì lần bấm sau dùng giọng máy.
   const [fileFailed, setFileFailed] = useState(false);
@@ -84,8 +86,8 @@ export default function SpeakButton({ segments, audioUrl, label, className = "" 
     <button
       type="button"
       onClick={handleClick}
-      aria-label={speaking ? "Dừng đọc" : "Nghe đọc"}
-      title={speaking ? "Dừng đọc" : "Nghe đọc"}
+      aria-label={speaking ? "Dừng đọc" : ariaLabel}
+      title={speaking ? "Dừng đọc" : ariaLabel}
       className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold transition-colors ${
         speaking
           ? "border-orange-300 bg-orange-50 text-orange-600"

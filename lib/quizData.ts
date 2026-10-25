@@ -24,6 +24,12 @@ export type Question = {
    * Có nó thì phát thẳng, không gọi TTS đám mây — không hạn mức, không chờ.
    */
   audioUrl?: string;
+  /**
+   * Câu nghe (phần Listening đề Tiếng Anh): file hội thoại làm sẵn và lời đọc của nó. Khác
+   * `audioUrl`: đây là nội dung của câu hỏi, không phải giọng đọc câu, nên không dính vào
+   * "Nghe cả bài" (có `audioUrl` thì Nghe cả bài chỉ phát file và bỏ qua các câu khác).
+   */
+  listen?: { url: string; script: string };
 };
 
 export type LessonMeta = {

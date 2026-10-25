@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, Headphones, XCircle } from "lucide-react";
 import { Question, displayAnswer, scoreAnswer } from "@/lib/quizData";
 import AnswerOption from "./AnswerOption";
 import MathText from "@/components/MathText";
@@ -78,6 +78,24 @@ export default function QuestionCard({ question, index, selectedAnswer, onSelect
           </span>
         )}
       </div>
+
+      {question.listen && (
+        // Câu nghe: bé phải nghe hội thoại mới làm được, nên nút này luôn hiện (không phụ
+        // thuộc `speak`). File hỏng thì SpeakButton đọc lời bằng giọng máy ở lần bấm sau.
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-700">
+          <Headphones className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="font-semibold">Nghe hội thoại rồi chọn đáp án</span>
+          <span className="ml-auto">
+            <SpeakButton
+              segments={[{ text: question.listen.script.replace(/\b[AB]: /g, ""), lang: "en-US" }]}
+              audioUrl={question.listen.url}
+              label="Nghe"
+              ariaLabel="Nghe hội thoại"
+              className="whitespace-nowrap"
+            />
+          </span>
+        </div>
+      )}
 
       {imagesBefore.length > 0 && (
         <div className="mb-3 space-y-3">

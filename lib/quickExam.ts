@@ -129,9 +129,11 @@ export function getQuickExam(grade: number, subject: string, kind: ExamKind): Qu
         `${en.book}: Unit ${a}–${b} (${unitsFor(en, kind).map((u) => u.title).join(", ")})`,
         `Reading: chọn từ khác loại, đọc đoạn văn (${enPassages(en, kind).map((p) => p.title).join(" hoặc ")}) và chọn True / False`,
         "Writing: chọn đáp án đúng, chọn câu đúng thứ tự từ",
-        "Listening (người lớn đọc lời in kèm) và Speaking (hỏi đáp) chấm trên giấy",
+        "Listening: nghe hội thoại ngay trên máy (hoặc người lớn đọc lời in kèm khi làm trên giấy)",
+        "Speaking (hỏi đáp) chấm trên giấy",
       ],
-      count: 12, minutes: 35,
+      // 12 câu đọc – viết + 4 câu nghe (mọi hội thoại có file nghe, tieng-anh-check soát).
+      count: 16, minutes: 35,
       paper: (seed) => buildTiengAnh(en, kind, kindLabel, seed),
     };
   }
@@ -222,10 +224,18 @@ export function buildQuickExamRows(spec: QuickExamSpec, seed: string): GenQuesti
 export function rowToQuestion(row: GenQuestionRow, id: number): Question {
   let images: QImage[] = [];
   let explanation: string | undefined;
+  let listen: Question["listen"];
   try {
-    const exp = JSON.parse(row.explanation) as { solution?: string; images?: { url: string; position?: string }[] };
+    const exp = JSON.parse(row.explanation) as {
+      solution?: string; images?: { url: string; position?: string }[]; listen?: Question["listen"];
+    };
     images = (exp.images ?? []).map((im) => ({ url: im.url, position: im.position === "before" ? "before" : "after" }));
     if (exp.solution?.trim()) explanation = exp.solution;
+    if (exp.listen) {
+      listen = exp.listen;
+      // Trang kết quả hiện lời đọc để người lớn xem bé nghe được gì.
+      explanation ??= `Lời đọc: ${exp.listen.script}`;
+    }
   } catch { /* không có lời giải thì thôi */ }
   return {
     id,
@@ -236,6 +246,7 @@ export function rowToQuestion(row: GenQuestionRow, id: number): Question {
     images,
     imageUrl: images[0]?.url,
     explanation,
+    listen,
   };
 }
 
