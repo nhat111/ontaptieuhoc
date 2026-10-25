@@ -64,12 +64,28 @@ def slug(script: str) -> str:
     return hashlib.sha1(script.encode("utf-8")).hexdigest()[:12]
 
 
+# Tên riêng giọng Anh đọc sai hẳn (Whisper nghe "Ho Chi Minh City" thành "Hokkaido Min City",
+# "Nha Trang" thành "an H8 Rang", "PE" thành "N.P.E."): viết lại theo cách đọc cho giọng Anh.
+# Chỉ những chỗ đã thử và nghe gần đúng hơn; Mai, Nam, bánh chưng, Hoan Kiem viết lại không khá
+# hơn (Hwan Kee-em bị đọc thành "H. Wayne Key M.") nên giữ nguyên.
+RESPELL = [
+    (r"\bHo Chi Minh\b", "Ho Chee Minh"),
+    (r"\bNha Trang\b", "Nyah Trahng"),
+    (r"\bLe Loi\b", "Lay Loy"),
+    (r"\bNam Dinh\b", "Nam Ding"),
+    (r"\bPE\b", "P. E."),
+]
+
+
 def spoken(text: str) -> str:
     """Chữ đưa vào giọng đọc (chữ trên màn hình không đổi).
 
     Đánh vần "B-E-N" bị đọc thành "Bi Xi'an"; tách thành "B. E. N." thì đọc đúng từng chữ cái.
     """
-    return re.sub(r"\b[A-Z](?:-[A-Z])+\b", lambda m: ". ".join(m.group(0).split("-")) + ".", text)
+    text = re.sub(r"\b[A-Z](?:-[A-Z])+\b", lambda m: ". ".join(m.group(0).split("-")) + ".", text)
+    for pattern, say in RESPELL:
+        text = re.sub(pattern, say, text)
+    return text
 
 
 def synth(voice: PiperVoice, text: str) -> tuple[int, bytes]:
