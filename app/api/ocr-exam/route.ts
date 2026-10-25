@@ -109,11 +109,16 @@ export async function POST(req: NextRequest) {
 
   // Phần chung của request; chỉ `fallbacks` là tuỳ chọn (xem dưới).
   const baseParams = {
-    model: "claude-opus-5",
+    model: "claude-opus-5-5",
     max_tokens: 16000,
     system: SYSTEM,
     // Ràng buộc JSON theo schema nên không cần tự parse text rồi đoán.
-    output_config: { format: { type: "json_schema" as const, schema: SCHEMA } },
+    // effort "high": Opus 5.5 mặc định "medium" (Opus 5 là "high"); đọc dấu
+    // khoanh bút mờ là chỗ cần nghĩ kỹ, đọc sai là chấm sai cả bài.
+    output_config: {
+      effort: "high" as const,
+      format: { type: "json_schema" as const, schema: SCHEMA },
+    },
     messages: [
       {
         role: "user" as const,
