@@ -1,9 +1,12 @@
-// scripts/tv-sheet-check.ts — kiểm tra phiếu bài tập Tiếng Việt lớp 2, 3 (lib/tvSheet.ts,
-// lib/tvGen/lop3.ts). Chạy: npx tsx scripts/tv-sheet-check.ts
+// scripts/tv-sheet-check.ts — kiểm tra phiếu bài tập Tiếng Việt lớp 1–5 (lib/tvSheet.ts,
+// lib/tvGen/lop3.ts, lop4.ts, lop5.ts). Chạy: npx tsx scripts/tv-sheet-check.ts
 //  - kho lớp 3: câu mỗi kiểu không trùng, đúng dấu cuối câu; câu so sánh chứa đúng đoạn
 //    a / từ so sánh / b, câu thường không có từ so sánh; mọi bộ phận Khi nào? Ở đâu?… là đoạn
 //    có thật trong câu, mỗi câu có ít nhất một bộ phận được hỏi; cặp từ trái nghĩa gần nhau
 //    không dùng làm nhiễu cho nhau; không có ngoặc kép thẳng;
+//  - kho lớp 4, 5: tên riêng có ≥ 3 cách viết sai, câu thường không có từ xưng gọi người,
+//    chủ ngữ / vị ngữ / trạng ngữ là đoạn trong câu, mỗi từ đồng nghĩa ở một nhóm, câu đa nghĩa
+//    chứa đúng từ, từ liên kết nằm ở câu sau, câu ghép / câu đơn không trùng;
 //  - mọi chủ đề, mọi tổ hợp số câu 10/15/20 × 200 seed: đúng số câu, toàn trắc nghiệm, lựa
 //    chọn không trùng, đáp án nằm trong lựa chọn và chấm đúng bằng scoreAnswer, không lặp câu,
 //    cùng seed ra cùng phiếu; HTML in được có đủ câu và trang đáp án.
@@ -15,6 +18,10 @@ import {
   CAU, DAU_CONG_DUNG, DAU_DIEN, HOI_CAU, HOI_KEYS, KHONG_SO_SANH, SO_SANH, TRAI_GAN, TU_SO_SANH, traiNghia,
 } from "../lib/tvGen/lop3";
 import { WORD_PAIRS } from "../lib/games3";
+import { CAU4, KHONG_NHAN_HOA, NHAN_HOA, TEN, TU_GOI_NGUOI } from "../lib/tvGen/lop4";
+import { CAU_DON, CAU_GHEP, DA_NGHIA, DAI_TU, DAU_CAU5, DONG_NGHIA, LIEN_KET } from "../lib/tvGen/lop5";
+import { DAU_CAU4 } from "../lib/tvGen/lop4";
+import { wrongCaps } from "../lib/tvGen/bank";
 import { mulberry32 } from "../lib/mathGen/core";
 import { scoreAnswer } from "../lib/quizData";
 import { rowToQuestion } from "../lib/quickExam";
@@ -81,10 +88,48 @@ const texts = [...allCau, ...SO_SANH.map((e) => e.s), ...KHONG_SO_SANH, ...HOI_C
   ...DAU_DIEN.map((e) => e.s), ...DAU_CONG_DUNG.map((e) => e.s + e.why)];
 for (const t of texts) if (/"/.test(t)) fail(`ngoặc kép thẳng: “${t}”`);
 
+/* ───────────── Kho lớp 4 ───────────── */
+
+for (const [k, list] of Object.entries(TEN)) for (const n of list) {
+  const w = wrongCaps(n);
+  if (w.length < 3) fail(`viết hoa ${k}: “${n}” chỉ có ${w.length} cách viết sai`);
+  if (w.includes(n)) fail(`viết hoa ${k}: “${n}” nằm trong cách viết sai`);
+}
+for (const e of NHAN_HOA) {
+  if (!e.s.toLocaleLowerCase("vi").includes(e.vat)) fail(`nhân hoá: “${e.s}” không chứa “${e.vat}”`);
+  for (const k of e.khac) if (!e.s.includes(k)) fail(`nhân hoá: “${e.s}” không chứa “${k}”`);
+}
+for (const s of KHONG_NHAN_HOA) for (const w of TU_GOI_NGUOI) if (hasWord(s, w)) fail(`câu thường “${s}” có từ “${w}”`);
+for (const e of CAU4) {
+  for (const p of [e.cn, e.vn, e.tn, e.x]) if (p && !e.s.includes(p)) fail(`chủ – vị: “${e.s}” không chứa “${p}”`);
+  if (!e.s.includes(`${e.cn} ${e.vn}`)) fail(`chủ – vị: “${e.s}” — chủ ngữ phải đứng liền trước vị ngữ`);
+  if (e.tn && !e.s.startsWith(`${e.tn}, `)) fail(`trạng ngữ: “${e.s}” phải bắt đầu bằng “${e.tn}, ”`);
+  if (!!e.tn !== !!e.loai) fail(`trạng ngữ: “${e.s}” thiếu loại hoặc thiếu trạng ngữ`);
+}
+
+/* ───────────── Kho lớp 5 ───────────── */
+
+const dn = DONG_NGHIA.flat();
+if (new Set(dn).size !== dn.length) fail("đồng nghĩa: một từ ở hai nhóm");
+for (const e of DA_NGHIA) for (const s of [...e.goc, ...e.chuyen]) if (!hasWord(s, e.tu)) fail(`đa nghĩa: “${s}” không có từ “${e.tu}”`);
+for (const e of LIEN_KET) {
+  const [, second] = e.d.split(/(?<=\.) /);
+  if (!second?.startsWith(e.tu)) fail(`liên kết: “${e.d}” — câu sau phải bắt đầu bằng “${e.tu}”`);
+}
+if (new Set([...CAU_GHEP, ...CAU_DON]).size !== CAU_GHEP.length + CAU_DON.length) fail("câu ghép / câu đơn trùng");
+for (const it of [...DAI_TU, ...DAU_CAU4, ...DAU_CAU5]) {
+  if (it.options.filter((o) => o === it.answer).length !== 1) fail(`câu viết sẵn: “${it.q}” — đáp án không đúng một lần`);
+  if (new Set(it.options).size !== it.options.length) fail(`câu viết sẵn: “${it.q}” — lựa chọn trùng`);
+}
+for (const t of [...NHAN_HOA.map((e) => e.s), ...KHONG_NHAN_HOA, ...CAU4.map((e) => e.s), ...DA_NGHIA.flatMap((e) => [...e.goc, ...e.chuyen]),
+  ...LIEN_KET.map((e) => e.d), ...CAU_GHEP, ...CAU_DON, ...[...DAI_TU, ...DAU_CAU4, ...DAU_CAU5].map((e) => e.q + e.explain)]) {
+  if (/"/.test(t)) fail(`ngoặc kép thẳng: “${t}”`);
+}
+
 /* ───────────── Mọi chủ đề ───────────── */
 
 if (new Set(TV_SHEET_LESSONS.map((l) => l.id)).size !== TV_SHEET_LESSONS.length) fail("chủ đề trùng id");
-if (TV_SHEET_GRADES.join(",") !== "2,3") fail(`lớp có phiếu: ${TV_SHEET_GRADES.join(",")}`);
+if (TV_SHEET_GRADES.join(",") !== "1,2,3,4,5") fail(`lớp có phiếu: ${TV_SHEET_GRADES.join(",")}`);
 
 let sheets = 0;
 for (const spec of TV_SHEET_LESSONS) {
@@ -119,6 +164,13 @@ for (const spec of TV_SHEET_LESSONS) {
     if (new Set(rows.map((r) => r.content + r.options.join())).size !== rows.length) dup++;
   }
   if (dup > 6) fail(`${spec.id}: ${dup}/300 phiếu 10 câu có câu lặp`);
+  // Phiếu 20 câu: kho đủ lớn (hoặc mượn được dạng khác) để không in lặp.
+  let dup20 = 0;
+  for (let s = 0; s < 100; s++) {
+    const rows = buildWorksheetQuestions([spec], 20, `e${s}`);
+    if (new Set(rows.map((r) => r.content + r.options.join())).size !== rows.length) dup20++;
+  }
+  if (dup20 > 5) fail(`${spec.id}: ${dup20}/100 phiếu 20 câu có câu lặp`);
 }
 
 // Nhiều chủ đề một lúc + HTML in.

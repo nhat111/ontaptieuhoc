@@ -295,3 +295,6 @@ export const TV4: TvContent = {
   },
   writing: WRITING_PROMPTS, words: [180, 320],
 };
+
+/** Cho phiếu Tiếng Việt lớp 4 theo chủ đề (lib/tvSheet.ts). */
+export { LTVC_BANK as LTVC_BANK_4 };
