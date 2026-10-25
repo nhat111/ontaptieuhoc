@@ -3,6 +3,27 @@ import { IMPORT_COOKIE, checkPassword, expectedToken, isImportProtected } from "
 
 // Nhận mật khẩu chung, đặt cookie cho phép vào khu soạn nội dung.
 
+// Chặn đoán mật khẩu: mỗi IP chỉ được sai MAX_FAILS lần trong WINDOW_MS. Đếm
+// trong bộ nhớ từng máy chủ (serverless có nhiều bản chạy song song) nên không
+// tuyệt đối, nhưng cộng với độ trễ mỗi lần sai thì dò mật khẩu thành rất chậm.
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILS = 10;
+const FAIL_DELAY_MS = 800;
+const fails = new Map<string, number[]>();
+
+function recentFails(ip: string): number[] {
+  const now = Date.now();
+  const recent = (fails.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length) fails.set(ip, recent);
+  else fails.delete(ip);
+  return recent;
+}
+
+function recordFail(ip: string) {
+  if (fails.size > 5000) fails.clear(); // đừng để Map phình mãi
+  fails.set(ip, [...recentFails(ip), Date.now()]);
+}
+
 /**
  * Khoá có đang bật không. Chỉ trả boolean, không lộ mật khẩu.
  *
@@ -19,6 +40,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, open: true });
   }
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (recentFails(ip).length >= MAX_FAILS) {
+    return NextResponse.json(
+      { error: "Nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút." },
+      { status: 429 },
+    );
+  }
+
   let body: { password?: unknown };
   try {
     body = await req.json();
@@ -27,6 +56,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (!(await checkPassword(body.password))) {
+    recordFail(ip);
+    await new Promise((r) => setTimeout(r, FAIL_DELAY_MS));
     return NextResponse.json({ error: "Mật khẩu không đúng." }, { status: 401 });
   }
 
