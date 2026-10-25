@@ -11,9 +11,16 @@ thi đọc mỗi câu hai lần. Bài đọc: giọng nữ đọc tên bài rồ
 Chạy (một lần, trên máy có Python + Node):
 
     python3 -m venv .venv && .venv/bin/pip install piper-tts lameenc
-    # tải en_US-lessac-medium và en_US-ryan-medium (.onnx + .onnx.json) từ
+    # tải en_US-hfc_female-medium và en_US-hfc_male-medium (.onnx + .onnx.json) từ
     # https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US
-    .venv/bin/python scripts/gen-en-listen-audio.py path/to/en_US-lessac-medium.onnx path/to/en_US-ryan-medium.onnx
+    rm -f public/audio/tieng-anh/*.mp3   # chỉ khi đổi giọng: file cũ được giữ theo tên nội dung
+    .venv/bin/python scripts/gen-en-listen-audio.py path/to/en_US-hfc_female-medium.onnx path/to/en_US-hfc_male-medium.onnx
+
+Chọn giọng bằng cách cho Whisper (small.en) nghe lại và so với lời gốc, 40 hội thoại × 6 cấu hình
+(10/2026): hfc_female + hfc_male đọc tốc độ thường sai 4,6% số từ, lessac + ryan 5,7% (đọc chậm
+1,2 lần không rõ hơn), amy + joe 5,0%. Lỗi còn lại gần hết ở tên riêng tiếng Việt (Mai, Nam,
+Hoan Kiem): giọng Anh đọc theo kiểu Anh, như băng sách; viết lại cách đọc (Nahm, Ling) không
+kiểm được bằng máy nên chưa làm.
 
 Ghi ra public/audio/tieng-anh/*.mp3 và lib/enListenClips.ts (lời đọc -> file). Danh sách hội
 thoại lấy từ scripts/en-listen-jobs.ts (đọc thẳng enContent*.ts), nên sửa hay thêm hội thoại
@@ -23,6 +30,7 @@ thì chỉ cần chạy lại script này. Hội thoại chưa có file vẫn ch
 import hashlib
 import io
 import json
+import re
 import subprocess
 import sys
 import wave
@@ -37,8 +45,9 @@ MANIFEST = ROOT / "lib" / "enListenClips.ts"
 URL_PREFIX = "/audio/tieng-anh/"
 PARA_GAP_S = 0.9   # giữa các đoạn của bài đọc
 
-# Chậm hơn giọng mặc định một chút cho học sinh tiểu học.
-CFG = SynthesisConfig(length_scale=1.2, noise_scale=0.4, noise_w_scale=0.5)
+# Tốc độ thường: đọc chậm 1,2 lần không giúp máy nghe rõ hơn mà nghe kéo dài; bé muốn chậm thì
+# chỉnh tốc độ phát (Chậm/Vừa/Nhanh) trên trang.
+CFG = SynthesisConfig(length_scale=1.0, noise_scale=0.4, noise_w_scale=0.5)
 TURN_GAP_S = 0.6   # giữa lượt A và lượt B
 REPEAT_GAP_S = 2.0  # giữa hai lần đọc
 PAD_S = 0.15       # vài máy cắt mất phần đầu khi vừa bắt đầu phát
@@ -55,10 +64,18 @@ def slug(script: str) -> str:
     return hashlib.sha1(script.encode("utf-8")).hexdigest()[:12]
 
 
+def spoken(text: str) -> str:
+    """Chữ đưa vào giọng đọc (chữ trên màn hình không đổi).
+
+    Đánh vần "B-E-N" bị đọc thành "Bi Xi'an"; tách thành "B. E. N." thì đọc đúng từng chữ cái.
+    """
+    return re.sub(r"\b[A-Z](?:-[A-Z])+\b", lambda m: ". ".join(m.group(0).split("-")) + ".", text)
+
+
 def synth(voice: PiperVoice, text: str) -> tuple[int, bytes]:
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
-        voice.synthesize_wav(text, w, syn_config=CFG)
+        voice.synthesize_wav(spoken(text), w, syn_config=CFG)
     buf.seek(0)
     with wave.open(buf, "rb") as w:
         return w.getframerate(), w.readframes(w.getnframes())
