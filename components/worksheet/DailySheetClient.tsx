@@ -3,6 +3,7 @@
 import { Download, Printer, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { track } from "@/lib/usage";
+import { buildWordDoc } from "@/lib/wordDoc";
 import {
   MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
   type DailyGrade, type DailySubject, type MathRange,
@@ -27,6 +28,7 @@ export default function DailySheetClient() {
   const [spellIds, setSpellIds] = useState<string[]>(DEFAULT_SPELL[1]);
   const [count, setCount] = useState(1);
   const [withAnswers, setWithAnswers] = useState(true);
+  const [decor, setDecor] = useState(true);
   // Chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
 
@@ -48,7 +50,7 @@ export default function DailySheetClient() {
 
   function html(autoPrint: boolean, answers = withAnswers) {
     const footer = typeof window !== "undefined" ? `Phiếu tạo miễn phí tại ${window.location.host}` : undefined;
-    return buildDailySheetHtml(sheets, { title, withAnswers: answers, autoPrint, footer });
+    return buildDailySheetHtml(sheets, { title, withAnswers: answers, autoPrint, footer, decor });
   }
 
   function toggle(id: string) {
@@ -56,9 +58,10 @@ export default function DailySheetClient() {
     set((cur) => (cur.includes(id) ? (cur.length > 1 ? cur.filter((x) => x !== id) : cur) : [...cur, id]));
   }
 
-  function downloadDoc() {
+  async function downloadDoc() {
     track("daily_word", { grade, detail: subject });
-    const blob = new Blob([html(false)], { type: "application/msword" });
+    // Hình trang trí là SVG — Word chỉ hiện khi đã vẽ lại thành PNG và nhúng vào file.
+    const blob = await buildWordDoc(html(false));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -140,10 +143,16 @@ export default function DailySheetClient() {
               {COUNTS.map((c) => <button key={c} onClick={() => setCount(c)} className={chip(c === count)}>{c}</button>)}
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700 sm:pt-7">
-            <input type="checkbox" checked={withAnswers} onChange={(e) => setWithAnswers(e.target.checked)} />
-            Kèm đáp án ở các trang cuối
-          </label>
+          <div className="flex flex-col gap-2 sm:pt-7">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" checked={withAnswers} onChange={(e) => setWithAnswers(e.target.checked)} />
+              Kèm đáp án ở các trang cuối
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" checked={decor} onChange={(e) => setDecor(e.target.checked)} />
+              Trang trí hình vui nhộn <span className="text-gray-400">(bỏ chọn để tiết kiệm mực)</span>
+            </label>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -181,7 +190,7 @@ export default function DailySheetClient() {
           <div className="overflow-x-auto rounded-xl border border-gray-100">
             <iframe
               title="Xem trước phiếu"
-              srcDoc={buildDailySheetHtml(sheets.slice(0, 1), { title, withAnswers: false })}
+              srcDoc={buildDailySheetHtml(sheets.slice(0, 1), { title, withAnswers: false, decor })}
               className="block w-full min-w-[700px] h-[1100px] bg-white"
             />
           </div>

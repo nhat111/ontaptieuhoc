@@ -48,6 +48,7 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
   const [count, setCount] = useState(10);
   const [versionCount, setVersionCount] = useState(1);
   const [answers, setAnswers] = useState<AnswerMode>("solutions");
+  const [decor, setDecor] = useState(true);
   // Câu hỏi chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
 
   function html(autoPrint: boolean) {
     return buildWorksheetHtml(versions, {
-      title, grade, answers, autoPrint, topics: specs.map((s) => s.title),
+      title, grade, answers, autoPrint, decor, topics: specs.map((s) => s.title),
     });
   }
 
@@ -182,6 +183,11 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
                 </select>
               </div>
             </div>
+            <label className="mt-4 flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-700">
+              <input type="checkbox" checked={decor} onChange={(e) => setDecor(e.target.checked)} className="h-4 w-4" />
+              Trang trí hình vui nhộn
+              <span className="font-normal text-slate-400">(bỏ chọn để tiết kiệm mực)</span>
+            </label>
           </Step>
 
           <div className="flex flex-col gap-2.5 border-t border-slate-100 pt-5 sm:flex-row sm:flex-wrap sm:items-center">
