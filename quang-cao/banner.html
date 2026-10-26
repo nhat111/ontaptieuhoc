@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1080px; height: 1080px; font-family: Nunito, sans-serif; color: #1e293b;
+    background: linear-gradient(150deg, #e0e7ff 0%, #fdf2f8 45%, #fef3c7 100%); position: relative; overflow: hidden; }
+  .blob { position: absolute; border-radius: 50%; opacity: .55; }
+  .b1 { width: 420px; height: 420px; background: #c7d2fe; top: -140px; right: -120px; }
+  .b2 { width: 300px; height: 300px; background: #fde68a; bottom: -110px; left: -90px; }
+  .wrap { position: relative; padding: 64px 68px; height: 100%; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 18px; }
+  .brand span { font-size: 38px; font-weight: 900; color: #3730a3; }
+  .badge { margin-left: auto; background: #10b981; color: #fff; font-weight: 800; font-size: 24px;
+    padding: 10px 22px; border-radius: 999px; }
+  h1 { margin-top: 44px; font-size: 76px; line-height: 1.08; font-weight: 900; color: #1e1b4b; }
+  h1 em { font-style: normal; color: #4f46e5; }
+  .sub { margin-top: 20px; font-size: 31px; font-weight: 700; color: #475569; line-height: 1.4; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: #fff; border-radius: 26px; padding: 24px 26px; box-shadow: 0 10px 30px rgba(79,70,229,.12);
+    display: flex; gap: 18px; align-items: flex-start; }
+  .ic { width: 58px; height: 58px; border-radius: 16px; flex: none; display: grid; place-items: center; font-size: 30px; }
+  .card b { display: block; font-size: 27px; font-weight: 900; color: #1e1b4b; }
+  .card p { font-size: 21px; font-weight: 600; color: #64748b; line-height: 1.35; margin-top: 4px; }
+  .foot { margin-top: auto; display: flex; align-items: center; gap: 22px; }
+  .cta { background: #4f46e5; color: #fff; font-size: 34px; font-weight: 900; padding: 22px 38px; border-radius: 22px;
+    box-shadow: 0 12px 26px rgba(79,70,229,.35); }
+  .grades { display: flex; gap: 8px; }
+  .grades i { font-style: normal; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+    font-weight: 900; font-size: 24px; color: #fff; }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="64" height="64" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#2563EB"/>
+        <path d="M16 10.5c-2.2-1.4-4.8-1.9-7.5-1.5v12.5c2.7-.4 5.3.1 7.5 1.5m0-12.5c2.2-1.4 4.8-1.9 7.5-1.5v12.5c-2.7-.4-5.3.1-7.5 1.5m0-12.5v12.5" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Ôn Tập Cùng Con</span>
+      <div class="badge">Miễn phí 100%</div>
+    </div>
+
+    <h1>Con ôn bài mỗi tối,<br><em>bố mẹ nhẹ cả đầu!</em></h1>
+    <p class="sub">Bài tập theo từng bài sách Kết nối tri thức, đề kiểm tra in ngay, trò chơi học mà vui — không cần đăng nhập.</p>
+
+    <div class="grid">
+      <div class="card"><div class="ic" style="background:#e0e7ff">📝</div>
+        <div><b>Tạo đề nhanh</b><p>Giữa kì, cuối kì · Toán, Tiếng Việt lớp 1–5, Tiếng Anh lớp 3–5</p></div></div>
+      <div class="card"><div class="ic" style="background:#d1fae5">📚</div>
+        <div><b>Học theo từng bài sách</b><p>Toán lớp 1–5 · Tiếng Việt lớp 1–2, có ví dụ giải mẫu</p></div></div>
+      <div class="card"><div class="ic" style="background:#fef3c7">🖨️</div>
+        <div><b>Tải PDF / Word</b><p>In đề, phiếu bài tập cho con làm trên giấy</p></div></div>
+      <div class="card"><div class="ic" style="background:#ffe4e6">🎮</div>
+        <div><b>Trò chơi học tập</b><p>Đua xe bảng nhân, hái táo, bắn bóng bay… lớp 1–5</p></div></div>
+    </div>
+
+    <div class="foot">
+      <div class="cta">Vào học ngay →</div>
+      <div class="grades">
+        <i style="background:#f87171">1</i><i style="background:#fb923c">2</i><i style="background:#facc15">3</i>
+        <i style="background:#34d399">4</i><i style="background:#38bdf8">5</i><i style="background:#818cf8">6</i>
+        <i style="background:#a78bfa">7</i><i style="background:#f472b6">8</i><i style="background:#94a3b8">9</i>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
