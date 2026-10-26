@@ -15,6 +15,8 @@
 
 import { type Rng, mulberry32, seedFrom, int, pick, chance, shuffle } from "./mathGen/core";
 import { escapeHtml } from "./exportLesson";
+import { ART_CSS, artImg, bulletArt, decoratedHeader, type ArtName } from "./sheetArt";
+
 
 /* ═══════════════ Kiểu dữ liệu ═══════════════ */
 
@@ -492,7 +494,7 @@ function itemHtml(it: Item, filled: boolean): string {
   }
 }
 
-function blockHtml(b: Block, n: number, filled: boolean): string {
+function blockHtml(b: Block, n: number, filled: boolean, decor = false): string {
   const rows: string[] = [];
   for (let i = 0; i < b.items.length; i += b.perRow) {
     const cells = b.items.slice(i, i + b.perRow).map((it) => `<td>${itemHtml(it, filled)}</td>`);
@@ -501,7 +503,7 @@ function blockHtml(b: Block, n: number, filled: boolean): string {
   }
   const w = Math.floor(100 / b.perRow);
   return (
-    `<p class="bt"><b>Bài ${n}:</b> ${b.title}</p>` +
+    `<p class="bt">${decor ? artImg(bulletArt(n - 1), 24, "bul") : ""}<b>Bài ${n}:</b> ${b.title}</p>` +
     `<table class="grid"><colgroup>${`<col width="${w}%"/>`.repeat(b.perRow)}</colgroup>${rows.join("")}</table>`
   );
 }
@@ -512,16 +514,27 @@ export interface DailyHtmlOptions {
   autoPrint?: boolean;
   /** Dòng nhỏ cuối mỗi phiếu, VD tên miền của web. */
   footer?: string;
+  /** Hình vui nhộn (mặt trời, cú mèo, hoa…) ở đầu phiếu và cạnh tên bài; trang đáp án vẫn để trơn. */
+  decor?: boolean;
 }
 
+/** Cặp hình hai bên tiêu đề, đổi theo số phiếu cho đỡ giống nhau. */
+const HEADER_ART: [ArtName, ArtName][] = [["owl", "sun"], ["pencil", "flower"], ["apple", "star"], ["cloud", "owl"]];
+
 export function buildDailySheetHtml(sheets: DailySheet[], o: DailyHtmlOptions): string {
-  const head = (i: number) =>
-    `<h1>${escapeHtml(o.title.toUpperCase())}${sheets.length > 1 ? ` – SỐ ${i + 1}` : ""}</h1>` +
-    `<p class="who">Họ và tên: …………………………………………… Ngày: ……/……/………</p>`;
-  const foot = o.footer ? `<p class="ft">${escapeHtml(o.footer)}</p>` : "";
+  const head = (i: number) => {
+    const h = `<h1>${escapeHtml(o.title.toUpperCase())}${sheets.length > 1 ? ` – SỐ ${i + 1}` : ""}</h1>`;
+    return (
+      (o.decor ? decoratedHeader(h, ...HEADER_ART[i % HEADER_ART.length], 56) : h) +
+      `<p class="who">Họ và tên: …………………………………………… Ngày: ……/……/………</p>`
+    );
+  };
+  const foot = o.footer
+    ? `<p class="ft">${o.decor ? artImg("flower", 18, "bul") : ""}${escapeHtml(o.footer)}${o.decor ? ` ${artImg("star", 18, "bul")}` : ""}</p>`
+    : "";
 
   const pages = sheets.map((s, i) =>
-    `<div class="${i ? "pb" : ""}">${head(i)}${s.blocks.map((b, k) => blockHtml(b, k + 1, false)).join("")}${foot}</div>`,
+    `<div class="${i ? "pb" : ""}">${head(i)}${s.blocks.map((b, k) => blockHtml(b, k + 1, false, o.decor)).join("")}${foot}</div>`,
   );
   const answers = o.withAnswers
     ? sheets.map((s, i) =>
@@ -556,7 +569,7 @@ export function buildDailySheetHtml(sheets: DailySheet[], o: DailyHtmlOptions): 
   .key { color: #c00; font-weight: bold; text-decoration: underline; }
   .ft { margin-top: 18px; text-align: center; font-size: 10pt; color: #777; }
   .pb { page-break-before: always; }
-  @media print { body { padding: 0; } }
+  @media print { body { padding: 0; } }${o.decor ? ART_CSS : ""}
 </style></head>
 <body>
 ${pages.join("")}${answers.join("")}
