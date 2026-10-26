@@ -102,6 +102,14 @@ export default function ExamBrowser({ exams, quickSubjects, initial }: Props) {
 
   const filtered = !!grade || !!activeSubject || !!query.trim();
 
+  /** Link Tạo đề nhanh mang sẵn lớp (và môn đang lọc, nếu máy tạo được môn đó). */
+  const quickHref = (g: number) => {
+    const list = quickSubjects[g] ?? [];
+    if (!g || !list.length) return "/tao-de";
+    const mon = activeSubject && list.includes(activeSubject) ? `&mon=${encodeURIComponent(activeSubject)}` : "";
+    return `/tao-de?lop=${g}${mon}`;
+  };
+
   return (
     <>
       <section className="border-b border-slate-200 bg-gradient-to-br from-primary-50 via-white to-amber-50/60">
@@ -116,7 +124,7 @@ export default function ExamBrowser({ exams, quickSubjects, initial }: Props) {
             </p>
           </div>
           <Link
-            href="/tao-de"
+            href={quickHref(grade)}
             className="group flex items-center gap-3 rounded-2xl border-2 border-primary-200 bg-white p-4 shadow-soft transition-all hover:border-primary-300 hover:shadow-pop motion-safe:hover:-translate-y-0.5 lg:max-w-sm"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700" aria-hidden>
@@ -202,7 +210,7 @@ export default function ExamBrowser({ exams, quickSubjects, initial }: Props) {
               const theme = gradeTheme(g);
               return (
                 <section key={g} aria-labelledby={`lop-${g}`}>
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                     <h2 id={`lop-${g}`} className="flex items-center gap-2.5 text-lg font-extrabold text-slate-900">
                       <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-black tabular-nums ${theme.soft} ${theme.text}`} aria-hidden>
                         {g || "?"}
@@ -211,9 +219,20 @@ export default function ExamBrowser({ exams, quickSubjects, initial }: Props) {
                       <span className="text-sm font-semibold text-slate-400">{items.length} đề</span>
                     </h2>
                     {g > 0 && (
-                      <Link href={`/lop/${g}?view=exam`} className="text-sm font-semibold text-primary-700 hover:text-primary-800">
-                        Xem theo chương
-                      </Link>
+                      <div className="flex shrink-0 items-center gap-3">
+                        {quickSubjects[g] && (
+                          <Link
+                            href={quickHref(g)}
+                            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border-2 border-primary-200 bg-white px-3 text-sm font-bold text-primary-700 hover:border-primary-300 hover:bg-primary-50"
+                          >
+                            <Sparkles className="h-4 w-4" aria-hidden />
+                            Tạo đề lớp {g}
+                          </Link>
+                        )}
+                        <Link href={`/lop/${g}?view=exam`} className="text-sm font-semibold text-primary-700 hover:text-primary-800">
+                          Xem theo chương
+                        </Link>
+                      </div>
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
