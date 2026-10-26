@@ -223,6 +223,8 @@ export type MoneyQuestion = {
   item?: { emoji: string; name: string };
   answer: number;
   options: number[];
+  /** Câu đọc cho bé — viết ở đây để moneyClipTexts() liệt kê đúng từng câu đọc sẵn. */
+  say: string;
   reveal: string;
 };
 
@@ -237,6 +239,14 @@ const ITEMS = [
 
 export const moneyText = (n: number) => `${fmtInt(n)} đồng`;
 
+// Đọc từng tờ: bé lớp 2 nghe được, vẫn phải tự cộng.
+const countSay = (notes: number[]) =>
+  `${notes.map((n, i) => `${i ? "tờ" : "Tờ"} ${n} đồng`).join(", ")}. Có tất cả bao nhiêu tiền?`;
+const changeSay = (name: string, price: number) =>
+  `Mua ${name} giá ${price} đồng, đưa tờ 1000 đồng. Được trả lại bao nhiêu tiền?`;
+const countReveal = (total: number) => `Có tất cả ${moneyText(total)}`;
+const changeReveal = (change: number) => `Được trả lại ${moneyText(change)}`;
+
 export function makeMoneyQuestion(level: MoneyLevel): MoneyQuestion {
   if (level === "dem-tien") {
     let notes: number[];
@@ -246,7 +256,10 @@ export function makeMoneyQuestion(level: MoneyLevel): MoneyQuestion {
     notes.sort((x, y) => y - x);
     const total = notes.reduce((s, n) => s + n, 0);
     // Nhiễu: đếm thiếu / thừa một tờ 100 hoặc 200, quên một tờ.
-    return { notes, answer: total, options: nearOptions(total, [-100, 100, -200, 200, -notes[0]], 100, 1000), reveal: `Có tất cả ${moneyText(total)}` };
+    return {
+      notes, answer: total, options: nearOptions(total, [-100, 100, -200, 200, -notes[0]], 100, 1000),
+      say: countSay(notes), reveal: countReveal(total),
+    };
   }
   const price = randInt(1, 9) * 100;
   const item = pick(ITEMS);
@@ -257,6 +270,26 @@ export function makeMoneyQuestion(level: MoneyLevel): MoneyQuestion {
     item,
     answer: change,
     options: nearOptions(change, [-100, 100, -200, 200, price - change], 100, 900),
-    reveal: `Được trả lại ${moneyText(change)}`,
+    say: changeSay(item.name, price),
+    reveal: changeReveal(change),
   };
+}
+
+/** Mọi câu trò Tiền Việt Nam có thể đọc — cho scripts/gen-game-audio.py đọc sẵn bằng giọng HoaiMy. */
+export function moneyClipTexts(): string[] {
+  const out: string[] = [];
+  const small = NOTES.slice(0, 3);
+  // Mọi bộ 2–4 tờ 100/200/500 (xếp từ lớn đến bé như trên màn hình), tổng không quá 1 000 đồng.
+  const walk = (notes: number[], from: number) => {
+    const total = notes.reduce((s, n) => s + n, 0);
+    if (total > 1000) return;
+    if (notes.length >= 2) out.push(countSay(notes), countReveal(total));
+    if (notes.length < 4) for (let i = from; i >= 0; i--) walk([...notes, small[i]], i);
+  };
+  walk([], small.length - 1);
+  for (let price = 100; price <= 900; price += 100) {
+    for (const item of ITEMS) out.push(changeSay(item.name, price));
+    out.push(changeReveal(1000 - price));
+  }
+  return [...new Set(out)];
 }

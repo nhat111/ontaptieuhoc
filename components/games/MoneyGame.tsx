@@ -2,6 +2,7 @@
 import GameShell, { type GameRound } from "./GameShell";
 import { makeMoneyQuestion, moneyText, type MoneyLevel } from "@/lib/games2";
 import { fmtInt } from "@/lib/games";
+import { GAME_MONEY_CLIPS } from "@/lib/gameClips";
 
 const LEVELS = [
   { id: "dem-tien", label: "💵 Đếm tiền", hint: "Cộng các tờ 100, 200, 500 đồng" },
@@ -30,8 +31,7 @@ function make(level: string): GameRound {
   const options = q.options.map((n) => ({ key: String(n), label: <span className="text-xl sm:text-2xl">{moneyText(n)}</span> }));
   if (level === "dem-tien") {
     return {
-      // Đọc từng tờ: bé lớp 2 nghe được, vẫn phải tự cộng.
-      say: `${q.notes.map((n) => `tờ ${n} đồng`).join(", ")}. Có tất cả bao nhiêu tiền?`,
+      say: q.say,
       reveal: q.reveal,
       visual: (
         <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
@@ -43,7 +43,7 @@ function make(level: string): GameRound {
     };
   }
   return {
-    say: `Mua ${q.item!.name} giá ${q.price} đồng, đưa tờ 1000 đồng. Được trả lại bao nhiêu tiền?`,
+    say: q.say,
     reveal: q.reveal,
     visual: (
       <div className="flex flex-col items-center gap-3 text-center">
@@ -68,6 +68,7 @@ export default function MoneyGame({ backHref }: { backHref: string }) {
       levels={LEVELS}
       make={make}
       optionCols={2}
+      clips={GAME_MONEY_CLIPS}
       backHref={backHref}
     />
   );
