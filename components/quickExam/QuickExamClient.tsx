@@ -8,7 +8,7 @@ import { EXAM_KINDS, getQuickExam, hasQuickExam, quickExamHref, type ExamKind } 
 import { answerText, type AnswerMode } from "@/lib/worksheetExport";
 import { paperRows } from "@/lib/exam5/paper";
 import { buildPaperHtml, schoolYearOf } from "@/lib/exam5/print";
-import { buildWordDoc } from "@/lib/wordDoc";
+import { htmlToDocx } from "@/lib/docx";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { track } from "@/lib/usage";
 import MathText from "@/components/MathText";
@@ -57,12 +57,12 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
 
   async function downloadDoc() {
     track("quick_exam_word", { grade, detail: `${subject} · ${kind}` });
-    // Word không đọc ảnh SVG/data: — buildWordDoc vẽ lại hình thành PNG và nhúng vào file.
-    const blob = await buildWordDoc(html({ forWord: true }));
+    // File .docx (Word và LibreOffice đều mở được); hình SVG được vẽ lại thành PNG trong htmlToDocx.
+    const blob = await htmlToDocx(html({ forWord: true }));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${spec!.id}-${seed}.doc`;
+    a.download = `${spec!.id}-${seed}.docx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -169,7 +169,7 @@ export default function QuickExamClient({ initialGrade, initialKind, initialSubj
                   <button onClick={downloadDoc}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
                     <Download className="h-4 w-4" aria-hidden />
-                    Tải Word (.doc)
+                    Tải Word (.docx)
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

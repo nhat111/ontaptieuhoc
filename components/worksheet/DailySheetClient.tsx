@@ -3,7 +3,7 @@
 import { Download, Printer, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { track } from "@/lib/usage";
-import { buildWordDoc } from "@/lib/wordDoc";
+import { htmlToDocx } from "@/lib/docx";
 import PdfPreview from "@/components/PdfPreview";
 import {
   MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
@@ -62,12 +62,12 @@ export default function DailySheetClient() {
 
   async function downloadDoc() {
     track("daily_word", { grade, detail: subject });
-    // Hình trang trí là SVG — Word chỉ hiện khi đã vẽ lại thành PNG và nhúng vào file.
-    const blob = await buildWordDoc(html(false));
+    // File .docx (Word và LibreOffice đều mở được); hình trang trí SVG được vẽ lại thành PNG.
+    const blob = await htmlToDocx(html(false));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${subject === "toan" ? "phieu-toan" : "phieu-tieng-viet"}-lop-${grade}-${seed}.doc`;
+    a.download = `${subject === "toan" ? "phieu-toan" : "phieu-tieng-viet"}-lop-${grade}-${seed}.docx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -173,7 +173,7 @@ export default function DailySheetClient() {
               <button onClick={downloadDoc}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
                 <Download className="h-4 w-4" aria-hidden />
-                Tải Word (.doc)
+                Tải Word (.docx)
               </button>
               <button onClick={openPdf}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2">

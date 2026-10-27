@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { MATH_LESSONS, buildWorksheetQuestions, type MathGrade, type MathLessonSpec } from "@/lib/mathGen";
 import { TV_SHEET_LESSONS } from "@/lib/tvSheet";
 import { buildWorksheetHtml, answerText, type AnswerMode, type WorksheetVersion } from "@/lib/worksheetExport";
-import { buildWordDoc } from "@/lib/wordDoc";
+import { htmlToDocx } from "@/lib/docx";
 import PdfPreview from "@/components/PdfPreview";
 import { latexToPlain } from "@/lib/exportLesson";
 import type { GenQuestionRow } from "@/lib/mathGen";
@@ -84,12 +84,12 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
 
   async function downloadDoc() {
     track("worksheet_word", { grade, detail: topicIds.join(",") });
-    // Mặt đồng hồ là SVG — Word chỉ hiện khi đã vẽ lại thành PNG và nhúng vào file.
-    const blob = await buildWordDoc(html(false));
+    // File .docx (Word và LibreOffice đều mở được); mặt đồng hồ SVG được vẽ lại thành PNG.
+    const blob = await htmlToDocx(html(false));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `phieu-${S.slug}-lop-${grade}-${seed}.doc`;
+    a.download = `phieu-${S.slug}-lop-${grade}-${seed}.docx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -217,7 +217,7 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
                 <button onClick={downloadDoc}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
                   <Download className="h-4 w-4" aria-hidden />
-                  Tải Word (.doc)
+                  Tải Word (.docx)
                 </button>
               </>
             )}

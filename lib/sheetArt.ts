@@ -2,7 +2,7 @@
 // Hình trang trí cho phiếu bài tập in (phiếu theo chủ đề, phiếu luyện hằng ngày): mặt trời,
 // ngôi sao, quả táo, bông hoa, đám mây, bút chì, cú mèo — đều có mặt cười, tự vẽ bằng SVG.
 //
-// Ảnh là SVG data URI có width/height (lib/wordDoc.ts cần cỡ gốc để vẽ lại thành PNG cho Word).
+// Ảnh là SVG data URI có width/height (lib/docx.ts vẽ lại thành PNG cho file Word).
 // Màu pastel, nét đậm: in trắng đen vẫn ra hình rõ. Không đổi gì trong phần sinh câu hỏi —
 // trang trí chỉ nằm ở HTML in, nên phiếu cùng seed vẫn ra đúng các câu cũ.
 
