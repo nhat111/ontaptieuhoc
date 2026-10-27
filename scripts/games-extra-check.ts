@@ -7,8 +7,8 @@
 
 import { existsSync } from "node:fs";
 import { appleSay, compareSay, makeCompareQuestion, makeCountQuestion, mathClipTexts, type CompareLevel, type CountLevel } from "../lib/games";
-import { GAME_MATH_CLIPS } from "../lib/gameClips";
-import { NOTES, makeMoneyQuestion, type MoneyLevel } from "../lib/games2";
+import { GAME_MATH_CLIPS, GAME_MONEY_CLIPS } from "../lib/gameClips";
+import { NOTES, makeMoneyQuestion, moneyClipTexts, type MoneyLevel } from "../lib/games2";
 import { makeRoundQuestion, type RoundLevel } from "../lib/games3";
 import {
   WORD_CLASSES, makeFractionQuestion, makeUnitQuestion, makeWordClassQuestion,
@@ -243,6 +243,22 @@ for (const level of ["tim-gia-tri", "ti-so"] as PercentLevel[]) {
     const url = GAME_MATH_CLIPS[t];
     if (!url) fail("giong-toan-1", `chưa có file (chạy scripts/gen-game-audio.py): ${t}`);
     else if (!existsSync(`public${url}`)) fail("giong-toan-1", `thiếu ${url}`);
+  }
+}
+
+// ── Lớp 2: giọng đọc sẵn của Tiền Việt Nam ──
+{
+  const listed = new Set(moneyClipTexts());
+  for (const level of ["dem-tien", "tra-lai"] as MoneyLevel[]) {
+    for (let i = 0; i < RUNS; i++) {
+      const q = makeMoneyQuestion(level);
+      for (const t of [q.say, q.reveal]) if (!listed.has(t)) fail("giong-tien", `moneyClipTexts thiếu: ${t}`);
+    }
+  }
+  for (const t of listed) {
+    const url = GAME_MONEY_CLIPS[t];
+    if (!url) fail("giong-tien", `chưa có file (chạy scripts/gen-game-audio.py): ${t}`);
+    else if (!existsSync(`public${url}`)) fail("giong-tien", `thiếu ${url}`);
   }
 }
 

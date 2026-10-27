@@ -21,6 +21,12 @@ Chạy (một lần, trên máy có Python, cần mạng):
 Thêm các câu Toán lớp 1 (Đếm hình, Hái táo, So sánh phạm vi 10: "3 cộng 2 bằng mấy?", "So sánh 4
 và 7", "4 bé hơn 7"…), lấy từ mathClipTexts() trong lib/games.ts qua scripts/game-audio-jobs.ts,
 ghi vào GAME_MATH_CLIPS. Bản đồ riêng để trang thu giọng chỉ liệt kê 80 câu Tiếng Việt.
+Trò Tiền Việt Nam lớp 2 ("Tờ 500 đồng, tờ 100 đồng. Có tất cả bao nhiêu tiền?", "Được trả lại
+300 đồng"…) lấy từ moneyClipTexts() trong lib/games2.ts, ghi vào GAME_MONEY_CLIPS — giọng máy
+điện thoại đọc các câu tiền nghe rời rạc.
+
+Sau proxy có CA riêng (máy chủ đám mây), edge-tts cần proxy và bộ CA đó: đặt HTTPS_PROXY và
+EDGE_TTS_CA=<đường dẫn ca-bundle> — không đặt thì chạy như thường.
 
 File đã có thì giữ (tên file theo câu), chạy lại chỉ sinh câu mới và xoá file thừa. Đổi giọng
 hay tốc độ thì xoá thư mục public/audio/tro-choi rồi chạy lại.
@@ -38,6 +44,7 @@ lại script cũng không vỡ trò chơi — chỉ kém hay hơn.
 import asyncio
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -99,15 +106,31 @@ def slug(text: str) -> str:
 
 
 def spoken(text: str) -> str:
-    """Chữ đưa vào giọng đọc: "Âm bờ" -> "Âm, bờ." (ngừng sau "Âm"); câu nào cũng có dấu kết thúc."""
+    """Chữ đưa vào giọng đọc: "Âm bờ" -> "Âm, bờ." (ngừng sau "Âm"); câu nào cũng có dấu kết thúc.
+
+    "1 000 đồng" (dấu cách ngăn nghìn trên màn hình) -> "1000 đồng", kẻo đọc thành hai số.
+    """
     if text.startswith("Âm "):
         text = "Âm, " + text[3:]
+    text = re.sub(r"(?<=\d) (?=\d{3}\b)", "", text)
     return text if text[-1] in ".!?" else text + "."
+
+
+def _proxy_setup() -> str | None:
+    ca = os.environ.get("EDGE_TTS_CA")
+    if ca:
+        import edge_tts.communicate as communicate
+
+        communicate.certifi.where = lambda: ca
+    return os.environ.get("HTTPS_PROXY") if ca else None
+
+
+PROXY = _proxy_setup()
 
 
 async def to_mp3(text: str) -> bytes:
     out = b""
-    async for chunk in edge_tts.Communicate(spoken(text), VOICE, rate=RATE).stream():
+    async for chunk in edge_tts.Communicate(spoken(text), VOICE, rate=RATE, proxy=PROXY).stream():
         if chunk["type"] == "audio":
             out += chunk["data"]
     if not out:
@@ -115,7 +138,7 @@ async def to_mp3(text: str) -> bytes:
     return out
 
 
-def math_texts() -> list[str]:
+def job_texts() -> dict[str, list[str]]:
     out = subprocess.run(
         ["npx", "tsx", "scripts/game-audio-jobs.ts"], cwd=ROOT, check=True, capture_output=True, text=True
     ).stdout
@@ -146,15 +169,18 @@ def main() -> None:
     if len(sys.argv) != 1:
         sys.exit(__doc__)
     texts = collect()
-    maths = [t for t in math_texts() if t not in texts]
+    jobs = job_texts()
+    maths = [t for t in jobs["math"] if t not in texts]
+    money = [t for t in jobs["money"] if t not in texts]
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    wanted = {f"{slug(t)}.mp3" for t in texts + maths}
+    wanted = {f"{slug(t)}.mp3" for t in texts + maths + money}
     for old in OUT_DIR.glob("*.mp3"):
         if old.name not in wanted:
             old.unlink()
     entries = render(texts)
     math_entries = render(maths)
+    money_entries = render(money)
 
     lines = [
         "// TỰ SINH bởi scripts/gen-game-audio.py — đừng sửa tay, chạy lại script.",
@@ -163,9 +189,11 @@ def main() -> None:
         *ts_map("GAME_CLIPS", entries),
         "// Toán lớp 1 (Đếm hình, Hái táo, So sánh phạm vi 10); không có trên trang thu giọng.",
         *ts_map("GAME_MATH_CLIPS", math_entries),
+        "// Tiền Việt Nam lớp 2.",
+        *ts_map("GAME_MONEY_CLIPS", money_entries),
     ]
     MANIFEST.write_text("\n".join(lines), encoding="utf-8")
-    print(f"{len(entries)} + {len(math_entries)} câu -> {OUT_DIR.relative_to(ROOT)}, {MANIFEST.relative_to(ROOT)}")
+    print(f"{len(entries)} + {len(math_entries)} + {len(money_entries)} câu -> {OUT_DIR.relative_to(ROOT)}, {MANIFEST.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
