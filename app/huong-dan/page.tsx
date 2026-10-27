@@ -55,6 +55,7 @@ const STEPS: GuideStep[] = [
       <>Nộp bài xong web chấm ngay: số câu <b>Đúng</b>, <b>Sai</b>, <b>Bỏ qua</b>, kèm sao thưởng và lời khen của bạn Cú.</>,
       <>Phần <b>Chi tiết từng câu</b> tô xanh đáp án đúng, tô đỏ đáp án bé chọn sai. Câu nào có <b>Lời giải</b> thì hiện ngay bên dưới.</>,
       <>Bấm <b>Làm lại</b> để làm lại bài, hoặc <b>Quay lại danh sách</b> để chọn bài khác.</>,
+      <>Muốn thi với bạn bè, anh chị em? Ở mục <b>Thách bạn làm đề này</b>, gõ tên gọi (không bắt buộc) rồi bấm <b>Gửi lời thách</b>: điện thoại mở bảng chia sẻ (Zalo, Messenger…), máy tính chép sẵn link. Người nhận làm đúng bộ câu đó và được so điểm khi nộp bài.</>,
     ],
     tip: "Đừng tải lại (F5) trang kết quả — kết quả chỉ giữ tạm trên máy, tải lại là mất.",
   },
@@ -126,6 +127,17 @@ const STEPS: GuideStep[] = [
       <>Bấm <b>Xem & tải PDF</b>. Có đủ lớp 1 đến lớp 5. Phiếu lớp 1 viết câu ngắn để thầy cô đọc to cho các em làm theo. Riêng tiết 10 lớp 5 (công cụ học máy trực quan) cần ít nhất một máy tính để thầy cô làm mẫu.</>,
     ],
     cta: { href: "/phieu-bai-tap?loai=ai", label: "Xem phiếu hoạt động AI" },
+  },
+  {
+    id: "nhiem-vu",
+    title: "Nhiệm vụ mỗi ngày và album sticker",
+    points: [
+      <>Vào <b>Nhiệm vụ</b> trên thanh menu, chọn lớp của con (1–5) một lần, web sẽ nhớ. Mỗi ngày có một nhiệm vụ 5 câu Toán: 3 câu bài con đang học, 2 câu ôn bài trước, có nút <b>Kiểm tra</b> từng câu.</>,
+      <>Bài được chọn theo bài Toán theo sách con làm gần nhất trên máy; chưa làm bài nào thì ước theo tuần học trong năm. Con đang học bài khác thì chọn lại ở ô ngay dưới nhiệm vụ.</>,
+      <>Làm mỗi ngày để giữ chuỗi 🔥 ngày liên tục. Sao từ trò chơi và từ bài làm (mỗi bài 1–3 sao theo điểm tốt nhất) mở dần các sticker trong <b>Album sticker</b>; có sticker chỉ mở khi làm nhiệm vụ nhiều ngày liền. Sticker đã mở thì giữ mãi.</>,
+    ],
+    tip: "Chuỗi ngày, sao và album lưu trên máy (trình duyệt) này. Đổi máy hoặc xoá dữ liệu trình duyệt thì bắt đầu lại.",
+    cta: { href: "/nhiem-vu", label: "Làm nhiệm vụ hôm nay" },
   },
   {
     id: "tro-choi",

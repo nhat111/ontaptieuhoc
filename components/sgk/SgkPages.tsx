@@ -159,6 +159,7 @@ export function SgkLessonView({ grade, slug, bai, seed: seedParam }: { grade: nu
           durationMinutes: 15,
         }}
         quickExamHref={sgkHref(grade, slug, lesson.so)}
+        shareHref={`${sgkHref(grade, slug, lesson.so)}?seed=${seed}`}
         progressKey={sgkProgressKey(grade, lesson.so, slug)}
         backLink={{ href: listHref, label: `${book.subject} ${grade} theo bài` }}
         examples={examples}

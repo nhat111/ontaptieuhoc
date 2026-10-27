@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import ResultSummary from "@/components/result/ResultSummary";
 import ReadingCard from "@/components/quiz/ReadingCard";
 import ResultItem from "@/components/result/ResultItem";
+import ChallengeShare, { ChallengeVerdict } from "@/components/result/ChallengeShare";
+import MissionDoneCard from "@/components/mission/MissionDoneCard";
 import { createClient } from "@/lib/supabase/client";
 import { readAloudEnabled } from "@/lib/readAloud";
 
@@ -35,7 +37,9 @@ export default function ResultPage() {
     );
   }
 
-  const { questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, backHref, backLabel, reading } = result;
+  const {
+    questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, backHref, backLabel, reading, retryLabel, shareHref, challenge, missionDay,
+  } = result;
   // Đề tự sinh ("Tạo đề nhanh") không nằm trong DB: làm lại bằng chính link của nó,
   // quay về trang tạo đề thay vì danh sách bài, và không mời đăng nhập để "lưu tiến độ".
   const quick = !!retryHref;
@@ -102,6 +106,10 @@ export default function ResultPage() {
           total={questions.length}
         />
 
+        {challenge && challenge.total === questions.length && <ChallengeVerdict challenge={challenge} correct={correct} />}
+        {missionDay && <MissionDoneCard />}
+        {shareHref && <ChallengeShare shareHref={shareHref} correct={correct} total={questions.length} title={title} grade={grade} />}
+
         {reading && (
           <div className="mb-5">
             <ReadingCard reading={reading} defaultOpen={false} />
@@ -134,7 +142,7 @@ export default function ResultPage() {
             onClick={() => router.push(quizHref)}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
           >
-            {backHref ? "Làm bộ câu mới" : "Làm lại"}
+            {retryLabel ?? (backHref ? "Làm bộ câu mới" : "Làm lại")}
           </button>
           <button
             onClick={() =>
@@ -148,7 +156,7 @@ export default function ResultPage() {
             }
             className="flex-1 bg-white text-gray-700 font-bold py-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
           >
-            {quick ? (backHref ? "Chọn bài khác" : "Tạo đề khác") : "Quay lại danh sách"}
+            {missionDay ? "Về trang nhiệm vụ" : quick ? (backHref ? "Chọn bài khác" : "Tạo đề khác") : "Quay lại danh sách"}
           </button>
         </div>
       </div>

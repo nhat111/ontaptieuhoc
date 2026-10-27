@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { Burst } from "@/components/games/Fx";
+import { starsFor } from "@/lib/mission";
 
 interface ResultSummaryProps {
   correct: number;
@@ -18,8 +19,8 @@ function getGrade(pct: number) {
 export default function ResultSummary({ correct, wrong, unanswered, total }: ResultSummaryProps) {
   const pct = Math.round((correct / total) * 100);
   const { label, textCls } = getGrade(pct);
-  // Sao cho bé: 3 sao từ 85%, 2 sao từ 70%, 1 sao từ 50%.
-  const stars = pct >= 85 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0;
+  // Sao cho bé: 3 sao từ 85%, 2 sao từ 70%, 1 sao từ 50% — cùng mốc với album sticker (/nhiem-vu).
+  const stars = starsFor(pct);
   const cheer =
     pct >= 85 ? "Xuất sắc! Bé giỏi quá!" : pct >= 70 ? "Làm tốt lắm!" : pct >= 50 ? "Khá rồi, cố thêm chút nữa nhé!" : "Không sao, mình làm lại nhé!";
 

@@ -1,10 +1,11 @@
 "use client";
-import { Clock, ListChecks, Play } from "lucide-react";
+import { Clock, ListChecks, Play, Trophy } from "lucide-react";
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { saveLessonResult } from "@/lib/lessonProgress";
+import { parseChallenge } from "@/lib/challenge";
 import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
 import { htmlToDocx } from "@/lib/docx";
@@ -57,13 +58,26 @@ interface Props {
    * giải ngay, câu đã kiểm tra bị khoá. Điểm khi nộp tính như thường. Đề kiểm tra không bật.
    */
   practice?: boolean;
+  /**
+   * Link trong site mở lại đúng bộ câu này (cho nút "Thách bạn" ở trang kết quả). Bài trong kho
+   * mặc định là /quiz?lessonId=…; bài tự sinh phải truyền link có seed.
+   */
+  shareHref?: string;
+  /** Chữ trên nút làm lại ở trang kết quả. */
+  retryLabel?: string;
+  /** Nhiệm vụ mỗi ngày: ngày của nhiệm vụ (trang kết quả hiện chuỗi ngày, album). */
+  missionDay?: string;
 }
 
-export default function QuizClient({ initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples, practice }: Props) {
+export default function QuizClient({
+  initialQuestions, initialLesson, quickExamHref, progressKey, backLink, examples, practice, shareHref, retryLabel, missionDay,
+}: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const lessonId = Number(searchParams.get("lessonId") ?? "1");
+  // Mở từ link "Thách bạn": ?thach=8-10&ten=Minh (lib/challenge.ts).
+  const challenge = parseChallenge(searchParams.get("thach"), searchParams.get("ten"), initialQuestions.length);
 
   // Câu hỏi là state vì có thể bị trộn khi bắt đầu làm bài.
   const [questions, setQuestions] = useState(initialQuestions);
@@ -250,6 +264,10 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
         retryHref: quickExamHref,
         backHref: backLink?.href,
         backLabel: backLink?.label,
+        retryLabel,
+        shareHref: shareHref ?? (quickExamHref ? undefined : `/quiz?lessonId=${lessonId}`),
+        challenge,
+        missionDay,
         reading: lesson.reading,
         grade: lesson.grade ?? null,
         subjectName: lesson.subjectName ?? null,
@@ -348,6 +366,17 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
                 {lesson.grade}
               </span>
             ) : null}
+            {challenge && (
+              <div className="mx-auto mb-5 flex max-w-md items-center gap-3 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-left">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600" aria-hidden>
+                  <Trophy className="h-5 w-5" />
+                </span>
+                <p className="text-sm text-amber-900">
+                  <b>{challenge.name || "Một bạn"}</b> thách bạn làm bài này và được{" "}
+                  <b className="tabular-nums">{challenge.score}/{challenge.total}</b>. Bạn làm được bao nhiêu?
+                </p>
+              </div>
+            )}
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">{lesson.title}</h1>
             {(lesson.grade || lesson.subjectName) && (
               <p className="text-sm text-slate-500 mb-6">

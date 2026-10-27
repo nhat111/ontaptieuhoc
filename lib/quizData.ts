@@ -1,5 +1,7 @@
 // Types và helpers — data thật load từ Supabase qua lib/db.ts
 
+import type { Challenge } from "./challenge";
+
 export type QType = "mcq" | "multi" | "short" | "numeric";
 
 // One question may have multiple images, each positioned before or after the
@@ -63,7 +65,15 @@ export type QuizResult = {
   /** Nút thứ hai và mục đường dẫn của trang kết quả (bài tự sinh theo sách, lib/sgk). */
   backHref?: string;
   backLabel?: string;
+  /** Chữ trên nút làm lại (mặc định "Làm lại" / "Làm bộ câu mới"). */
+  retryLabel?: string;
   reading?: Reading;
+  /** Link trong site mở lại ĐÚNG bộ câu này — để "Thách bạn làm đề này" (lib/challenge.ts). */
+  shareHref?: string;
+  /** Bài này được mở từ một link thách: điểm và tên người thách, để so điểm. */
+  challenge?: Challenge | null;
+  /** Nhiệm vụ mỗi ngày (lib/mission.ts): ngày của nhiệm vụ, để trang kết quả hiện chuỗi ngày. */
+  missionDay?: string;
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;

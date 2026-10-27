@@ -95,6 +95,7 @@ export default async function QuizPage({ searchParams }: Props) {
         initialQuestions={questions}
         initialLesson={lesson}
         quickExamHref={quick ? quickExamHref(quick.spec, quick.seed) : undefined}
+        shareHref={quick ? quickExamHref(quick.spec, quick.seed) : undefined}
       />
     </Suspense>
   );

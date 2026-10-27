@@ -6,12 +6,13 @@
 // Màu pastel, nét đậm: in trắng đen vẫn ra hình rõ. Không đổi gì trong phần sinh câu hỏi —
 // trang trí chỉ nằm ở HTML in, nên phiếu cùng seed vẫn ra đúng các câu cũ.
 
-const uri = (body: string) =>
+/** Thân SVG (khung 100 × 100) → data URI có width/height. */
+export const svgUri = (body: string) =>
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">${body}</svg>`);
 
 /** Mắt, má hồng và miệng cười, tâm (x, y), độ rộng mặt s. */
-const face = (x: number, y: number, s = 1) =>
+export const cuteFace = (x: number, y: number, s = 1) =>
   `<circle cx="${x - 7 * s}" cy="${y}" r="${2.6 * s}" fill="#1f2937"/>` +
   `<circle cx="${x + 7 * s}" cy="${y}" r="${2.6 * s}" fill="#1f2937"/>` +
   `<circle cx="${x - 6.4 * s}" cy="${y - 0.9 * s}" r="${0.8 * s}" fill="#fff"/>` +
@@ -41,31 +42,31 @@ const petals = Array.from({ length: 6 }, (_, i) => {
 }).join("");
 
 export const ART = {
-  sun: uri(rays + `<circle cx="50" cy="50" r="29" fill="#fde047" stroke="#f59e0b" stroke-width="3"/>` + face(50, 48, 1.15)),
-  star: uri(
-    `<path d="${starPath(50, 54, 44, 21)}" fill="#fcd34d" stroke="#f59e0b" stroke-width="3.5" stroke-linejoin="round"/>` + face(50, 54, 0.95),
+  sun: svgUri(rays + `<circle cx="50" cy="50" r="29" fill="#fde047" stroke="#f59e0b" stroke-width="3"/>` + cuteFace(50, 48, 1.15)),
+  star: svgUri(
+    `<path d="${starPath(50, 54, 44, 21)}" fill="#fcd34d" stroke="#f59e0b" stroke-width="3.5" stroke-linejoin="round"/>` + cuteFace(50, 54, 0.95),
   ),
-  apple: uri(
+  apple: svgUri(
     `<path d="M50 30 C38 20 14 24 15 50 C16 76 34 92 50 84 C66 92 84 76 85 50 C86 24 62 20 50 30Z" fill="#f87171" stroke="#dc2626" stroke-width="3"/>` +
       `<path d="M50 30 Q49 18 55 10" fill="none" stroke="#92400e" stroke-width="4" stroke-linecap="round"/>` +
       `<path d="M55 18 Q70 6 80 16 Q68 26 55 18Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>` +
-      face(50, 56, 1.1),
+      cuteFace(50, 56, 1.1),
   ),
-  flower: uri(petals + `<circle cx="50" cy="50" r="19" fill="#fde047" stroke="#f59e0b" stroke-width="2.5"/>` + face(50, 48, 0.8)),
-  cloud: uri(
+  flower: svgUri(petals + `<circle cx="50" cy="50" r="19" fill="#fde047" stroke="#f59e0b" stroke-width="2.5"/>` + cuteFace(50, 48, 0.8)),
+  cloud: svgUri(
     `<path d="M24 74 C8 74 6 52 22 50 C20 32 42 26 50 38 C56 22 82 26 80 46 C96 48 94 74 78 74Z" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3" stroke-linejoin="round"/>` +
-      face(50, 58, 1),
+      cuteFace(50, 58, 1),
   ),
-  pencil: uri(
+  pencil: svgUri(
     `<g transform="rotate(-35 50 50)">` +
       `<rect x="14" y="36" width="56" height="28" rx="3" fill="#fde047" stroke="#ca8a04" stroke-width="3"/>` +
       `<rect x="4" y="36" width="12" height="28" rx="4" fill="#f9a8d4" stroke="#db2777" stroke-width="3"/>` +
       `<path d="M70 36 L94 50 L70 64Z" fill="#fed7aa" stroke="#ca8a04" stroke-width="3" stroke-linejoin="round"/>` +
       `<path d="M86 45.3 L94 50 L86 54.7Z" fill="#374151"/>` +
       `</g>` +
-      face(46, 50, 0.85),
+      cuteFace(46, 50, 0.85),
   ),
-  owl: uri(
+  owl: svgUri(
     `<path d="M22 30 L30 10 L40 24 L60 24 L70 10 L78 30 C88 50 84 90 50 92 C16 90 12 50 22 30Z" fill="#c4b5fd" stroke="#7c3aed" stroke-width="3" stroke-linejoin="round"/>` +
       `<ellipse cx="50" cy="70" rx="20" ry="17" fill="#ede9fe"/>` +
       `<circle cx="37" cy="42" r="12" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/>` +
