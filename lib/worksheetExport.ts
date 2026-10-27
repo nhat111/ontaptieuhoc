@@ -11,6 +11,7 @@
 
 import type { GenQuestionRow } from "./mathGen";
 import { escapeHtml, latexToPlain } from "./exportLesson";
+import { ART_CSS, artImg, decoratedHeader, type ArtName } from "./sheetArt";
 
 export type AnswerMode = "none" | "key" | "solutions";
 
@@ -29,7 +30,12 @@ export interface WorksheetOptions {
   minutes?: number;
   /** Chèn script gọi window.print() sau khi tải xong (dùng cho nút PDF). */
   autoPrint?: boolean;
+  /** Hình vui nhộn ở đầu mỗi đề và cạnh tên phần; trang đáp án vẫn để trơn. */
+  decor?: boolean;
 }
+
+/** Cặp hình hai bên tiêu đề, đổi theo đề cho đỡ giống nhau. */
+const HEADER_ART: [ArtName, ArtName][] = [["owl", "sun"], ["pencil", "flower"], ["apple", "star"], ["cloud", "owl"]];
 
 const LETTERS = "ABCDEF";
 const DOTS = "……………………………………………………………………………………";
@@ -82,21 +88,25 @@ function optionsTable(options: string[]): string {
 
 const img = (url: string) => `<p class="img"><img src="${escapeHtml(url)}" alt="" width="140" height="140"/></p>`;
 
-function versionHtml(v: WorksheetVersion, o: WorksheetOptions, first: boolean): string {
+function versionHtml(v: WorksheetVersion, o: WorksheetOptions, index: number): string {
+  const first = index === 0;
   const items = v.rows.map(parse);
   const mcq = items.filter((p) => p.row.type === "mcq");
   const open = items.filter((p) => p.row.type !== "mcq");
 
-  const header =
-    `<div class="${first ? "" : "pb"}">` +
+  const title =
     `<h1>${escapeHtml(o.title.toUpperCase())}${v.label ? ` – ${escapeHtml(v.label.toUpperCase())}` : ""}</h1>` +
     (o.minutes ? `<p class="meta">Thời gian làm bài: ${o.minutes} phút</p>` : "") +
-    `<p class="meta">Chủ đề: ${escapeHtml(o.topics.join("; "))}</p>` +
+    `<p class="meta">Chủ đề: ${escapeHtml(o.topics.join("; "))}</p>`;
+  const header =
+    `<div class="${first ? "" : "pb"}">` +
+    (o.decor ? decoratedHeader(title, ...HEADER_ART[index % HEADER_ART.length]) : title) +
     `<p class="who">Họ và tên: ………………………………………………… Lớp: ${o.grade}……</p>` +
     `</div>`;
+  const bullet = (name: ArtName) => (o.decor ? artImg(name, 26, "bul") : "");
 
   const p1 = mcq.length
-    ? `<h2>Phần 1. Trắc nghiệm</h2><p class="note">Khoanh vào chữ đặt trước câu trả lời đúng.</p>` +
+    ? `<h2>${bullet("star")}Phần 1. Trắc nghiệm</h2><p class="note">Khoanh vào chữ đặt trước câu trả lời đúng.</p>` +
       mcq.map((p, i) =>
         p.images.map(img).join("") +
         `<p class="q"><b>Câu ${i + 1}.</b> ${escapeHtml(p.text)}</p>` +
@@ -105,7 +115,7 @@ function versionHtml(v: WorksheetVersion, o: WorksheetOptions, first: boolean): 
     : "";
 
   const p2 = open.length
-    ? `<h2>${mcq.length ? "Phần 2. " : ""}Tự luận</h2>` +
+    ? `<h2>${bullet("pencil")}${mcq.length ? "Phần 2. " : ""}Tự luận</h2>` +
       open.map((p, i) =>
         p.images.map(img).join("") +
         `<p class="q"><b>Bài ${i + 1}.</b> ${escapeHtml(p.text)}</p>` +
@@ -139,7 +149,7 @@ function answersHtml(versions: WorksheetVersion[], mode: AnswerMode): string {
 
 /** Một file HTML gồm mọi đề (mỗi đề sang trang mới) và trang đáp án ở cuối. */
 export function buildWorksheetHtml(versions: WorksheetVersion[], o: WorksheetOptions): string {
-  const body = versions.map((v, i) => versionHtml(v, o, i === 0)).join("") + answersHtml(versions, o.answers);
+  const body = versions.map((v, i) => versionHtml(v, o, i)).join("") + answersHtml(versions, o.answers);
   return `<!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8"/>
 <title>${escapeHtml(o.title)}</title>
@@ -160,7 +170,7 @@ export function buildWorksheetHtml(versions: WorksheetVersion[], o: WorksheetOpt
   .ans { margin: 4px 0; font-size: 13pt; }
   .exp { font-size: 12pt; color: #333; }
   .pb { page-break-before: always; }
-  @media print { body { padding: 0; } }
+  @media print { body { padding: 0; } }${o.decor ? ART_CSS : ""}
 </style></head>
 <body>
 ${body}

@@ -63,7 +63,7 @@ export interface BuildExamOptions {
 }
 
 // Build a self-contained HTML document for the exam, usable both as a Word
-// download (.doc) and as the source for browser print-to-PDF.
+// download (.docx) and as the source for browser print-to-PDF.
 export function buildExamHtml(
   meta: LessonMeta,
   questions: Question[],

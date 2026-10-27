@@ -21,6 +21,7 @@
     "@tiptap/starter-kit": "^3.23.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "fflate": "^0.8.3",
     "html2canvas-pro": "^2.5.2",
     "jspdf": "^4.2.1",
     "katex": "^0.18.10",
