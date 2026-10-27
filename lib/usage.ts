@@ -20,6 +20,8 @@ export const USAGE_EVENTS = {
   daily_word: "Phiếu hằng ngày · Tải Word",
   ai_sheet_print: "Phiếu AI · In PDF",
   game_start: "Chơi trò chơi",
+  mission_start: "Làm nhiệm vụ mỗi ngày",
+  challenge_share: "Gửi lời thách bạn",
 } as const;
 
 export type UsageEventName = keyof typeof USAGE_EVENTS;

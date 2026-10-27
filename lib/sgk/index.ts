@@ -74,9 +74,13 @@ const specOf = (grade: number, l: SgkLesson, slug: string): MathLessonSpec =>
 /** Seed cho một lần vào bài không ghi `?seed=` (trang bài render động ở server). */
 export const freshSeed = () => Math.random().toString(36).slice(2, 8);
 
+/** Dạng câu của một bài: của chính nó, hoặc (bài luyện tập) của các bài được trộn. */
+export const sgkSpecs = (grade: number, lesson: SgkLesson, slug = "toan"): MathLessonSpec[] =>
+  lesson.mix ? [specOf(grade, lesson, slug)] : tronOf(grade, lesson, slug).map((l) => specOf(grade, l, slug));
+
 /** 10 câu của một bài. Bài luyện tập chia đều số câu cho các bài được trộn. */
 export function buildSgkRows(grade: number, lesson: SgkLesson, seed: string, slug = "toan"): GenQuestionRow[] {
-  const specs = lesson.mix ? [specOf(grade, lesson, slug)] : tronOf(grade, lesson, slug).map((l) => specOf(grade, l, slug));
+  const specs = sgkSpecs(grade, lesson, slug);
   // Toán giữ tiền tố "kntt|" cũ: link ?seed= đã chia sẻ mở lại đúng bộ câu.
   const prefix = slug === "toan" ? "kntt" : sgkBook(grade, slug)!.id;
   return buildWorksheetQuestions(specs, QUESTIONS_PER_LESSON, `${prefix}|${lesson.so}|${seed}`);

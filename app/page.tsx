@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Apple, ArrowRight, Gamepad2, Gift, ListChecks, Printer, Scale, Shapes, Sparkles, Star, Volume2 } from "lucide-react";
+import { Apple, ArrowRight, Flame, Gamepad2, Gift, ListChecks, Printer, Scale, Shapes, Sparkles, Star, Volume2 } from "lucide-react";
 import Header from "@/components/Header";
 import GradeCard from "@/components/GradeCard";
 import Footer from "@/components/Footer";
@@ -148,8 +148,25 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Lớp 1–5: khu trò chơi ── */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-4">
+      {/* ── Lớp 1–5: khu trò chơi + nhiệm vụ mỗi ngày ── */}
+      <section className="mx-auto max-w-6xl space-y-5 px-4 pb-16 pt-4">
+        <Link
+          href="/nhiem-vu"
+          className="group flex flex-col gap-4 rounded-3xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-6 shadow-soft transition-all hover:border-orange-300 hover:shadow-pop sm:flex-row sm:items-center sm:p-8"
+        >
+          <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-md" aria-hidden>
+            <Flame className="h-8 w-8" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-xl font-black text-slate-900">Nhiệm vụ mỗi ngày · Toán lớp 1–5</span>
+            <span className="mt-1 block text-sm leading-relaxed text-slate-600">
+              5 câu mỗi ngày theo đúng bài con đang học, giữ chuỗi ngày liên tục và sưu tầm sticker cho album.
+            </span>
+          </span>
+          <span className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-orange-500 px-5 text-sm font-extrabold text-white shadow-sm transition-colors group-hover:bg-orange-600">
+            Làm nhiệm vụ hôm nay
+          </span>
+        </Link>
         <Link
           href="/lop/1/tro-choi"
           className="group relative flex flex-col gap-5 overflow-hidden rounded-3xl border-2 border-star-200 bg-gradient-to-br from-star-50 via-white to-coral-50 p-6 shadow-soft transition-all hover:border-star-300 hover:shadow-pop sm:flex-row sm:items-center sm:p-8"
