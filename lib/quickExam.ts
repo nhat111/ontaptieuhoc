@@ -247,6 +247,7 @@ export function rowToQuestion(row: GenQuestionRow, id: number): Question {
     imageUrl: images[0]?.url,
     explanation,
     listen,
+    ...(row.src ? { src: row.src, srcTitle: row.srcTitle } : {}),
   };
 }
 

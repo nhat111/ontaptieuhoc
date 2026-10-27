@@ -140,6 +140,17 @@ const STEPS: GuideStep[] = [
     cta: { href: "/nhiem-vu", label: "Làm nhiệm vụ hôm nay" },
   },
   {
+    id: "so-cau-sai",
+    title: "Sổ câu sai: ôn đúng chỗ con hay sai",
+    points: [
+      <>Câu nào con làm sai (ở bài theo sách, nhiệm vụ, đề kiểm tra…) tự được ghi vào <b>Sổ câu sai</b>; trang kết quả báo “Đã ghi … mục vào Sổ câu sai”. Câu bỏ trống không bị ghi.</>,
+      <>Mở sổ từ nút <b>Mở Sổ câu sai</b> ở trang kết quả hoặc thẻ <b>Sổ câu sai</b> ở trang Nhiệm vụ. Bấm <b>Làm câu tương tự</b> để luyện đúng dạng đó với số khác (không phải làm lại đúng câu cũ), hoặc <b>Ôn 10 câu</b> để ôn nhiều dạng một lúc.</>,
+      <>Làm đúng 2 lần liền một dạng (ở bất cứ bài nào) là dạng đó được gạch khỏi sổ. Bấm <b>Xem đáp án</b> để xem đáp án và lời giải câu con đã sai.</>,
+    ],
+    tip: "Sổ lưu trên máy (trình duyệt) này, giống chuỗi ngày và album.",
+    cta: { href: "/so-cau-sai", label: "Mở Sổ câu sai" },
+  },
+  {
     id: "tro-choi",
     title: "Trò chơi cho bé lớp 1 đến lớp 5",
     points: [

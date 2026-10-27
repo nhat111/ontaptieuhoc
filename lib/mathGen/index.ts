@@ -117,6 +117,14 @@ export type GenQuestionRow = {
   correct_answer: string;
   /** JSON `{ solution, images? }` — cùng định dạng lib/db.ts đang đọc. */
   explanation: string;
+  /**
+   * Dạng câu đã sinh ra câu này: `<id chủ đề>#<thứ tự dạng trong mix>` (chỉ có ở câu từ
+   * buildWorksheetQuestions). Sổ câu sai dùng để sinh "câu tương tự" (lib/similarRows.ts).
+   * Không đi vào nội dung câu, không đổi bộ câu theo seed.
+   */
+  src?: string;
+  /** Tên chủ đề / bài của dạng đó, để Sổ câu sai ghi "Bài 15. …". */
+  srcTitle?: string;
 };
 
 const SEQ_SEP = "; "; // số thập phân dùng dấu phẩy nên không nối dãy bằng ","
@@ -230,12 +238,13 @@ export function buildWorksheetQuestions(specs: MathLessonSpec[], total: number, 
         for (let t = 0; t < 30 && seen.has(key(row)); t++) row = toQuestionRow(gen(r), r);
         // Dạng này đã hết câu mới (kho nhỏ, phiếu nhiều câu): mượn dạng khác của cùng chủ đề
         // thay vì in lặp. Chỉ chạy khi trước đây sẽ ra câu lặp, nên phiếu cũ không đổi.
+        let from = gi;
         for (let t = 0; t < 60 && seen.has(key(row)) && spec.mix.length > 1; t++) {
-          const [other] = spec.mix[(gi + 1 + (t % (spec.mix.length - 1))) % spec.mix.length];
-          row = toQuestionRow(other(r), r);
+          from = (gi + 1 + (t % (spec.mix.length - 1))) % spec.mix.length;
+          row = toQuestionRow(spec.mix[from][0](r), r);
         }
         seen.add(key(row));
-        rows.push(row);
+        rows.push({ ...row, src: `${spec.id}#${from}`, srcTitle: spec.title });
       }
     });
   });
