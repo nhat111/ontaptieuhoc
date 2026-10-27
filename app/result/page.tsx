@@ -9,6 +9,7 @@ import ReadingCard from "@/components/quiz/ReadingCard";
 import ResultItem from "@/components/result/ResultItem";
 import ChallengeShare, { ChallengeVerdict } from "@/components/result/ChallengeShare";
 import MissionDoneCard from "@/components/mission/MissionDoneCard";
+import WrongBookNotice from "@/components/wrongBook/WrongBookNotice";
 import { createClient } from "@/lib/supabase/client";
 import { readAloudEnabled } from "@/lib/readAloud";
 
@@ -38,7 +39,7 @@ export default function ResultPage() {
   }
 
   const {
-    questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, backHref, backLabel, reading, retryLabel, shareHref, challenge, missionDay,
+    questions, answers, lessonId, lessonTitle, grade, subjectName, retryHref, backHref, backLabel, reading, retryLabel, shareHref, challenge, missionDay, wrongBook,
   } = result;
   // Đề tự sinh ("Tạo đề nhanh") không nằm trong DB: làm lại bằng chính link của nó,
   // quay về trang tạo đề thay vì danh sách bài, và không mời đăng nhập để "lưu tiến độ".
@@ -108,6 +109,7 @@ export default function ResultPage() {
 
         {challenge && challenge.total === questions.length && <ChallengeVerdict challenge={challenge} correct={correct} />}
         {missionDay && <MissionDoneCard />}
+        {wrongBook && <WrongBookNotice added={wrongBook.added} cleared={wrongBook.cleared} />}
         {shareHref && <ChallengeShare shareHref={shareHref} correct={correct} total={questions.length} title={title} grade={grade} />}
 
         {reading && (

@@ -71,6 +71,20 @@ export const sgkReady = (grade: number, lesson: SgkLesson, slug = "toan") => !!l
 const specOf = (grade: number, l: SgkLesson, slug: string): MathLessonSpec =>
   ({ id: `${sgkBook(grade, slug)!.id}-${l.so}`, grade: grade as MathGrade, title: l.ten, mix: l.mix! });
 
+/**
+ * Tìm lại dạng câu theo id chủ đề `kntt-toan-3-15` (MathLessonSpec.id của bài theo sách) —
+ * cho Sổ câu sai sinh "câu tương tự". Bài không có dạng riêng (luyện tập) thì null.
+ */
+export function sgkSpecById(id: string): { spec: MathLessonSpec; href: string } | null {
+  for (const book of ALL_BOOKS) {
+    if (!id.startsWith(`${book.id}-`)) continue;
+    const so = Number(id.slice(book.id.length + 1));
+    const lesson = findSgkLesson(book.grade, so, book.slug)?.lesson;
+    return lesson?.mix ? { spec: specOf(book.grade, lesson, book.slug), href: sgkHref(book.grade, book.slug, so) } : null;
+  }
+  return null;
+}
+
 /** Seed cho một lần vào bài không ghi `?seed=` (trang bài render động ở server). */
 export const freshSeed = () => Math.random().toString(36).slice(2, 8);
 

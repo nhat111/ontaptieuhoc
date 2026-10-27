@@ -32,6 +32,9 @@ export type Question = {
    * "Nghe cả bài" (có `audioUrl` thì Nghe cả bài chỉ phát file và bỏ qua các câu khác).
    */
   listen?: { url: string; script: string };
+  /** Dạng câu (câu tự sinh): để Sổ câu sai ra "câu tương tự" — xem GenQuestionRow.src. */
+  src?: string;
+  srcTitle?: string;
 };
 
 export type LessonMeta = {
@@ -74,6 +77,8 @@ export type QuizResult = {
   challenge?: Challenge | null;
   /** Nhiệm vụ mỗi ngày (lib/mission.ts): ngày của nhiệm vụ, để trang kết quả hiện chuỗi ngày. */
   missionDay?: string;
+  /** Sổ câu sai sau lần nộp này: số mục vừa ghi thêm / vừa gạch (lib/wrongBook.ts). */
+  wrongBook?: { added: number; cleared: number };
 };
 
 export const LABELS = ["A", "B", "C", "D", "E", "F"] as const;

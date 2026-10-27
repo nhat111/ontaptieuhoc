@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Check, Flame, Lock, Play, RotateCcw, Sparkles, Star } from "lucide-react";
+import { BookX, Check, ChevronRight, Flame, Lock, Play, RotateCcw, Sparkles, Star } from "lucide-react";
 import { gradeTheme } from "@/lib/gradeTheme";
 import { lessonState, type LessonProgressMap } from "@/lib/lessonProgress";
 import {
@@ -10,6 +10,7 @@ import {
 import { STICKER_ART } from "@/lib/stickerArt";
 import { track } from "@/lib/usage";
 import { setMissionPrefs, useGameStars, useMissionPrefs, useProgress, useToday, type MissionPrefs } from "./hooks";
+import { useWrongBook } from "@/components/wrongBook/hooks";
 
 const THU = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -18,6 +19,7 @@ export default function MissionHub({ lists }: { lists: Record<number, MissionBai
   const progress = useProgress();
   const gameStars = useGameStars();
   const prefs = useMissionPrefs();
+  const wrong = useWrongBook().entries.length;
 
   // Ở server (và khoảnh khắc trước khi đọc được máy) chưa biết ngày, tiến độ: hiện khung trống.
   if (!today) return <div className="h-96 animate-pulse rounded-3xl bg-white/60" aria-hidden />;
@@ -94,6 +96,19 @@ export default function MissionHub({ lists }: { lists: Record<number, MissionBai
           <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">Chọn lớp của con để nhận nhiệm vụ: mỗi ngày {MISSION_SIZE} câu Toán theo đúng bài sách Kết nối tri thức con đang học.</p>
         )}
       </section>
+
+      {wrong > 0 && (
+        <Link href="/so-cau-sai" className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-soft hover:border-coral-200">
+          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-coral-50 text-coral-600" aria-hidden>
+            <BookX className="h-6 w-6" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-extrabold text-slate-900">Sổ câu sai: {wrong} mục cần ôn</span>
+            <span className="block text-sm text-slate-500">Làm câu tương tự để gạch dần khỏi sổ.</span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-slate-400" aria-hidden />
+        </Link>
+      )}
 
       <Album stars={stars} gameStars={gameStars} best={best} />
     </div>

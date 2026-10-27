@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/lib/quizData";
 import { saveLessonResult } from "@/lib/lessonProgress";
 import { parseChallenge } from "@/lib/challenge";
+import { recordAttempt } from "@/lib/wrongBook";
 import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
 import { htmlToDocx } from "@/lib/docx";
@@ -253,6 +254,8 @@ export default function QuizClient({
     } else if (progressKey) {
       saveLessonResult(progressKey, score, total);
     }
+    // Sổ câu sai: ghi câu sai, đếm đúng liền của dạng đã có trong sổ (lib/wrongBook.ts).
+    const book = recordAttempt(questions, finalAnswers, { title: lesson.title, grade: lesson.grade, subject: lesson.subjectName });
 
     sessionStorage.setItem(
       "quizResult",
@@ -268,6 +271,7 @@ export default function QuizClient({
         shareHref: shareHref ?? (quickExamHref ? undefined : `/quiz?lessonId=${lessonId}`),
         challenge,
         missionDay,
+        wrongBook: { added: book.added, cleared: book.cleared },
         reading: lesson.reading,
         grade: lesson.grade ?? null,
         subjectName: lesson.subjectName ?? null,
