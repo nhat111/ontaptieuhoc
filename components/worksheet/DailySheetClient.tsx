@@ -4,6 +4,7 @@ import { Download, Printer, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { track } from "@/lib/usage";
 import { buildWordDoc } from "@/lib/wordDoc";
+import PdfPreview from "@/components/PdfPreview";
 import {
   MATH_RANGES, buildDailySheets, buildDailySheetHtml, mathBlocksFor, spellGroupsFor, spellLabel,
   type DailyGrade, type DailySubject, type MathRange,
@@ -31,6 +32,7 @@ export default function DailySheetClient() {
   const [decor, setDecor] = useState(true);
   // Chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
 
   const available = subject === "toan"
     ? mathBlocksFor(range, grade).map((b) => ({ id: b.id, label: b.label }))
@@ -72,8 +74,13 @@ export default function DailySheetClient() {
     URL.revokeObjectURL(url);
   }
 
+  // Dựng PDF ngay trên máy rồi tải về: hộp thoại in của điện thoại không lưu ra được file PDF.
   function openPdf() {
     track("daily_print", { grade, detail: subject });
+    setPdfHtml(html(false));
+  }
+
+  function printSheet() {
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html(true));
@@ -171,7 +178,7 @@ export default function DailySheetClient() {
               <button onClick={openPdf}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2">
                 <Printer className="h-4 w-4" aria-hidden />
-                In / lưu PDF
+                Xem & tải PDF
               </button>
             </>
           )}
@@ -195,6 +202,15 @@ export default function DailySheetClient() {
             />
           </div>
         </div>
+      )}
+      {pdfHtml && (
+        <PdfPreview
+          html={pdfHtml}
+          fileName={`${subject === "toan" ? "phieu-toan" : "phieu-tieng-viet"}-lop-${grade}-${seed}`}
+          title={title}
+          onPrint={printSheet}
+          onClose={() => setPdfHtml(null)}
+        />
       )}
     </div>
   );

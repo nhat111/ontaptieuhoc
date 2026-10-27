@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AI_GRADES, aiGrade, buildAiSheetHtml } from "@/lib/aiSheets";
 import { track } from "@/lib/usage";
+import PdfPreview from "@/components/PdfPreview";
 
 const ALL_GRADES = [1, 2, 3, 4, 5];
 
@@ -14,6 +15,7 @@ export default function AiSheetClient() {
   const [picked, setPicked] = useState<number[]>(data.sheets.map((s) => s.no));
   const [withTeacher, setWithTeacher] = useState(true);
   const [previewNo, setPreviewNo] = useState(1);
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
 
   const sheets = data.sheets.filter((s) => picked.includes(s.no));
   const allOn = picked.length === data.sheets.length;
@@ -23,13 +25,19 @@ export default function AiSheetClient() {
     setPicked((cur) => (cur.includes(no) ? cur.filter((x) => x !== no) : [...cur, no].sort((a, b) => a - b)));
   }
 
+  const sheetHtml = (autoPrint: boolean) =>
+    buildAiSheetHtml(grade, sheets, { withTeacher, autoPrint, footer: `Phiếu miễn phí tại ${window.location.host}` });
+
+  // Dựng PDF ngay trên máy rồi tải về: hộp thoại in của điện thoại không lưu ra được file PDF.
   function openPdf() {
     track("ai_sheet_print", { grade, detail: `${sheets.length} phiếu` });
+    setPdfHtml(sheetHtml(false));
+  }
+
+  function printSheet() {
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(buildAiSheetHtml(grade, sheets, {
-      withTeacher, autoPrint: true, footer: `Phiếu miễn phí tại ${window.location.host}`,
-    }));
+    w.document.write(sheetHtml(true));
     w.document.close();
   }
 
@@ -94,7 +102,7 @@ export default function AiSheetClient() {
           <button onClick={openPdf} disabled={sheets.length === 0}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-6 text-base font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2 disabled:pointer-events-none disabled:opacity-40">
             <Printer className="h-5 w-5" aria-hidden />
-            In / lưu PDF {sheets.length > 0 ? `(${sheets.length} phiếu)` : ""}
+            Xem & tải PDF {sheets.length > 0 ? `(${sheets.length} phiếu)` : ""}
           </button>
         </div>
         <p className="text-xs text-gray-400">
@@ -119,6 +127,15 @@ export default function AiSheetClient() {
           />
         </div>
       </div>
+      {pdfHtml && (
+        <PdfPreview
+          html={pdfHtml}
+          fileName={`phieu-ai-lop-${grade}`}
+          title={`Phiếu hoạt động AI lớp ${grade}`}
+          onPrint={printSheet}
+          onClose={() => setPdfHtml(null)}
+        />
+      )}
     </div>
   );
 }
