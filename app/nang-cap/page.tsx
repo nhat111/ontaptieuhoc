@@ -15,7 +15,7 @@ const BANK = { name: "Vietcombank", account: "0123456789", holder: "NGUYEN VAN A
 const MOMO = "0901234567";
 
 const PERKS = [
-  "Tải đề ra Word (.doc) và PDF để in cho con luyện ở nhà",
+  "Tải đề ra Word (.docx) và PDF để in cho con luyện ở nhà",
   "Tải kèm đáp án / lời giải",
   "Báo cáo tiến bộ chi tiết theo môn",
   "Không quảng cáo",

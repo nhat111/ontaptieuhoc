@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { MATH_LESSONS, buildWorksheetQuestions, type MathGrade, type MathLessonSpec } from "@/lib/mathGen";
 import { TV_SHEET_LESSONS } from "@/lib/tvSheet";
 import { buildWorksheetHtml, answerText, type AnswerMode, type WorksheetVersion } from "@/lib/worksheetExport";
-import { buildWordDoc } from "@/lib/wordDoc";
+import { htmlToDocx } from "@/lib/docx";
+import PdfPreview from "@/components/PdfPreview";
 import { latexToPlain } from "@/lib/exportLesson";
 import type { GenQuestionRow } from "@/lib/mathGen";
 import {
@@ -51,6 +52,7 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
   const [decor, setDecor] = useState(true);
   // Câu hỏi chỉ sinh sau khi bấm (sinh lúc render sẽ lệch giữa server và trình duyệt).
   const [seed, setSeed] = useState<string | null>(null);
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
 
   const specs = useMemo(() => S.lessons.filter((t) => t.grade === grade && topicIds.includes(t.id)), [S, grade, topicIds]);
 
@@ -82,20 +84,25 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
 
   async function downloadDoc() {
     track("worksheet_word", { grade, detail: topicIds.join(",") });
-    // Mặt đồng hồ là SVG — Word chỉ hiện khi đã vẽ lại thành PNG và nhúng vào file.
-    const blob = await buildWordDoc(html(false));
+    // File .docx (Word và LibreOffice đều mở được); mặt đồng hồ SVG được vẽ lại thành PNG.
+    const blob = await htmlToDocx(html(false));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `phieu-${S.slug}-lop-${grade}-${seed}.doc`;
+    a.download = `phieu-${S.slug}-lop-${grade}-${seed}.docx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
   }
 
+  // Dựng PDF ngay trên máy rồi tải về: hộp thoại in của điện thoại không lưu ra được file PDF.
   function openPdf() {
     track("worksheet_print", { grade, detail: topicIds.join(",") });
+    setPdfHtml(html(false));
+  }
+
+  function printSheet() {
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html(true));
@@ -205,12 +212,12 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
                 <button onClick={openPdf}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-b-4 border-primary-800 bg-primary-600 px-5 text-sm font-extrabold text-white shadow-pop transition-all hover:bg-primary-700 active:translate-y-0.5 active:border-b-2">
                   <Printer className="h-4 w-4" aria-hidden />
-                  In / lưu PDF
+                  Xem & tải PDF
                 </button>
                 <button onClick={downloadDoc}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-primary-200 bg-white px-5 text-sm font-bold text-primary-700 hover:bg-primary-50">
                   <Download className="h-4 w-4" aria-hidden />
-                  Tải Word (.doc)
+                  Tải Word (.docx)
                 </button>
               </>
             )}
@@ -247,6 +254,15 @@ export default function WorksheetClient({ subject = "toan" }: { subject?: Worksh
             ))}
           </ol>
         </div>
+      )}
+      {pdfHtml && (
+        <PdfPreview
+          html={pdfHtml}
+          fileName={`phieu-${S.slug}-lop-${grade}-${seed}`}
+          title={title}
+          onPrint={printSheet}
+          onClose={() => setPdfHtml(null)}
+        />
       )}
     </div>
   );

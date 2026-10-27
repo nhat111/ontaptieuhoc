@@ -7,7 +7,7 @@ import { Question, LessonMeta, formatTime, scoreAnswer, shuffleQuiz } from "@/li
 import { saveLessonResult } from "@/lib/lessonProgress";
 import { track } from "@/lib/usage";
 import { buildExamHtml } from "@/lib/exportLesson";
-import { buildWordDoc } from "@/lib/wordDoc";
+import { htmlToDocx } from "@/lib/docx";
 import Header from "@/components/Header";
 import PdfPreview from "@/components/PdfPreview";
 import QuestionCard from "./QuestionCard";
@@ -294,11 +294,11 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
   async function downloadDoc(withAnswers: boolean) {
     track("lesson_print", usage());
     // Nhúng ảnh vào file: Word không tự tải ảnh qua link hay đọc ảnh data:.
-    const blob = await buildWordDoc(buildExamHtml(lesson, questions, { withAnswers }));
+    const blob = await htmlToDocx(buildExamHtml(lesson, questions, { withAnswers }));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${safeName}${withAnswers ? "-co-dap-an" : ""}.doc`;
+    a.download = `${safeName}${withAnswers ? "-co-dap-an" : ""}.docx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -456,7 +456,7 @@ export default function QuizClient({ initialQuestions, initialLesson, quickExamH
                   onClick={() => downloadDoc(false)}
                   className="text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  Word (.doc)
+                  Word (.docx)
                 </button>
                 <button
                   onClick={openPdf}
